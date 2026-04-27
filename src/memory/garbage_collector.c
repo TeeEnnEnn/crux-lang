@@ -4,7 +4,7 @@
 
 #include "alloc.h"
 #include "common.h"
-#include "compiler.h"
+#include "compiler/compiler_core.h"
 #include "garbage_collector.h"
 #include "object.h"
 #include "panic.h"

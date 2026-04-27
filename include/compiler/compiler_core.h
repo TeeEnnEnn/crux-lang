@@ -8,6 +8,7 @@
 #include "type_system.h"
 #include "common.h"
 
+
 /**
  * @brief Parser state used during compilation.
  *
@@ -194,23 +195,6 @@ bool is_valid_table_key_type(ObjectTypeRecord *type);
 void emit_words(const Compiler *compiler, uint16_t word1, uint16_t word2);
 void emit_word(const Compiler *compiler, uint16_t word);
 
-/**
- * lookup a callable in a vm stdlib table
- * @param compiler The current compiler
- * @param type_table The vm owned type table to look for a callable from
- * @param name_token The name of the callable
- * @return the callable otherwise NULL if no callable found
- */
-const ObjectNativeCallable *lookup_stdlib_method(const Compiler *compiler, const Table *type_table,
-												 const Token *name_token);
-void consume_identifier_like(const Compiler *compiler, const char *message);
-bool check_identifier_like(const Compiler *compiler);
-bool is_identifier_like(CruxTokenType type);
-bool match(const Compiler *compiler, CruxTokenType type);
-bool check(const Compiler *compiler, CruxTokenType type);
-void advance(const Compiler *compiler);
-void consume(const Compiler *compiler, CruxTokenType type, const char *message);
-Chunk *current_chunk(const Compiler *compiler);
 
 /**
  * emits an OP_LOOP instruction
@@ -369,8 +353,6 @@ void ensure_local_name_available(const Compiler *compiler, const Token name);
 
 void declare_named_variable(Compiler *compiler, Token name, ObjectTypeRecord *type);
 
-bool match_type_name(const Compiler *compiler);
-
 TypeMask type_token_type_to_mask(CruxTokenType token_type);
 /**
  * Checks if the previous opcode in the current chunk matches the given opcode.
@@ -382,5 +364,9 @@ TypeMask type_token_type_to_mask(CruxTokenType token_type);
  */
 bool check_previous_op_code(const Compiler *compiler, OpCode op, int distance);
 bool set_previous_op_code(const Compiler *compiler, OpCode op, int distance);
+
+bool init_compiler(VM *vm, Compiler *compiler, Compiler *enclosing, const FunctionType type);
+
+ObjectFunction *end_compiler(Compiler *compiler);
 
 #endif // COMPILER_H

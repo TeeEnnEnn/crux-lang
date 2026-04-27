@@ -54,6 +54,7 @@ file(GLOB SOURCES
     "src/vm/*.c"
     "src/memory/*.c"
     "src/compiler/*.c"
+    "src/type_system/*.c"
 )
 
 if (NOT WIN32)
@@ -62,6 +63,7 @@ endif()
 
 file(GLOB HEADERS
    "include/*.h"
+   "include/compiler/*.h"
    "include/stdlib/*.h"
    "deps/utf8/utf8.h"
 )

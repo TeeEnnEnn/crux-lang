@@ -2,8 +2,8 @@
 #define PANIC_H
 
 #include <stdarg.h>
-#include "../include/scanner.h"
-#include "compiler.h"
+#include "scanner.h"
+#include "compiler/compiler_core.h"
 
 typedef struct {
 	const char *name;

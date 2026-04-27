@@ -2,7 +2,8 @@
 #include <string.h>
 
 #include "chunk.h"
-#include "compiler.h"
+#include "compiler/compiler_core.h"
+#include "file_handler.h"
 #include "garbage_collector.h"
 #include "object.h"
 #include "panic.h"
@@ -656,4 +657,223 @@ OpCode get_compound_opcode(const Compiler *compiler, const OpCode setOp, const i
 
 	compiler_panic(compiler->parser, "Compiler Error: Failed to create bytecode for compound operation.", RUNTIME);
 	return setOp;
+}
+
+
+bool parse_signed_int_literal(Compiler *compiler, int32_t *value, const char *message)
+{
+	bool is_negative = false;
+	if (match(compiler, CRUX_TOKEN_MINUS)) {
+		is_negative = true;
+	}
+
+	if (!match(compiler, CRUX_TOKEN_INT)) {
+		compiler_panic(compiler->parser, message, SYNTAX);
+		return false;
+	}
+
+	char *end = NULL;
+	long parsed = strtol(compiler->parser->previous.start, &end, 10);
+	if (end == compiler->parser->previous.start) {
+		compiler_panic(compiler->parser, "Failed to parse integer literal in range.", SYNTAX);
+		return false;
+	}
+
+	if (is_negative) {
+		parsed = -parsed;
+	}
+
+	*value = (int32_t)parsed;
+	return true;
+}
+
+
+Token peek_next_token(const Compiler *compiler)
+{
+	Scanner scanner = *compiler->parser->scanner;
+	return scan_token(&scanner);
+}
+
+bool resolve_assignment_target(Compiler *compiler, const Token name, uint16_t *set_op, int *arg,
+									  ObjectTypeRecord **target_type)
+{
+	ObjectString *name_str = copy_string(compiler->owner, name.start, name.length);
+	push(compiler->owner->current_module_record, OBJECT_VAL(name_str));
+
+	// First check if it's a local variable
+	*arg = resolve_local(compiler, &name);
+	if (*arg != -1) {
+		*set_op = OP_SET_LOCAL;
+		*target_type = compiler->locals[*arg].type;
+		pop(compiler->owner->current_module_record);
+		return true;
+	}
+
+	// Then check if it's an upvalue
+	Token mutable_name = name;
+	*arg = resolve_upvalue(compiler, &mutable_name);
+	if (*arg != -1) {
+		*set_op = OP_SET_UPVALUE;
+		*target_type = compiler->upvalues[*arg].type;
+		pop(compiler->owner->current_module_record);
+		return true;
+	}
+
+	// Otherwise it's a global variable
+	*set_op = OP_SET_GLOBAL;
+	*target_type = NULL;
+	int global_index = -1;
+
+	for (const Compiler *comp = compiler; comp != NULL; comp = comp->enclosing) {
+		if (*target_type == NULL) {
+			type_table_get(comp->type_table, name_str, target_type);
+		}
+		if (global_index == -1) {
+			Value index_value;
+			if (table_get(&comp->globals, name_str, &index_value)) {
+				global_index = AS_INT(index_value);
+			}
+		}
+		if (*target_type != NULL && global_index != -1) {
+			break;
+		}
+	}
+
+	// if the variable is still not found, it's undeclared - panic
+	if (*target_type == NULL) {
+		compiler_panicf(compiler->parser, TYPE, "Undeclared variable '%.*s'.", name.length, name.start);
+		pop(compiler->owner->current_module_record);
+		return false;
+	}
+	if (global_index == -1) {
+		compiler_panicf(compiler->parser, TYPE, "Failed to get index for global variable '%.*s'.", name.length,
+						name.start);
+		pop(compiler->owner->current_module_record);
+		return false;
+	}
+	*arg = global_index;
+
+	pop(compiler->owner->current_module_record);
+	return true;
+}
+
+
+bool is_primitive_numeric_type(const ObjectTypeRecord *type)
+{
+	return type && (type->base_type == INT_TYPE || type->base_type == FLOAT_TYPE);
+}
+
+int merge_vector_dimensions(Compiler *compiler, const ObjectTypeRecord *left_type,
+								   const ObjectTypeRecord *right_type, const char *operation)
+{
+	const int left_dim = left_type->as.vector_type.dimensions;
+	const int right_dim = right_type->as.vector_type.dimensions;
+
+	if (left_dim != -1 && right_dim != -1 && left_dim != right_dim) {
+		compiler_panicf(compiler->parser, TYPE, "Vectors must have the same dimension for %s.", operation);
+	}
+
+	return left_dim != -1 ? left_dim : right_dim;
+}
+
+ObjectTypeRecord *merge_matrix_shape(Compiler *compiler, const ObjectTypeRecord *left_type,
+											const ObjectTypeRecord *right_type, const char *operation)
+{
+	const int left_rows = left_type->as.matrix_type.rows;
+	const int left_cols = left_type->as.matrix_type.cols;
+	const int right_rows = right_type->as.matrix_type.rows;
+	const int right_cols = right_type->as.matrix_type.cols;
+
+	if (left_rows != -1 && right_rows != -1 && left_rows != right_rows) {
+		compiler_panicf(compiler->parser, TYPE, "Matrices must have the same dimensions for %s.", operation);
+	}
+	if (left_cols != -1 && right_cols != -1 && left_cols != right_cols) {
+		compiler_panicf(compiler->parser, TYPE, "Matrices must have the same dimensions for %s.", operation);
+	}
+
+	return new_matrix_type_rec(compiler->owner, left_rows != -1 ? left_rows : right_rows,
+							   left_cols != -1 ? left_cols : right_cols);
+}
+
+ObjectTypeRecord *matrix_multiply_result_type(Compiler *compiler, const ObjectTypeRecord *left_type,
+													 const ObjectTypeRecord *right_type)
+{
+	const int left_rows = left_type->as.matrix_type.rows;
+	const int left_cols = left_type->as.matrix_type.cols;
+	const int right_rows = right_type->as.matrix_type.rows;
+	const int right_cols = right_type->as.matrix_type.cols;
+
+	if (left_cols != -1 && right_rows != -1 && left_cols != right_rows) {
+		compiler_panicf(compiler->parser, TYPE, "Matrix multiplication requires lhs.cols == rhs.rows, got %d and %d.",
+						left_cols, right_rows);
+	}
+
+	return new_matrix_type_rec(compiler->owner, left_rows, right_cols);
+}
+
+ObjectModuleRecord *compile_module_statically(Compiler *compiler, ObjectString *path)
+{
+	Value cached_val;
+	if (table_get(&compiler->owner->module_cache, path, &cached_val)) {
+		ObjectModuleRecord *mod = AS_CRUX_MODULE_RECORD(cached_val);
+		if (mod->state == STATE_LOADING) {
+			compiler_panicf(compiler->parser, IMPORT, "Circular dependency detected while loading module '%s'.",
+							path->chars);
+			return mod;
+		}
+		return mod;
+	}
+
+	const FileResult result = read_file(path->chars);
+	if (result.error) {
+		compiler_panicf(compiler->parser, IMPORT, "Could not read file '%s': %s", path->chars, result.error);
+		return NULL;
+	}
+	char *source = result.content;
+
+	ObjectModuleRecord *new_module = new_object_module_record(compiler->owner, path, false, false);
+	table_set(compiler->owner, &compiler->owner->module_cache, path, OBJECT_VAL(new_module));
+
+	ObjectModuleRecord *previous_module = compiler->owner->current_module_record;
+	compiler->owner->current_module_record = new_module;
+
+	Compiler imported_compiler = {0};
+	ObjectFunction *module_func = compile(compiler->owner, &imported_compiler, compiler, source);
+	free(result.content);
+	source = NULL;
+
+	if (module_func != NULL) {
+		new_module->module_closure = new_closure(compiler->owner, module_func);
+		new_module->state = STATE_LOADED;
+	} else {
+		new_module->state = STATE_ERROR;
+	}
+
+	compiler->owner->current_module_record = previous_module;
+
+	return new_module;
+}
+
+void synchronize(const Compiler *compiler)
+{
+	compiler->parser->panic_mode = false;
+
+	while (compiler->parser->current.type != CRUX_TOKEN_EOF) {
+		if (compiler->parser->previous.type == CRUX_TOKEN_SEMICOLON)
+			return;
+		switch (compiler->parser->current.type) {
+		case CRUX_TOKEN_STRUCT:
+		case CRUX_TOKEN_PUB:
+		case CRUX_TOKEN_FN:
+		case CRUX_TOKEN_LET:
+		case CRUX_TOKEN_FOR:
+		case CRUX_TOKEN_IF:
+		case CRUX_TOKEN_WHILE:
+		case CRUX_TOKEN_RETURN:
+		case CRUX_TOKEN_PANIC:
+			return;
+		default:;
+		}
+		advance(compiler);
+	}
 }

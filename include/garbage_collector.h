@@ -4,8 +4,6 @@
 #include "object.h"
 #include "slab_allocator.h"
 
-#define TABLE_MAX_LOAD 0.65
-
 #define ALLOCATE(vm, type, count) (type *)reallocate(vm, NULL, 0, sizeof(type) * count)
 
 #define FREE(vm, type, pointer) reallocate(vm, pointer, sizeof(type), 0)
