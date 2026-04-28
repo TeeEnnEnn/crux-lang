@@ -9,10 +9,10 @@
  * arg0 -> message: Any
  * Returns Error
  */
-Value error_function(VM *vm, const Value *args)
+CruxValue error_function(CruxVM *vm, const CruxValue *args)
 {
 	ObjectModuleRecord *module_record = vm->current_module_record;
-	const Value message = args[0];
+	const CruxValue message = args[0];
 	ObjectString *errorMessage = to_string(vm, message);
 	push(module_record, OBJECT_VAL(errorMessage));
 	ObjectError *error = new_error(vm, errorMessage, RUNTIME, false);
@@ -26,7 +26,7 @@ Value error_function(VM *vm, const Value *args)
  * arg1 -> message: String
  * Returns Nil
  */
-Value assert_function(VM *vm, const Value *args)
+CruxValue assert_function(CruxVM *vm, const CruxValue *args)
 {
 	const bool result = AS_BOOL(args[0]);
 	ObjectString *message = AS_CRUX_STRING(args[1]);
@@ -43,7 +43,7 @@ Value assert_function(VM *vm, const Value *args)
  * arg0 -> error: Error
  * Returns String
  */
-Value error_message_method(VM *vm, const Value *args)
+CruxValue error_message_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectError *error = AS_CRUX_ERROR(args[0]);
@@ -55,7 +55,7 @@ Value error_message_method(VM *vm, const Value *args)
  * arg0 -> error: Error
  * Returns String
  */
-Value error_type_method(VM *vm, const Value *args)
+CruxValue error_type_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectError *error = AS_CRUX_ERROR(args[0]);
 

@@ -1,39 +1,39 @@
 #include "object.h"
 #include "value.h"
 
-Value new_buffer_function(VM *vm, const Value *args);
+CruxValue new_buffer_function(CruxVM *vm, const CruxValue *args);
 
-Value write_byte_buffer_method(VM *vm, const Value *args);
-Value write_int16_le_buffer_method(VM *vm, const Value *args);
-Value write_int32_le_buffer_method(VM *vm, const Value *args);
-Value write_float32_le_buffer_method(VM *vm, const Value *args);
-Value write_float64_le_buffer_method(VM *vm, const Value *args);
-Value write_int16_be_buffer_method(VM *vm, const Value *args);
-Value write_int32_be_buffer_method(VM *vm, const Value *args);
-Value write_float32_be_buffer_method(VM *vm, const Value *args);
-Value write_float64_be_buffer_method(VM *vm, const Value *args);
+CruxValue write_byte_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue write_int16_le_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue write_int32_le_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue write_float32_le_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue write_float64_le_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue write_int16_be_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue write_int32_be_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue write_float32_be_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue write_float64_be_buffer_method(CruxVM *vm, const CruxValue *args);
 
-Value write_string_buffer_method(VM *vm, const Value *args);
-Value write_buffer_buffer_method(VM *vm, const Value *args);
+CruxValue write_string_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue write_buffer_buffer_method(CruxVM *vm, const CruxValue *args);
 
-Value read_byte_buffer_method(VM *vm, const Value *args);
-Value read_string_buffer_method(VM *vm, const Value *args);
-Value read_line_buffer_method(VM *vm, const Value *args);
-Value read_all_buffer_method(VM *vm, const Value *args);
+CruxValue read_byte_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue read_string_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue read_line_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue read_all_buffer_method(CruxVM *vm, const CruxValue *args);
 
-Value read_int16_le_buffer_method(VM *vm, const Value *args);
-Value read_int32_le_buffer_method(VM *vm, const Value *args);
-Value read_float32_le_buffer_method(VM *vm, const Value *args);
-Value read_float64_le_buffer_method(VM *vm, const Value *args);
-Value read_int16_be_buffer_method(VM *vm, const Value *args);
-Value read_int32_be_buffer_method(VM *vm, const Value *args);
-Value read_float32_be_buffer_method(VM *vm, const Value *args);
-Value read_float64_be_buffer_method(VM *vm, const Value *args);
+CruxValue read_int16_le_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue read_int32_le_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue read_float32_le_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue read_float64_le_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue read_int16_be_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue read_int32_be_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue read_float32_be_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue read_float64_be_buffer_method(CruxVM *vm, const CruxValue *args);
 
-Value capacity_buffer_method(VM *vm, const Value *args);
-Value is_empty_buffer_method(VM *vm, const Value *args);
-Value clear_buffer_method(VM *vm, const Value *args);
-Value peek_byte_buffer_method(VM *vm, const Value *args);
-Value skip_bytes_buffer_method(VM *vm, const Value *args);
-Value clone_buffer_method(VM *vm, const Value *args);
-Value compact_buffer_method(VM *vm, const Value *args);
+CruxValue capacity_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue is_empty_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue clear_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue peek_byte_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue skip_bytes_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue clone_buffer_method(CruxVM *vm, const CruxValue *args);
+CruxValue compact_buffer_method(CruxVM *vm, const CruxValue *args);

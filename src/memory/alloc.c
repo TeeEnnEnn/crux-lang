@@ -8,7 +8,7 @@
 #include "slab_allocator.h"
 #include "vm.h"
 
-void *alloc_memory(VM *vm, size_t size)
+void *alloc_memory(CruxVM *vm, size_t size)
 {
 	if (size == 0)
 		return NULL;
@@ -25,7 +25,7 @@ void *alloc_memory(VM *vm, size_t size)
 	return malloc(size);
 }
 
-void free_memory(VM *vm, void *ptr, const size_t size)
+void free_memory(CruxVM *vm, void *ptr, const size_t size)
 {
 	if (!ptr || size == 0) {
 		fprintf(stderr, "Error: NULL pointer given for memory to free.\n");
@@ -47,7 +47,7 @@ void free_memory(VM *vm, void *ptr, const size_t size)
 	}
 }
 
-void *allocate_object_with_gc(VM *vm, const size_t size)
+void *allocate_object_with_gc(CruxVM *vm, const size_t size)
 {
 	vm->bytes_allocated += size;
 	if (vm->bytes_allocated > vm->next_gc) {
@@ -69,7 +69,7 @@ void *allocate_object_with_gc(VM *vm, const size_t size)
 	return result;
 }
 
-void *reallocate(VM *vm, void *pointer, const size_t oldSize, const size_t newSize)
+void *reallocate(CruxVM *vm, void *pointer, const size_t oldSize, const size_t newSize)
 {
 	vm->bytes_allocated += newSize - oldSize;
 	if (newSize > oldSize) {

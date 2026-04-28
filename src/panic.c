@@ -96,7 +96,7 @@ static ErrorDetails getErrorDetails(const ErrorType type)
 		return (ErrorDetails){"Branch Extent Error"};
 	}
 	case VALUE: {
-		return (ErrorDetails){"Value Error"};
+		return (ErrorDetails){"CruxValue Error"};
 	}
 	case RUNTIME:
 	default:
@@ -361,11 +361,11 @@ void runtime_panic(ObjectModuleRecord *module_record, const ErrorType type, cons
  * Creates a formatted error message for type mismatches with actual type
  * information.
  */
-char *type_error_message(VM *vm, const Value value, const char *expected_type)
+char *type_error_message(CruxVM *vm, const CruxValue value, const char *expected_type)
 {
 	static char buffer[1024];
 
-	const Value typeValue = typeof_value(vm, value);
+	const CruxValue typeValue = typeof_value(vm, value);
 	char *actualType = AS_C_STRING(typeValue);
 
 	snprintf(buffer, sizeof(buffer), "Expected type '%s', but got '%s'.", expected_type, actualType);

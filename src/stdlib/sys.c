@@ -17,7 +17,7 @@
  * TODO:CHANGE TYPE TO {} (no arguments)
  * Returns Result<Array>
  */
-Value args_function(VM *vm, const Value *args)
+CruxValue args_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	ObjectModuleRecord *module_record = vm->current_module_record;
@@ -29,7 +29,7 @@ Value args_function(VM *vm, const Value *args)
 	for (int i = 0; i < vm->args.argc; i++) {
 		char *arg = strdup(vm->args.argv[i]);
 		if (arg == NULL) {
-			Value error_result = MAKE_GC_SAFE_ERROR(vm, "Failed to allocate memory for argument.", MEMORY);
+			CruxValue error_result = MAKE_GC_SAFE_ERROR(vm, "Failed to allocate memory for argument.", MEMORY);
 			pop(module_record);
 			pop(module_record);
 			return error_result;
@@ -53,7 +53,7 @@ Value args_function(VM *vm, const Value *args)
  * Returns the current operating system platform
  * Returns String
  */
-Value platform_function(VM *vm, const Value *args)
+CruxValue platform_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 #ifdef _WIN32
@@ -71,7 +71,7 @@ Value platform_function(VM *vm, const Value *args)
  * Returns the CPU architecture
  * Returns String
  */
-Value arch_function(VM *vm, const Value *args)
+CruxValue arch_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 #if defined(__x86_64__) || defined(_M_X64)
@@ -109,7 +109,7 @@ Value arch_function(VM *vm, const Value *args)
  * Returns the current process ID
  * Returns Int
  */
-Value pid_function(VM *vm, const Value *args)
+CruxValue pid_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	(void)args;
@@ -125,7 +125,7 @@ Value pid_function(VM *vm, const Value *args)
  * arg0 -> name: String
  * Returns Result<String>
  */
-Value get_env_function(VM *vm, const Value *args)
+CruxValue get_env_function(CruxVM *vm, const CruxValue *args)
 {
 	const char *value = getenv(AS_C_STRING(args[0]));
 	if (value == NULL) {
@@ -149,7 +149,7 @@ Value get_env_function(VM *vm, const Value *args)
  * arg0 -> seconds: Int
  * Returns Nil
  */
-Value sleep_function(VM *vm, const Value *args)
+CruxValue sleep_function(CruxVM *vm, const CruxValue *args)
 {
 #ifdef _WIN32
 	Sleep(AS_INT(args[0]));
@@ -164,7 +164,7 @@ Value sleep_function(VM *vm, const Value *args)
  * arg0 -> code: Int
  * Returns (never returns)
  */
-Value exit_function(VM *vm, const Value *args)
+CruxValue exit_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 

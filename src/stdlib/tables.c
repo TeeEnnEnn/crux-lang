@@ -7,7 +7,7 @@
  * arg0 -> table: Table
  * Returns Result<Array>
  */
-Value table_values_method(VM *vm, const Value *args)
+CruxValue table_values_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectTable *table = AS_CRUX_TABLE(args[0]);
 	ObjectArray *values = new_array(vm, table->size);
@@ -39,7 +39,7 @@ Value table_values_method(VM *vm, const Value *args)
  * arg0 -> table: Table
  * Returns Result<Array>
  */
-Value table_keys_method(VM *vm, const Value *args)
+CruxValue table_keys_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectTable *table = AS_CRUX_TABLE(args[0]);
 
@@ -72,7 +72,7 @@ Value table_keys_method(VM *vm, const Value *args)
  * arg0 -> table: Table
  * Returns Result<Array>
  */
-Value table_pairs_method(VM *vm, const Value *args)
+CruxValue table_pairs_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectModuleRecord *module_record = vm->current_module_record;
 	const ObjectTable *table = AS_CRUX_TABLE(args[0]);
@@ -81,7 +81,7 @@ Value table_pairs_method(VM *vm, const Value *args)
 	push(module_record, OBJECT_VAL(pairs));
 
 	if (pairs == NULL) {
-		const Value res = MAKE_GC_SAFE_ERROR(
+		const CruxValue res = MAKE_GC_SAFE_ERROR(
 			vm,
 			"Failed to allocate enough memory for <pairs> array.",
 			MEMORY);
@@ -97,7 +97,7 @@ Value table_pairs_method(VM *vm, const Value *args)
 			ObjectArray *pair = new_array(vm, 2);
 			push(module_record, OBJECT_VAL(pair));
 			if (pair == NULL) {
-				Value res = MAKE_GC_SAFE_ERROR(
+				CruxValue res = MAKE_GC_SAFE_ERROR(
 					vm,
 					"Failed to allocate enough memory for "
 					"pair array",
@@ -129,10 +129,10 @@ Value table_pairs_method(VM *vm, const Value *args)
  * arg1 -> key: Hashable
  * Returns Result<Nil>
  */
-Value table_remove_method(VM *vm, const Value *args)
+CruxValue table_remove_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectTable *table = AS_CRUX_TABLE(args[0]);
-	const Value key = args[1];
+	const CruxValue key = args[1];
 	if (IS_CRUX_HASHABLE(key)) {
 		const bool result = object_table_remove(table, key);
 		if (!result) {
@@ -153,12 +153,12 @@ Value table_remove_method(VM *vm, const Value *args)
  * arg1 -> key: Hashable
  * Returns Result<Any>
  */
-Value table_get_method(VM *vm, const Value *args)
+CruxValue table_get_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectTable *table = AS_CRUX_TABLE(args[0]);
-	const Value key = args[1];
+	const CruxValue key = args[1];
 	if (IS_CRUX_HASHABLE(key)) {
-		Value value;
+		CruxValue value;
 		const bool result = object_table_get(table->entries,
 						     table->size,
 						     table->capacity, key,
@@ -179,11 +179,11 @@ Value table_get_method(VM *vm, const Value *args)
  * arg1 -> key: Hashable
  * Returns Bool
  */
-Value table_has_key_method(VM *vm, const Value *args)
+CruxValue table_has_key_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectTable *table = AS_CRUX_TABLE(args[0]);
-	const Value key = args[1];
+	const CruxValue key = args[1];
 	if (IS_CRUX_HASHABLE(key)) {
 		const bool result = object_table_contains_key(table, key);
 		return BOOL_VAL(result);
@@ -198,14 +198,14 @@ Value table_has_key_method(VM *vm, const Value *args)
  * arg2 -> default: Any
  * Returns Any
  */
-Value table_get_or_else_method(VM *vm, const Value *args)
+CruxValue table_get_or_else_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectTable *table = AS_CRUX_TABLE(args[0]);
-	const Value key = args[1];
-	const Value defaultValue = args[2];
+	const CruxValue key = args[1];
+	const CruxValue defaultValue = args[2];
 	if (IS_CRUX_HASHABLE(key)) {
-		Value value;
+		CruxValue value;
 		const bool result = object_table_get(table->entries,
 						     table->size,
 						     table->capacity, key,

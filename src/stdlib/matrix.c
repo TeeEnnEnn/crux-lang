@@ -18,9 +18,9 @@
 
 /*
  * Deep-copy src into a freshly allocated ObjectMatrix.
- * Returns NULL on allocation failure (the VM will have already seen the OOM).
+ * Returns NULL on allocation failure (the CruxVM will have already seen the OOM).
  */
-static ObjectMatrix *matrix_copy_internal(VM *vm, const ObjectMatrix *src)
+static ObjectMatrix *matrix_copy_internal(CruxVM *vm, const ObjectMatrix *src)
 {
 	ObjectMatrix *dst = new_matrix(vm, src->row_dim, src->col_dim);
 	memcpy(dst->data, src->data, sizeof(double) * src->row_dim * src->col_dim);
@@ -90,7 +90,7 @@ static int lu_decompose(double *restrict m, const uint16_t n, uint16_t *perm)
  * arg1 -> cols: Int
  * Returns Result<Matrix>
  */
-Value new_matrix_function(VM *vm, const Value *args)
+CruxValue new_matrix_function(CruxVM *vm, const CruxValue *args)
 {
 	const int32_t rows = AS_INT(args[0]);
 	const int32_t cols = AS_INT(args[1]);
@@ -114,7 +114,7 @@ Value new_matrix_function(VM *vm, const Value *args)
  * arg0 -> n: Int
  * Returns Result<Matrix>
  */
-Value new_matrix_identity_function(VM *vm, const Value *args)
+CruxValue new_matrix_identity_function(CruxVM *vm, const CruxValue *args)
 {
 	const int32_t n = AS_INT(args[0]);
 	if (n <= 0) {
@@ -141,7 +141,7 @@ Value new_matrix_identity_function(VM *vm, const Value *args)
  * arg2 -> data: Array
  * Returns Result<Matrix>
  */
-Value new_matrix_from_array_function(VM *vm, const Value *args)
+CruxValue new_matrix_from_array_function(CruxVM *vm, const CruxValue *args)
 {
 	const int32_t rows = AS_INT(args[0]);
 	const int32_t cols = AS_INT(args[1]);
@@ -188,7 +188,7 @@ Value new_matrix_from_array_function(VM *vm, const Value *args)
  * arg2 -> col: Int
  * Returns Result<Float>
  */
-Value matrix_get_method(VM *vm, const Value *args)
+CruxValue matrix_get_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 	const int32_t row = AS_INT(args[1]);
@@ -209,7 +209,7 @@ Value matrix_get_method(VM *vm, const Value *args)
  * arg3 -> value: Float
  * Returns Result<Nil>
  */
-Value matrix_set_method(VM *vm, const Value *args)
+CruxValue matrix_set_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 	const int32_t row = AS_INT(args[1]);
@@ -231,7 +231,7 @@ Value matrix_set_method(VM *vm, const Value *args)
  * arg0 -> matrix: Matrix
  * Returns Int
  */
-Value matrix_rows_method(VM *vm, const Value *args)
+CruxValue matrix_rows_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
@@ -243,7 +243,7 @@ Value matrix_rows_method(VM *vm, const Value *args)
  * arg0 -> matrix: Matrix
  * Returns Int
  */
-Value matrix_cols_method(VM *vm, const Value *args)
+CruxValue matrix_cols_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 
@@ -254,7 +254,7 @@ Value matrix_cols_method(VM *vm, const Value *args)
 /* ── Arithmetic ──────────────────────────────────────────────────────────────
  */
 
-Value matrix_add_value(VM *vm, const ObjectMatrix *a, const ObjectMatrix *b)
+CruxValue matrix_add_value(CruxVM *vm, const ObjectMatrix *a, const ObjectMatrix *b)
 {
 	REQUIRE_SAME_SHAPE(a, b, "addition");
 
@@ -271,7 +271,7 @@ Value matrix_add_value(VM *vm, const ObjectMatrix *a, const ObjectMatrix *b)
 	return OBJECT_VAL(res);
 }
 
-Value matrix_subtract_value(VM *vm, const ObjectMatrix *a, const ObjectMatrix *b)
+CruxValue matrix_subtract_value(CruxVM *vm, const ObjectMatrix *a, const ObjectMatrix *b)
 {
 	REQUIRE_SAME_SHAPE(a, b, "subtraction");
 
@@ -288,7 +288,7 @@ Value matrix_subtract_value(VM *vm, const ObjectMatrix *a, const ObjectMatrix *b
 	return OBJECT_VAL(res);
 }
 
-Value matrix_multiply_value(VM *vm, const ObjectMatrix *a, const ObjectMatrix *b)
+CruxValue matrix_multiply_value(CruxVM *vm, const ObjectMatrix *a, const ObjectMatrix *b)
 {
 	if (a->col_dim != b->row_dim) {
 		return MAKE_GC_SAFE_ERROR(vm,
@@ -318,7 +318,7 @@ Value matrix_multiply_value(VM *vm, const ObjectMatrix *a, const ObjectMatrix *b
 	return OBJECT_VAL(res);
 }
 
-Value matrix_scale_value(VM *vm, const ObjectMatrix *mat, const double scalar)
+CruxValue matrix_scale_value(CruxVM *vm, const ObjectMatrix *mat, const double scalar)
 {
 	ObjectMatrix *result = new_matrix(vm, mat->row_dim, mat->col_dim);
 	const uint32_t total = (uint32_t)mat->row_dim * mat->col_dim;
@@ -328,7 +328,7 @@ Value matrix_scale_value(VM *vm, const ObjectMatrix *mat, const double scalar)
 	return OBJECT_VAL(result);
 }
 
-Value matrix_scalar_add_value(VM *vm, const ObjectMatrix *mat, const double scalar)
+CruxValue matrix_scalar_add_value(CruxVM *vm, const ObjectMatrix *mat, const double scalar)
 {
 	ObjectMatrix *result = new_matrix(vm, mat->row_dim, mat->col_dim);
 	const uint32_t total = (uint32_t)mat->row_dim * mat->col_dim;
@@ -338,7 +338,7 @@ Value matrix_scalar_add_value(VM *vm, const ObjectMatrix *mat, const double scal
 	return OBJECT_VAL(result);
 }
 
-Value matrix_scalar_subtract_value(VM *vm, const ObjectMatrix *mat, const double scalar)
+CruxValue matrix_scalar_subtract_value(CruxVM *vm, const ObjectMatrix *mat, const double scalar)
 {
 	ObjectMatrix *result = new_matrix(vm, mat->row_dim, mat->col_dim);
 	const uint32_t total = (uint32_t)mat->row_dim * mat->col_dim;
@@ -348,7 +348,7 @@ Value matrix_scalar_subtract_value(VM *vm, const ObjectMatrix *mat, const double
 	return OBJECT_VAL(result);
 }
 
-Value scalar_matrix_subtract_value(VM *vm, const double scalar, const ObjectMatrix *mat)
+CruxValue scalar_matrix_subtract_value(CruxVM *vm, const double scalar, const ObjectMatrix *mat)
 {
 	ObjectMatrix *result = new_matrix(vm, mat->row_dim, mat->col_dim);
 	const uint32_t total = (uint32_t)mat->row_dim * mat->col_dim;
@@ -358,7 +358,7 @@ Value scalar_matrix_subtract_value(VM *vm, const double scalar, const ObjectMatr
 	return OBJECT_VAL(result);
 }
 
-Value matrix_scalar_divide_value(VM *vm, const ObjectMatrix *mat, const double scalar)
+CruxValue matrix_scalar_divide_value(CruxVM *vm, const ObjectMatrix *mat, const double scalar)
 {
 	if (fabs(scalar) < EPSILON) {
 		return MAKE_GC_SAFE_ERROR(vm, "Division by zero.", MATH);
@@ -378,7 +378,7 @@ Value matrix_scalar_divide_value(VM *vm, const ObjectMatrix *mat, const double s
  * arg1 -> other: Matrix
  * Returns Result<Matrix>
  */
-Value matrix_add_method(VM *vm, const Value *args)
+CruxValue matrix_add_method(CruxVM *vm, const CruxValue *args)
 {
 	return matrix_add_value(vm, AS_CRUX_MATRIX(args[0]), AS_CRUX_MATRIX(args[1]));
 }
@@ -388,7 +388,7 @@ Value matrix_add_method(VM *vm, const Value *args)
  * dimensions) arg0 -> matrix: Matrix arg1 -> other: Matrix Returns
  * Result<Matrix>
  */
-Value matrix_subtract_method(VM *vm, const Value *args)
+CruxValue matrix_subtract_method(CruxVM *vm, const CruxValue *args)
 {
 	return matrix_subtract_value(vm, AS_CRUX_MATRIX(args[0]), AS_CRUX_MATRIX(args[1]));
 }
@@ -398,7 +398,7 @@ Value matrix_subtract_method(VM *vm, const Value *args)
  * matrix rows) arg0 -> matrix: Matrix arg1 -> other: Matrix Returns
  * Result<Matrix>
  */
-Value matrix_multiply_method(VM *vm, const Value *args)
+CruxValue matrix_multiply_method(CruxVM *vm, const CruxValue *args)
 {
 	return matrix_multiply_value(vm, AS_CRUX_MATRIX(args[0]), AS_CRUX_MATRIX(args[1]));
 }
@@ -409,7 +409,7 @@ Value matrix_multiply_method(VM *vm, const Value *args)
  * arg1 -> scalar: Float
  * Returns Matrix
  */
-Value matrix_scale_method(VM *vm, const Value *args)
+CruxValue matrix_scale_method(CruxVM *vm, const CruxValue *args)
 {
 	return matrix_scale_value(vm, AS_CRUX_MATRIX(args[0]), TO_DOUBLE(args[1]));
 }
@@ -422,7 +422,7 @@ Value matrix_scale_method(VM *vm, const Value *args)
  * arg0 -> matrix: Matrix
  * Returns Matrix
  */
-Value matrix_transpose_method(VM *vm, const Value *args)
+CruxValue matrix_transpose_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 
@@ -441,7 +441,7 @@ Value matrix_transpose_method(VM *vm, const Value *args)
  * arg0 -> matrix: Matrix
  * Returns Result<Float>
  */
-Value matrix_determinant_method(VM *vm, const Value *args)
+CruxValue matrix_determinant_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 
@@ -475,7 +475,7 @@ Value matrix_determinant_method(VM *vm, const Value *args)
  * Computes the inverse of the matrix (only defined for square, non-singular
  * matrices) arg0 -> matrix: Matrix Returns Result<Matrix>
  */
-Value matrix_inverse_method(VM *vm, const Value *args)
+CruxValue matrix_inverse_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 
@@ -557,7 +557,7 @@ Value matrix_inverse_method(VM *vm, const Value *args)
  * Returns the trace of the matrix (sum of main diagonal elements, square
  * matrices only) arg0 -> matrix: Matrix Returns Result<Float>
  */
-Value matrix_trace_method(VM *vm, const Value *args)
+CruxValue matrix_trace_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 
@@ -578,7 +578,7 @@ Value matrix_trace_method(VM *vm, const Value *args)
  * arg0 -> matrix: Matrix
  * Returns Result<Int>
  */
-Value matrix_rank_method(VM *vm, const Value *args)
+CruxValue matrix_rank_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 	const uint16_t rows = mat->row_dim;
@@ -639,7 +639,7 @@ Value matrix_rank_method(VM *vm, const Value *args)
  * arg1 -> row: Int
  * Returns Result<Array>
  */
-Value matrix_row_method(VM *vm, const Value *args)
+CruxValue matrix_row_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 	const int32_t row = AS_INT(args[1]);
@@ -652,7 +652,7 @@ Value matrix_row_method(VM *vm, const Value *args)
 	push(vm->current_module_record, OBJECT_VAL(arr));
 
 	for (uint16_t j = 0; j < mat->col_dim; j++) {
-		const Value v = FLOAT_VAL(MATRIX_AT(mat, row, j));
+		const CruxValue v = FLOAT_VAL(MATRIX_AT(mat, row, j));
 		array_add_back(vm, arr, v);
 	}
 
@@ -667,7 +667,7 @@ Value matrix_row_method(VM *vm, const Value *args)
  * arg1 -> col: Int
  * Returns Result<Array>
  */
-Value matrix_col_method(VM *vm, const Value *args)
+CruxValue matrix_col_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 	const int32_t col = AS_INT(args[1]);
@@ -680,7 +680,7 @@ Value matrix_col_method(VM *vm, const Value *args)
 	push(vm->current_module_record, OBJECT_VAL(arr));
 
 	for (uint16_t i = 0; i < mat->row_dim; i++) {
-		Value v = FLOAT_VAL(MATRIX_AT(mat, i, col));
+		CruxValue v = FLOAT_VAL(MATRIX_AT(mat, i, col));
 		array_add_back(vm, arr, v);
 	}
 
@@ -696,7 +696,7 @@ Value matrix_col_method(VM *vm, const Value *args)
  * Checks if two matrices are equal (element-wise comparison with epsilon
  * tolerance) arg0 -> matrix: Matrix arg1 -> other: Matrix Returns Result<Bool>
  */
-Value matrix_equals_method(VM *vm, const Value *args)
+CruxValue matrix_equals_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *a = AS_CRUX_MATRIX(args[0]);
 	const ObjectMatrix *b = AS_CRUX_MATRIX(args[1]);
@@ -720,7 +720,7 @@ Value matrix_equals_method(VM *vm, const Value *args)
  * arg0 -> matrix: Matrix
  * Returns Result<Matrix>
  */
-Value matrix_copy_method(VM *vm, const Value *args)
+CruxValue matrix_copy_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 
@@ -733,7 +733,7 @@ Value matrix_copy_method(VM *vm, const Value *args)
  * arg0 -> matrix: Matrix
  * Returns Result<Array>
  */
-Value matrix_to_array_method(VM *vm, const Value *args)
+CruxValue matrix_to_array_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 
@@ -770,7 +770,7 @@ Value matrix_to_array_method(VM *vm, const Value *args)
  * dimension) arg0 -> matrix: Matrix arg1 -> vector: Vector Returns
  * Result<Vector>
  */
-Value matrix_multiply_vector_method(VM *vm, const Value *args)
+CruxValue matrix_multiply_vector_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectMatrix *mat = AS_CRUX_MATRIX(args[0]);
 	const ObjectVector *vec = AS_CRUX_VECTOR(args[1]);

@@ -1,15 +1,15 @@
 #ifndef TABLES_H
 #define TABLES_H
 
-#include "../object.h"
+#include "object.h"
 
-Value table_values_method(VM *vm, const Value *args);
-Value table_keys_method(VM *vm, const Value *args);
-Value table_pairs_method(VM *vm, const Value *args);
-Value table_remove_method(VM *vm, const Value *args);
-Value table_get_method(VM *vm, const Value *args);
+CruxValue table_values_method(CruxVM *vm, const CruxValue *args);
+CruxValue table_keys_method(CruxVM *vm, const CruxValue *args);
+CruxValue table_pairs_method(CruxVM *vm, const CruxValue *args);
+CruxValue table_remove_method(CruxVM *vm, const CruxValue *args);
+CruxValue table_get_method(CruxVM *vm, const CruxValue *args);
 
-Value table_has_key_method(VM *vm, const Value *args);
-Value table_get_or_else_method(VM *vm, const Value *args);
+CruxValue table_has_key_method(CruxVM *vm, const CruxValue *args);
+CruxValue table_get_or_else_method(CruxVM *vm, const CruxValue *args);
 
 #endif // TABLES_H

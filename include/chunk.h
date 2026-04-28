@@ -195,7 +195,7 @@ void init_chunk(Chunk *chunk);
  * @param byte The byte to append to the chunk
  * @param line The source code line number corresponding to this byte
  */
-void write_chunk(VM *vm, Chunk *chunk, uint16_t byte, int line);
+void write_chunk(CruxVM *vm, Chunk *chunk, uint16_t byte, int line);
 
 /**
  * @brief Frees memory allocated for a chunk
@@ -207,21 +207,21 @@ void write_chunk(VM *vm, Chunk *chunk, uint16_t byte, int line);
  * @param vm Pointer to the virtual machine (used for memory management)
  * @param chunk Pointer to the Chunk to free
  */
-void free_chunk(VM *vm, Chunk *chunk);
+void free_chunk(CruxVM *vm, Chunk *chunk);
 
 /**
  * @brief Adds a constant value to a chunk's constant pool
  *
- * Temporarily pushes the value onto the VM stack for GC safety,
+ * Temporarily pushes the value onto the CruxVM stack for GC safety,
  * then adds the value to the chunk's constants array.
  * Returns the index where the constant was stored for later reference.
  *
  * @param vm Pointer to the virtual machine (used for memory management and GC
  * protection)
  * @param chunk Pointer to the Chunk to modify
- * @param value The Value to add to the constant pool
+ * @param value The CruxValue to add to the constant pool
  * @return The index of the added constant in the constants array
  */
-int add_constant(VM *vm, Chunk *chunk, Value value);
+int add_constant(CruxVM *vm, Chunk *chunk, CruxValue value);
 
 #endif // CHUNK_H

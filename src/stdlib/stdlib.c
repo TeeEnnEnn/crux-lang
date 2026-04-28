@@ -32,7 +32,7 @@
 
 #define SA vm
 
-static ObjectTypeRecord **make_args(VM *vm, ObjectTypeRecord **src, int count)
+static ObjectTypeRecord **make_args(CruxVM *vm, ObjectTypeRecord **src, int count)
 {
 	if (count == 0)
 		return NULL;
@@ -43,7 +43,7 @@ static ObjectTypeRecord **make_args(VM *vm, ObjectTypeRecord **src, int count)
 	return dst;
 }
 
-static ObjectString **make_names(VM *vm, ObjectString **src, int count)
+static ObjectString **make_names(CruxVM *vm, ObjectString **src, int count)
 {
 	if (count == 0)
 		return NULL;
@@ -142,7 +142,7 @@ static ObjectString **make_names(VM *vm, ObjectString **src, int count)
 
 #define arr_num ARR(numeric)
 
-bool register_native_method(VM *vm, Table *method_table, const char *method_name, const CruxCallable method_function,
+bool register_native_method(CruxVM *vm, Table *method_table, const char *method_name, const CruxCallable method_function,
 							const int arity, ObjectTypeRecord **arg_types, ObjectTypeRecord *return_type)
 {
 	ObjectString *name = copy_string(vm, method_name, (int)strlen(method_name));
@@ -170,7 +170,7 @@ bool register_native_method(VM *vm, Table *method_table, const char *method_name
 	return true;
 }
 
-static bool register_native_function(VM *vm, Table *function_table, const char *function_name,
+static bool register_native_function(CruxVM *vm, Table *function_table, const char *function_name,
 									 const CruxCallable function, const int arity, ObjectTypeRecord **arg_types,
 									 ObjectTypeRecord *return_type)
 {
@@ -197,7 +197,7 @@ static bool register_native_function(VM *vm, Table *function_table, const char *
 	}
 	object_set_immortal(&return_type->object, true); // return type is immortal
 
-	const Value func = OBJECT_VAL(callable);
+	const CruxValue func = OBJECT_VAL(callable);
 	push(module_record, func);
 	const bool ok = table_set(vm, function_table, name, func);
 	pop(module_record);
@@ -205,7 +205,7 @@ static bool register_native_function(VM *vm, Table *function_table, const char *
 	return ok;
 }
 
-static bool register_native_methods(VM *vm, Table *method_table, const Callable *methods, int count)
+static bool register_native_methods(CruxVM *vm, Table *method_table, const Callable *methods, int count)
 {
 	for (int i = 0; i < count; i++) {
 		if (!register_native_method(vm, method_table, methods[i].name, methods[i].function, methods[i].arity,
@@ -215,7 +215,7 @@ static bool register_native_methods(VM *vm, Table *method_table, const Callable 
 	return true;
 }
 
-static bool register_native_functions(VM *vm, Table *function_table, const Callable *functions, int count)
+static bool register_native_functions(CruxVM *vm, Table *function_table, const Callable *functions, int count)
 {
 	for (int i = 0; i < count; i++) {
 		if (!register_native_function(vm, function_table, functions[i].name, functions[i].function, functions[i].arity,
@@ -225,7 +225,7 @@ static bool register_native_functions(VM *vm, Table *function_table, const Calla
 	return true;
 }
 
-static bool init_module(VM *vm, const char *module_name, const Callable *functions, int count)
+static bool init_module(CruxVM *vm, const char *module_name, const Callable *functions, int count)
 {
 	Table *module_table = ALLOCATE(vm, Table, 1);
 	if (!module_table)
@@ -248,12 +248,12 @@ static bool init_module(VM *vm, const char *module_name, const Callable *functio
 	return true;
 }
 
-static bool init_type_method_table(VM *vm, Table *method_table, const Callable *methods, int count)
+static bool init_type_method_table(CruxVM *vm, Table *method_table, const Callable *methods, int count)
 {
 	return methods ? register_native_methods(vm, method_table, methods, count) : true;
 }
 
-bool initialize_std_lib(VM *vm)
+bool initialize_std_lib(CruxVM *vm)
 {
 	GC_STATUS prev_status = vm->gc_status;
 	vm->gc_status = PAUSED;

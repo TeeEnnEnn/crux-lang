@@ -13,26 +13,26 @@ void init_value_array(ValueArray *array)
 	array->count = 0;
 }
 
-// Value must be GC protected
-void write_value_array(VM *vm, ValueArray *array, const Value value)
+// CruxValue must be GC protected
+void write_value_array(CruxVM *vm, ValueArray *array, const CruxValue value)
 {
 	if (array->capacity < array->count + 1) {
 		const int oldCapacity = array->capacity;
 		array->capacity = GROW_CAPACITY(oldCapacity);
-		array->values = GROW_ARRAY(vm, Value, array->values, oldCapacity, array->capacity);
+		array->values = GROW_ARRAY(vm, CruxValue, array->values, oldCapacity, array->capacity);
 	}
 
 	array->values[array->count] = value;
 	array->count++;
 }
 
-void free_value_array(VM *vm, ValueArray *array)
+void free_value_array(CruxVM *vm, ValueArray *array)
 {
-	FREE_ARRAY(vm, Value, array->values, array->capacity);
+	FREE_ARRAY(vm, CruxValue, array->values, array->capacity);
 	init_value_array(array);
 }
 
-bool values_equal(const Value a, const Value b)
+bool values_equal(const CruxValue a, const CruxValue b)
 {
 	if (IS_INT(a) && IS_INT(b)) {
 		return AS_INT(a) == AS_INT(b);

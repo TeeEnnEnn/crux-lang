@@ -36,7 +36,7 @@ static FILE *get_channel(const char *channel)
  * Writes a string representation of <value> to <stream>.
  * Returns false if the write fails.
  */
-static bool write_value_to_stream(FILE *stream, Value value)
+static bool write_value_to_stream(FILE *stream, CruxValue value)
 {
 	/* Delegate to the existing print_value infrastructure but capture
 	 * failures via ferror.  We clear the error flag first so we are
@@ -66,7 +66,7 @@ static void flush_line(FILE *stream)
  * On success writes the ObjectString* into *out and returns true.
  * On allocation failure or read error returns false.
  */
-static bool read_bounded_line(VM *vm, FILE *stream, const size_t max_len, ObjectString **out)
+static bool read_bounded_line(CruxVM *vm, FILE *stream, const size_t max_len, ObjectString **out)
 {
 	char *buffer = ALLOCATE(vm, char, max_len + 1);
 	if (buffer == NULL)
@@ -110,7 +110,7 @@ static bool read_bounded_line(VM *vm, FILE *stream, const size_t max_len, Object
  * arg0 -> value: Any
  * Returns Nil
  */
-Value io_print_function(VM *vm, const Value *args)
+CruxValue io_print_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	print_value_to(stdout, args[0], false);
@@ -125,7 +125,7 @@ Value io_print_function(VM *vm, const Value *args)
  * arg0 -> value: Any
  * Returns Nil
  */
-Value io_println_function(VM *vm, const Value *args)
+CruxValue io_println_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 
@@ -143,7 +143,7 @@ Value io_println_function(VM *vm, const Value *args)
  * "stderr") without a newline arg0 -> channel: String arg1 -> value: Any
  * Returns Result<Nil>
  */
-Value io_print_to_function(VM *vm, const Value *args)
+CruxValue io_print_to_function(CruxVM *vm, const CruxValue *args)
 {
 	FILE *stream = get_channel(AS_C_STRING(args[0]));
 	if (stream == NULL) {
@@ -169,7 +169,7 @@ Value io_print_to_function(VM *vm, const Value *args)
  * "stderr") followed by a newline arg0 -> channel: String arg1 -> value: Any
  * Returns Result<Nil>
  */
-Value io_println_to_function(VM *vm, const Value *args)
+CruxValue io_println_to_function(CruxVM *vm, const CruxValue *args)
 {
 	FILE *stream = get_channel(AS_C_STRING(args[0]));
 	if (stream == NULL) {
@@ -194,7 +194,7 @@ Value io_println_to_function(VM *vm, const Value *args)
  * Reads exactly one character from stdin, discarding the rest of the line
  * Returns Result<String>
  */
-Value io_scan_function(VM *vm, const Value *args)
+CruxValue io_scan_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	const int ch = fgetc(stdin);
@@ -219,7 +219,7 @@ Value io_scan_function(VM *vm, const Value *args)
  * Reads a line from stdin up to (and excluding) the newline character
  * Returns Result<String>
  */
-Value io_scanln_function(VM *vm, const Value *args)
+CruxValue io_scanln_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 
@@ -246,7 +246,7 @@ Value io_scanln_function(VM *vm, const Value *args)
  * arg0 -> n: Int
  * Returns Result<String>
  */
-Value io_nscan_function(VM *vm, const Value *args)
+CruxValue io_nscan_function(CruxVM *vm, const CruxValue *args)
 {
 	const int32_t n = AS_INT(args[0]);
 	if (n <= 0) {
@@ -274,7 +274,7 @@ Value io_nscan_function(VM *vm, const Value *args)
  * arg0 -> channel: String
  * Returns Result<String>
  */
-Value io_scan_from_function(VM *vm, const Value *args)
+CruxValue io_scan_from_function(CruxVM *vm, const CruxValue *args)
 {
 	FILE *stream = get_channel(AS_C_STRING(args[0]));
 	if (stream == NULL) {
@@ -309,7 +309,7 @@ Value io_scan_from_function(VM *vm, const Value *args)
  * Reads a line from a specified channel up to (and excluding) the newline
  * character arg0 -> channel: String Returns Result<String>
  */
-Value io_scanln_from_function(VM *vm, const Value *args)
+CruxValue io_scanln_from_function(CruxVM *vm, const CruxValue *args)
 {
 	FILE *stream = get_channel(AS_C_STRING(args[0]));
 	if (stream == NULL) {
@@ -344,7 +344,7 @@ Value io_scanln_from_function(VM *vm, const Value *args)
  * arg1 -> n: Int
  * Returns Result<String>
  */
-Value io_nscan_from_function(VM *vm, const Value *args)
+CruxValue io_nscan_from_function(CruxVM *vm, const CruxValue *args)
 {
 	FILE *stream = get_channel(AS_C_STRING(args[0]));
 	if (stream == NULL) {

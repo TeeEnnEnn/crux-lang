@@ -1,41 +1,21 @@
 #ifndef VALUE_H
 #define VALUE_H
 
+#include "crux.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef struct VM VM;
 typedef struct ObjectString ObjectString;
 typedef struct CruxObject CruxObject;
 typedef struct ObjectTypeRecord ObjectTypeRecord;
 
-#define QNAN ((uint64_t)0x7ffc000000000000)
-#define SIGN_BIT ((uint64_t)0x8000000000000000)
-#define TAG_NIL 1 // 01.
-#define TAG_FALSE 2 // 10.
-#define TAG_TRUE 3 // 11.
-#define TAG_INT32_BIT ((uint64_t)1 << 48)
-typedef uint64_t Value;
-
-static double value_to_num(const Value value)
-{
-	union {
-		Value v;
-		double d;
-	} u;
-	u.v = value;
-	return u.d;
-}
-
-static Value num_to_value(const double num)
-{
-	union {
-		double d;
-		Value v;
-	} u;
-	u.d = num;
-	return u.v;
-}
+#define QNAN CRUX_QNAN
+#define SIGN_BIT CRUX_SIGN_BIT
+#define TAG_NIL CRUX_TAG_NIL // 01.
+#define TAG_FALSE CRUX_TAG_FALSE // 10.
+#define TAG_TRUE CRUX_TAG_TRUE // 11.
+#define TAG_INT32_BIT CRUX_TAG_INT32_BIT
 
 #define IS_INT(value) (((value) & (QNAN | SIGN_BIT | TAG_INT32_BIT)) == (QNAN | TAG_INT32_BIT))
 #define IS_FLOAT(value) (((value) & QNAN) != QNAN)
@@ -46,20 +26,20 @@ static Value num_to_value(const double num)
 #define IS_NUMERIC(value) (IS_INT(value) || IS_FLOAT(value))
 
 #define AS_INT(value) ((int32_t)((value) & 0xFFFFFFFF))
-#define AS_FLOAT(value) value_to_num(value)
+#define AS_FLOAT(value) crux_as_float(value)
 #define AS_BOOL(value) ((value) == TRUE_VAL)
 #define AS_CRUX_OBJECT(value) ((CruxObject *)(uintptr_t)((value) & ~(SIGN_BIT | QNAN)))
 
-#define OBJECT_VAL(obj) (Value)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj))
+#define OBJECT_VAL(obj) (CruxValue)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj))
 #define BOOL_VAL(b) ((b) ? TRUE_VAL : FALSE_VAL)
-#define FALSE_VAL ((Value)(uint64_t)(QNAN | TAG_FALSE))
-#define TRUE_VAL ((Value)(uint64_t)(QNAN | TAG_TRUE))
-#define NIL_VAL ((Value)(uint64_t)(QNAN | TAG_NIL))
-#define FLOAT_VAL(num) num_to_value((num))
-#define INT_VAL(integer) ((Value)(QNAN | TAG_INT32_BIT | ((uint64_t)(integer) & 0xFFFFFFFF)))
+#define FALSE_VAL ((CruxValue)(uint64_t)(QNAN | TAG_FALSE))
+#define TRUE_VAL ((CruxValue)(uint64_t)(QNAN | TAG_TRUE))
+#define NIL_VAL ((CruxValue)(uint64_t)(QNAN | TAG_NIL))
+#define FLOAT_VAL(num) crux_float_val((num))
+#define INT_VAL(integer) ((CruxValue)(QNAN | TAG_INT32_BIT | ((uint64_t)(integer) & 0xFFFFFFFF)))
 
 typedef struct {
-	Value *values;
+	CruxValue *values;
 	int capacity;
 	int count;
 } ValueArray;
@@ -110,7 +90,7 @@ typedef uint32_t TypeMask;
  * @param b Second value to compare
  * @return true if the values are equal, false otherwise
  */
-bool values_equal(Value a, Value b);
+bool values_equal(CruxValue a, CruxValue b);
 
 /**
  * @brief Initializes a new value array
@@ -130,9 +110,9 @@ void init_value_array(ValueArray *array);
  *
  * @param vm Pointer to the virtual machine (used for memory management)
  * @param array Pointer to the ValueArray to modify
- * @param value The Value to append to the array
+ * @param value The CruxValue to append to the array
  */
-void write_value_array(VM *vm, ValueArray *array, Value value);
+void write_value_array(CruxVM *vm, ValueArray *array, CruxValue value);
 
 /**
  * @brief Frees memory allocated for a value array
@@ -143,7 +123,7 @@ void write_value_array(VM *vm, ValueArray *array, Value value);
  * @param vm Pointer to the virtual machine (used for memory management)
  * @param array Pointer to the ValueArray to free
  */
-void free_value_array(VM *vm, ValueArray *array);
+void free_value_array(CruxVM *vm, ValueArray *array);
 
 /**
  * @brief Prints a human-readable representation of a value
@@ -154,9 +134,9 @@ void free_value_array(VM *vm, ValueArray *array);
  * - Numbers print in their natural format
  * - Objects are printed using the printObject function
  *
- * @param value The Value to print
+ * @param value The CruxValue to print
  * @param inCollection is the value in a collection?
  */
-void print_value(Value value, bool inCollection);
+void print_value(CruxValue value, bool inCollection);
 
 #endif // VALUE_H

@@ -16,7 +16,7 @@
  * Grows the buffer's data until it can hold the required bytes.
  * Returns false if growth would exceed UINT32_MAX.
  */
-static bool grow_buffer(VM *vm, ObjectBuffer *buffer, uint32_t required)
+static bool grow_buffer(CruxVM *vm, ObjectBuffer *buffer, uint32_t required)
 {
 	uint64_t new_capacity = buffer->capacity;
 	while (new_capacity < required) {
@@ -33,7 +33,7 @@ static bool grow_buffer(VM *vm, ObjectBuffer *buffer, uint32_t required)
  * Ensures the buffer has room for count additional bytes.
  * Returns false if growth fails.
  */
-static bool ensure_write_capacity(VM *vm, ObjectBuffer *buffer, uint32_t count)
+static bool ensure_write_capacity(CruxVM *vm, ObjectBuffer *buffer, uint32_t count)
 {
 	uint32_t required = buffer->write_pos + count;
 	if (required <= buffer->capacity)
@@ -65,7 +65,7 @@ static double bytes_to_float64(const uint8_t *src)
  * Creates a new empty buffer with the default initial capacity.
  * Returns Buffer
  */
-Value new_buffer_function(VM *vm, const Value *args)
+CruxValue new_buffer_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	ObjectBuffer *buffer = new_buffer(vm, INITIAL_BUFFER_CAPACITY);
@@ -78,7 +78,7 @@ Value new_buffer_function(VM *vm, const Value *args)
  * arg1 -> byte: Int  (0-255, upper bits are silently truncated)
  * Returns Result<Buffer>
  */
-Value write_byte_buffer_method(VM *vm, const Value *args)
+CruxValue write_byte_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	uint8_t byte = (uint8_t)AS_INT(args[1]);
@@ -100,7 +100,7 @@ Value write_byte_buffer_method(VM *vm, const Value *args)
  * arg1 -> value: Int
  * Returns Nil
  */
-Value write_int16_le_buffer_method(VM *vm, const Value *args)
+CruxValue write_int16_le_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	int16_t value = (int16_t)AS_INT(args[1]);
@@ -119,7 +119,7 @@ Value write_int16_le_buffer_method(VM *vm, const Value *args)
  * arg1 -> value: Int
  * Returns Nil
  */
-Value write_int16_be_buffer_method(VM *vm, const Value *args)
+CruxValue write_int16_be_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	int16_t value = (int16_t)AS_INT(args[1]);
@@ -138,7 +138,7 @@ Value write_int16_be_buffer_method(VM *vm, const Value *args)
  * arg1 -> value: Int
  * Returns Nil
  */
-Value write_int32_le_buffer_method(VM *vm, const Value *args)
+CruxValue write_int32_le_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	int32_t value = (int32_t)AS_INT(args[1]);
@@ -159,7 +159,7 @@ Value write_int32_le_buffer_method(VM *vm, const Value *args)
  * arg1 -> value: Int
  * Returns Nil
  */
-Value write_int32_be_buffer_method(VM *vm, const Value *args)
+CruxValue write_int32_be_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	int32_t value = (int32_t)AS_INT(args[1]);
@@ -182,7 +182,7 @@ Value write_int32_be_buffer_method(VM *vm, const Value *args)
  * arg1 -> value: Float
  * Returns Nil
  */
-Value write_float32_le_buffer_method(VM *vm, const Value *args)
+CruxValue write_float32_le_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	float value = (float)AS_FLOAT(args[1]);
@@ -207,7 +207,7 @@ Value write_float32_le_buffer_method(VM *vm, const Value *args)
  * arg1 -> value: Float
  * Returns Nil
  */
-Value write_float32_be_buffer_method(VM *vm, const Value *args)
+CruxValue write_float32_be_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	float value = (float)AS_FLOAT(args[1]);
@@ -230,7 +230,7 @@ Value write_float32_be_buffer_method(VM *vm, const Value *args)
  * arg1 -> value: Float
  * Returns Nil
  */
-Value write_float64_le_buffer_method(VM *vm, const Value *args)
+CruxValue write_float64_le_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	double value = AS_FLOAT(args[1]);
@@ -257,7 +257,7 @@ Value write_float64_le_buffer_method(VM *vm, const Value *args)
  * arg1 -> value: Float
  * Returns Nil
  */
-Value write_float64_be_buffer_method(VM *vm, const Value *args)
+CruxValue write_float64_be_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	double value = AS_FLOAT(args[1]);
@@ -284,7 +284,7 @@ Value write_float64_be_buffer_method(VM *vm, const Value *args)
  * arg1 -> string: String
  * Returns Result<Buffer>
  */
-Value write_string_buffer_method(VM *vm, const Value *args)
+CruxValue write_string_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	ObjectString *string = AS_CRUX_STRING(args[1]);
@@ -308,7 +308,7 @@ Value write_string_buffer_method(VM *vm, const Value *args)
  * arg1 -> other: Buffer
  * Returns Result<Buffer>
  */
-Value write_buffer_buffer_method(VM *vm, const Value *args)
+CruxValue write_buffer_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *self = AS_CRUX_BUFFER(args[0]);
 	ObjectBuffer *other = AS_CRUX_BUFFER(args[1]);
@@ -335,7 +335,7 @@ Value write_buffer_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Result<Int>
  */
-Value read_byte_buffer_method(VM *vm, const Value *args)
+CruxValue read_byte_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 
@@ -352,7 +352,7 @@ Value read_byte_buffer_method(VM *vm, const Value *args)
  * arg1 -> n: Int
  * Returns Result<String>
  */
-Value read_string_buffer_method(VM *vm, const Value *args)
+CruxValue read_string_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	int32_t n = AS_INT(args[1]);
@@ -379,7 +379,7 @@ Value read_string_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Result<String>
  */
-Value read_line_buffer_method(VM *vm, const Value *args)
+CruxValue read_line_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 
@@ -409,7 +409,7 @@ Value read_line_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Result<String>
  */
-Value read_all_buffer_method(VM *vm, const Value *args)
+CruxValue read_all_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	uint32_t readable = BUFFER_READABLE(buffer);
@@ -431,7 +431,7 @@ Value read_all_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Result<Int>
  */
-Value read_int16_le_buffer_method(VM *vm, const Value *args)
+CruxValue read_int16_le_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 
@@ -449,7 +449,7 @@ Value read_int16_le_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Result<Int>
  */
-Value read_int16_be_buffer_method(VM *vm, const Value *args)
+CruxValue read_int16_be_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 
@@ -467,7 +467,7 @@ Value read_int16_be_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Result<Int>
  */
-Value read_int32_le_buffer_method(VM *vm, const Value *args)
+CruxValue read_int32_le_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 
@@ -487,7 +487,7 @@ Value read_int32_le_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Result<Int>
  */
-Value read_int32_be_buffer_method(VM *vm, const Value *args)
+CruxValue read_int32_be_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 
@@ -507,7 +507,7 @@ Value read_int32_be_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Result<Float>
  */
-Value read_float32_le_buffer_method(VM *vm, const Value *args)
+CruxValue read_float32_le_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 
@@ -524,7 +524,7 @@ Value read_float32_le_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Result<Float>
  */
-Value read_float32_be_buffer_method(VM *vm, const Value *args)
+CruxValue read_float32_be_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 
@@ -548,7 +548,7 @@ Value read_float32_be_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Result<Float>
  */
-Value read_float64_le_buffer_method(VM *vm, const Value *args)
+CruxValue read_float64_le_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 
@@ -565,7 +565,7 @@ Value read_float64_le_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Result<Float>
  */
-Value read_float64_be_buffer_method(VM *vm, const Value *args)
+CruxValue read_float64_be_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 
@@ -588,7 +588,7 @@ Value read_float64_be_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Float
  */
-Value capacity_buffer_method(VM *vm, const Value *args)
+CruxValue capacity_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
@@ -600,7 +600,7 @@ Value capacity_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Bool
  */
-Value is_empty_buffer_method(VM *vm, const Value *args)
+CruxValue is_empty_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
@@ -612,7 +612,7 @@ Value is_empty_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Nil
  */
-Value clear_buffer_method(VM *vm, const Value *args)
+CruxValue clear_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
@@ -627,7 +627,7 @@ Value clear_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Int
  */
-Value peek_byte_buffer_method(VM *vm, const Value *args)
+CruxValue peek_byte_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
@@ -643,7 +643,7 @@ Value peek_byte_buffer_method(VM *vm, const Value *args)
  * arg1 -> n: Int
  * Returns Nil | Error
  */
-Value skip_bytes_buffer_method(VM *vm, const Value *args)
+CruxValue skip_bytes_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	int32_t n = AS_INT(args[1]);
@@ -663,7 +663,7 @@ Value skip_bytes_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns String
  */
-Value to_string_buffer_method(VM *vm, const Value *args)
+CruxValue to_string_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);
 	uint32_t readable = BUFFER_READABLE(buffer);
@@ -678,7 +678,7 @@ Value to_string_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Buffer
  */
-Value clone_buffer_method(VM *vm, const Value *args)
+CruxValue clone_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectBuffer *src = AS_CRUX_BUFFER(args[0]);
 	ObjectBuffer *dst = new_buffer(vm, src->capacity);
@@ -697,7 +697,7 @@ Value clone_buffer_method(VM *vm, const Value *args)
  * arg0 -> buffer: Buffer
  * Returns Nil
  */
-Value compact_buffer_method(VM *vm, const Value *args)
+CruxValue compact_buffer_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectBuffer *buffer = AS_CRUX_BUFFER(args[0]);

@@ -10,12 +10,12 @@
  * arg0 -> array: Array[Hashable]
  * returns -> Result<Set>
  */
-Value new_set_function(VM *vm, const Value *args)
+CruxValue new_set_function(CruxVM *vm, const CruxValue *args)
 {
 	ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 	ObjectSet *set = new_set(vm, INITIAL_SET_CAPACITY);
 	for (uint32_t i = 0; i < array->size; i++) {
-		Value value = array->values[i];
+		CruxValue value = array->values[i];
 		if (!set_add_value(vm, set, value)) {
 			return MAKE_GC_SAFE_ERROR(vm, "All set elements must be hashable.", TYPE);
 		}
@@ -30,12 +30,12 @@ Value new_set_function(VM *vm, const Value *args)
  * Adds a value to a set.
  * arg0 -> set: Set
  * arg1 -> value: Hashable
- * returns -> Value
+ * returns -> CruxValue
  */
-Value add_set_method(VM *vm, const Value *args)
+CruxValue add_set_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectSet *set = AS_CRUX_SET(args[0]);
-	Value value = args[1];
+	CruxValue value = args[1];
 	if (!set_add_value(vm, set, value)) {
 		return MAKE_GC_SAFE_ERROR(vm, "All set elements must be hashable.", TYPE);
 	}
@@ -46,12 +46,12 @@ Value add_set_method(VM *vm, const Value *args)
  * Removes a value from a set.
  * arg0 -> set: Set
  * arg1 -> value: Hashable
- * returns -> Value
+ * returns -> CruxValue
  */
-Value remove_set_method(VM *vm, const Value *args)
+CruxValue remove_set_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectSet *set = AS_CRUX_SET(args[0]);
-	Value value = args[1];
+	CruxValue value = args[1];
 	if (!IS_CRUX_HASHABLE(value)) {
 		return MAKE_GC_SAFE_ERROR(vm, "All set elements must be hashable.", TYPE);
 	}
@@ -66,10 +66,10 @@ Value remove_set_method(VM *vm, const Value *args)
  * arg1 -> value: Hashable
  * returns -> Nil
  */
-Value discard_set_method(VM *vm, const Value *args)
+CruxValue discard_set_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectSet *set = AS_CRUX_SET(args[0]);
-	Value value = args[1];
+	CruxValue value = args[1];
 	if (!IS_CRUX_HASHABLE(value)) {
 		return MAKE_GC_SAFE_ERROR(vm, "All set elements must be hashable.", TYPE);
 	}
@@ -83,7 +83,7 @@ Value discard_set_method(VM *vm, const Value *args)
  * arg1 -> set2: Set
  * returns -> Result<Set>
  */
-Value union_set_method(VM *vm, const Value *args)
+CruxValue union_set_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectSet *set1 = AS_CRUX_SET(args[0]);
 	ObjectSet *set2 = AS_CRUX_SET(args[1]);
@@ -116,15 +116,15 @@ Value union_set_method(VM *vm, const Value *args)
  * arg1 -> set2: Set
  * returns -> Set
  */
-Value intersection_set_method(VM *vm, const Value *args)
+CruxValue intersection_set_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectSet *set1 = AS_CRUX_SET(args[0]);
 	ObjectSet *set2 = AS_CRUX_SET(args[1]);
 	ObjectSet *result = new_set(vm, set1->entries->size);
 	for (size_t i = 0; i < set1->entries->capacity; i++) {
 		if (set1->entries->entries[i].is_occupied) {
-			Value key = set1->entries->entries[i].key;
-			Value v;
+			CruxValue key = set1->entries->entries[i].key;
+			CruxValue v;
 			if (object_table_get(set2->entries->entries, set2->entries->size, set2->entries->capacity, key, &v)) {
 				object_table_set(vm, result->entries, key, NIL_VAL);
 			}
@@ -140,15 +140,15 @@ Value intersection_set_method(VM *vm, const Value *args)
  * arg1 -> set2: Set
  * returns -> Set
  */
-Value difference_set_method(VM *vm, const Value *args)
+CruxValue difference_set_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectSet *set1 = AS_CRUX_SET(args[0]);
 	ObjectSet *set2 = AS_CRUX_SET(args[1]);
 	ObjectSet *result = new_set(vm, set1->entries->size);
 	for (size_t i = 0; i < set1->entries->capacity; i++) {
 		if (set1->entries->entries[i].is_occupied) {
-			Value key = set1->entries->entries[i].key;
-			Value v;
+			CruxValue key = set1->entries->entries[i].key;
+			CruxValue v;
 			if (!object_table_get(set2->entries->entries, set2->entries->size, set2->entries->capacity, key, &v)) {
 				object_table_set(vm, result->entries, key, NIL_VAL);
 			}
@@ -164,15 +164,15 @@ Value difference_set_method(VM *vm, const Value *args)
  * arg1 -> set2: Set
  * returns -> Set
  */
-Value sym_difference_set_method(VM *vm, const Value *args)
+CruxValue sym_difference_set_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectSet *set1 = AS_CRUX_SET(args[0]);
 	ObjectSet *set2 = AS_CRUX_SET(args[1]);
 	ObjectSet *result = new_set(vm, set1->entries->size);
 	for (size_t i = 0; i < set1->entries->capacity; i++) {
 		if (set1->entries->entries[i].is_occupied) {
-			Value key = set1->entries->entries[i].key;
-			Value v;
+			CruxValue key = set1->entries->entries[i].key;
+			CruxValue v;
 			if (!object_table_get(set2->entries->entries, set2->entries->size, set2->entries->capacity, key, &v)) {
 				object_table_set(vm, result->entries, key, NIL_VAL);
 			}
@@ -180,8 +180,8 @@ Value sym_difference_set_method(VM *vm, const Value *args)
 	}
 	for (size_t i = 0; i < set2->entries->capacity; i++) {
 		if (set2->entries->entries[i].is_occupied) {
-			Value key = set2->entries->entries[i].key;
-			Value v;
+			CruxValue key = set2->entries->entries[i].key;
+			CruxValue v;
 			if (!object_table_get(set1->entries->entries, set1->entries->size, set1->entries->capacity, key, &v)) {
 				object_table_set(vm, result->entries, key, NIL_VAL);
 			}
@@ -196,15 +196,15 @@ Value sym_difference_set_method(VM *vm, const Value *args)
  * arg1 -> set2: Set
  * returns -> Bool
  */
-Value is_subset_set_method(VM *vm, const Value *args)
+CruxValue is_subset_set_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectSet *set1 = AS_CRUX_SET(args[0]);
 	ObjectSet *set2 = AS_CRUX_SET(args[1]);
 	for (size_t i = 0; i < set1->entries->capacity; i++) {
 		if (set1->entries->entries[i].is_occupied) {
-			Value key = set1->entries->entries[i].key;
-			Value v;
+			CruxValue key = set1->entries->entries[i].key;
+			CruxValue v;
 			if (!object_table_get(set2->entries->entries, set2->entries->size, set2->entries->capacity, key, &v)) {
 				return BOOL_VAL(false);
 			}
@@ -219,15 +219,15 @@ Value is_subset_set_method(VM *vm, const Value *args)
  * arg1 -> set2: Set
  * returns -> Bool
  */
-Value is_superset_set_method(VM *vm, const Value *args)
+CruxValue is_superset_set_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectSet *set1 = AS_CRUX_SET(args[0]);
 	ObjectSet *set2 = AS_CRUX_SET(args[1]);
 	for (size_t i = 0; i < set2->entries->capacity; i++) {
 		if (set2->entries->entries[i].is_occupied) {
-			Value key = set2->entries->entries[i].key;
-			Value v;
+			CruxValue key = set2->entries->entries[i].key;
+			CruxValue v;
 			if (!object_table_get(set1->entries->entries, set1->entries->size, set1->entries->capacity, key, &v)) {
 				return BOOL_VAL(false);
 			}
@@ -242,15 +242,15 @@ Value is_superset_set_method(VM *vm, const Value *args)
  * arg1 -> set2: Set
  * returns -> Bool
  */
-Value is_disjoint_set_method(VM *vm, const Value *args)
+CruxValue is_disjoint_set_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectSet *set1 = AS_CRUX_SET(args[0]);
 	ObjectSet *set2 = AS_CRUX_SET(args[1]);
 	for (size_t i = 0; i < set1->entries->capacity; i++) {
 		if (set1->entries->entries[i].is_occupied) {
-			Value key = set1->entries->entries[i].key;
-			Value v;
+			CruxValue key = set1->entries->entries[i].key;
+			CruxValue v;
 			if (object_table_get(set2->entries->entries, set2->entries->size, set2->entries->capacity, key, &v)) {
 				return BOOL_VAL(false);
 			}
@@ -265,12 +265,12 @@ Value is_disjoint_set_method(VM *vm, const Value *args)
  * arg1 -> value: Hashable
  * returns -> Bool
  */
-Value contains_set_method(VM *vm, const Value *args)
+CruxValue contains_set_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectSet *set = AS_CRUX_SET(args[0]);
-	Value value = args[1];
-	Value v;
+	CruxValue value = args[1];
+	CruxValue v;
 	return BOOL_VAL(object_table_get(set->entries->entries, set->entries->size, set->entries->capacity, value, &v));
 }
 
@@ -279,7 +279,7 @@ Value contains_set_method(VM *vm, const Value *args)
  * arg0 -> set: Set
  * returns -> Bool
  */
-Value is_empty_set_method(VM *vm, const Value *args)
+CruxValue is_empty_set_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectSet *set = AS_CRUX_SET(args[0]);
@@ -291,7 +291,7 @@ Value is_empty_set_method(VM *vm, const Value *args)
  * arg0 -> set: Set
  * returns -> Array
  */
-Value to_array_set_method(VM *vm, const Value *args)
+CruxValue to_array_set_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectSet *self = AS_CRUX_SET(args[0]);
 	ObjectArray *array = new_array(vm, self->entries->size);
@@ -309,7 +309,7 @@ Value to_array_set_method(VM *vm, const Value *args)
  * arg0 -> set: Set
  * returns -> Set
  */
-Value clone_set_method(VM *vm, const Value *args)
+CruxValue clone_set_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectSet *self = AS_CRUX_SET(args[0]);
 	ObjectSet *other = new_set(vm, self->entries->size);

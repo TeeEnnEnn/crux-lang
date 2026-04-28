@@ -12,7 +12,7 @@ void init_chunk(Chunk *chunk)
 	init_value_array(&chunk->constants);
 }
 
-void write_chunk(VM *vm, Chunk *chunk, const uint16_t byte, const int line)
+void write_chunk(CruxVM *vm, Chunk *chunk, const uint16_t byte, const int line)
 {
 	if (chunk->capacity < chunk->count + 1) {
 		const int oldCapacity = chunk->capacity;
@@ -28,7 +28,7 @@ void write_chunk(VM *vm, Chunk *chunk, const uint16_t byte, const int line)
 	chunk->count++;
 }
 
-void free_chunk(VM *vm, Chunk *chunk)
+void free_chunk(CruxVM *vm, Chunk *chunk)
 {
 	FREE_ARRAY(vm, uint16_t, chunk->code, chunk->capacity);
 	FREE_ARRAY(vm, int, chunk->lines, chunk->capacity);
@@ -36,7 +36,7 @@ void free_chunk(VM *vm, Chunk *chunk)
 	init_chunk(chunk);
 }
 
-int add_constant(VM *vm, Chunk *chunk, const Value value)
+int add_constant(CruxVM *vm, Chunk *chunk, const CruxValue value)
 {
 	push(vm->current_module_record, value);
 	write_value_array(vm, &chunk->constants, value);

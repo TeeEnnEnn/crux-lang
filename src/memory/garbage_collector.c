@@ -71,7 +71,7 @@ static size_t table_tombstone_count(const Table *table)
 	return tombstones;
 }
 
-static size_t compute_next_gc_threshold(const VM *vm)
+static size_t compute_next_gc_threshold(const CruxVM *vm)
 {
 	const size_t growth_target = (size_t)((double)vm->bytes_allocated * vm->heap_growth_factor);
 	const size_t delta_target = vm->bytes_allocated + vm->min_gc_growth_delta;
@@ -83,7 +83,7 @@ static size_t compute_next_gc_threshold(const VM *vm)
 	return next_gc;
 }
 
-void mark_object_internal(VM *vm, CruxObject *object)
+void mark_object_internal(CruxVM *vm, CruxObject *object)
 {
 	object_set_marked(object, true);
 
@@ -107,28 +107,28 @@ void mark_object_internal(VM *vm, CruxObject *object)
 		vm->gc_max_gray_peak = (uint32_t)vm->gray_count;
 }
 
-void mark_value(VM *vm, const Value value)
+void mark_value(CruxVM *vm, const CruxValue value)
 {
 	if (IS_CRUX_OBJECT(value)) {
 		mark_object(vm, AS_CRUX_OBJECT(value));
 	}
 }
 
-void mark_array(VM *vm, const ValueArray *array)
+void mark_array(CruxVM *vm, const ValueArray *array)
 {
 	for (int i = 0; i < array->count; i++) {
 		mark_value(vm, array->values[i]);
 	}
 }
 
-void mark_object_array(VM *vm, const Value *values, const uint32_t size)
+void mark_object_array(CruxVM *vm, const CruxValue *values, const uint32_t size)
 {
 	for (uint32_t i = 0; i < size; i++) {
 		mark_value(vm, values[i]);
 	}
 }
 
-void mark_object_table(VM *vm, const ObjectTableEntry *entries, const uint32_t capacity)
+void mark_object_table(CruxVM *vm, const ObjectTableEntry *entries, const uint32_t capacity)
 {
 	if (!entries)
 		return;
@@ -140,7 +140,7 @@ void mark_object_table(VM *vm, const ObjectTableEntry *entries, const uint32_t c
 	}
 }
 
-void mark_type_table(VM *vm, ObjectTypeTable *table)
+void mark_type_table(CruxVM *vm, ObjectTypeTable *table)
 {
 	if (!table)
 		return;
@@ -152,14 +152,14 @@ void mark_type_table(VM *vm, ObjectTypeTable *table)
 	}
 }
 
-void mark_type_record(VM *vm, ObjectTypeRecord *rec)
+void mark_type_record(CruxVM *vm, ObjectTypeRecord *rec)
 {
 	if (!rec)
 		return;
 	mark_object(vm, (CruxObject *)rec);
 }
 
-static void mark_object_struct(VM *vm, ObjectStruct *structure)
+static void mark_object_struct(CruxVM *vm, ObjectStruct *structure)
 {
 	mark_object(vm, (CruxObject *)structure->name);
 	mark_table(vm, &structure->fields);
@@ -167,7 +167,7 @@ static void mark_object_struct(VM *vm, ObjectStruct *structure)
 	mark_object(vm, (CruxObject *)structure);
 }
 
-static void mark_struct_instance(VM *vm, ObjectStructInstance *instance)
+static void mark_struct_instance(CruxVM *vm, ObjectStructInstance *instance)
 {
 	for (int i = 0; i < instance->field_count; i++) {
 		mark_value(vm, instance->fields[i]);
@@ -176,34 +176,34 @@ static void mark_struct_instance(VM *vm, ObjectStructInstance *instance)
 	mark_object(vm, (CruxObject *)instance);
 }
 
-typedef void (*BlackenFunction)(VM *vm, CruxObject *object);
-typedef void (*FreeFunction)(VM *vm, CruxObject *object);
+typedef void (*BlackenFunction)(CruxVM *vm, CruxObject *object);
+typedef void (*FreeFunction)(CruxVM *vm, CruxObject *object);
 
-static void blacken_closure(VM *vm, CruxObject *object);
-static void blacken_function(VM *vm, CruxObject *object);
-static void blacken_upvalue(VM *vm, CruxObject *object);
-static void blacken_array(VM *vm, CruxObject *object);
-static void blacken_table(VM *vm, CruxObject *object);
-static void blacken_error(VM *vm, CruxObject *object);
-static void blacken_native_callable(VM *vm, CruxObject *object);
-static void blacken_result(VM *vm, CruxObject *object);
-static void blacken_random(VM *vm, CruxObject *object);
-static void blacken_file(VM *vm, CruxObject *object);
-static void blacken_module_record(VM *vm, CruxObject *object);
-static void blacken_struct(VM *vm, CruxObject *object);
-static void blacken_struct_instance(VM *vm, CruxObject *object);
-static void blacken_vector(VM *vm, CruxObject *object);
-static void blacken_complex(VM *vm, CruxObject *object);
-static void blacken_string(VM *vm, CruxObject *object);
-static void blacken_range(VM *vm, CruxObject *object);
-static void blacken_iterator(VM *vm, CruxObject *object);
-static void blacken_set(VM *vm, CruxObject *object);
-static void blacken_buffer(VM *vm, CruxObject *object);
-static void blacken_tuple(VM *vm, CruxObject *object);
-static void blacken_matrix(VM *vm, CruxObject *object);
-static void blacken_type_record(VM *vm, CruxObject *object);
-static void blacken_type_table(VM *vm, CruxObject *object);
-static void blacken_option(VM *vm, CruxObject *object);
+static void blacken_closure(CruxVM *vm, CruxObject *object);
+static void blacken_function(CruxVM *vm, CruxObject *object);
+static void blacken_upvalue(CruxVM *vm, CruxObject *object);
+static void blacken_array(CruxVM *vm, CruxObject *object);
+static void blacken_table(CruxVM *vm, CruxObject *object);
+static void blacken_error(CruxVM *vm, CruxObject *object);
+static void blacken_native_callable(CruxVM *vm, CruxObject *object);
+static void blacken_result(CruxVM *vm, CruxObject *object);
+static void blacken_random(CruxVM *vm, CruxObject *object);
+static void blacken_file(CruxVM *vm, CruxObject *object);
+static void blacken_module_record(CruxVM *vm, CruxObject *object);
+static void blacken_struct(CruxVM *vm, CruxObject *object);
+static void blacken_struct_instance(CruxVM *vm, CruxObject *object);
+static void blacken_vector(CruxVM *vm, CruxObject *object);
+static void blacken_complex(CruxVM *vm, CruxObject *object);
+static void blacken_string(CruxVM *vm, CruxObject *object);
+static void blacken_range(CruxVM *vm, CruxObject *object);
+static void blacken_iterator(CruxVM *vm, CruxObject *object);
+static void blacken_set(CruxVM *vm, CruxObject *object);
+static void blacken_buffer(CruxVM *vm, CruxObject *object);
+static void blacken_tuple(CruxVM *vm, CruxObject *object);
+static void blacken_matrix(CruxVM *vm, CruxObject *object);
+static void blacken_type_record(CruxVM *vm, CruxObject *object);
+static void blacken_type_table(CruxVM *vm, CruxObject *object);
+static void blacken_option(CruxVM *vm, CruxObject *object);
 
 static const BlackenFunction blacken_dispatch[] = {
 	[OBJECT_STRING] = blacken_string,
@@ -233,7 +233,7 @@ static const BlackenFunction blacken_dispatch[] = {
 	[OBJECT_TYPE_TABLE] = blacken_type_table,
 };
 
-static void blacken_object(VM *vm, CruxObject *object)
+static void blacken_object(CruxVM *vm, CruxObject *object)
 {
 #ifdef DEBUG_LOG_GC
 	printf("%p blacken ", (void *)object);
@@ -247,7 +247,7 @@ static void blacken_object(VM *vm, CruxObject *object)
 	}
 }
 
-static void blacken_closure(VM *vm, CruxObject *object)
+static void blacken_closure(CruxVM *vm, CruxObject *object)
 {
 	const ObjectClosure *closure = (ObjectClosure *)object;
 	mark_object(vm, (CruxObject *)closure->function);
@@ -256,7 +256,7 @@ static void blacken_closure(VM *vm, CruxObject *object)
 	}
 }
 
-static void blacken_function(VM *vm, CruxObject *object)
+static void blacken_function(CruxVM *vm, CruxObject *object)
 {
 	const ObjectFunction *function = (ObjectFunction *)object;
 	mark_object(vm, (CruxObject *)function->name);
@@ -264,30 +264,30 @@ static void blacken_function(VM *vm, CruxObject *object)
 	mark_array(vm, &function->chunk.constants);
 }
 
-static void blacken_upvalue(VM *vm, CruxObject *object)
+static void blacken_upvalue(CruxVM *vm, CruxObject *object)
 {
 	mark_value(vm, ((ObjectUpvalue *)object)->closed);
 }
 
-static void blacken_array(VM *vm, CruxObject *object)
+static void blacken_array(CruxVM *vm, CruxObject *object)
 {
 	const ObjectArray *array = (ObjectArray *)object;
 	mark_object_array(vm, array->values, array->size);
 }
 
-static void blacken_table(VM *vm, CruxObject *object)
+static void blacken_table(CruxVM *vm, CruxObject *object)
 {
 	const ObjectTable *table = (ObjectTable *)object;
 	mark_object_table(vm, table->entries, table->capacity);
 }
 
-static void blacken_error(VM *vm, CruxObject *object)
+static void blacken_error(CruxVM *vm, CruxObject *object)
 {
 	const ObjectError *error = (ObjectError *)object;
 	mark_object(vm, (CruxObject *)error->message);
 }
 
-static void blacken_native_callable(VM *vm, CruxObject *object)
+static void blacken_native_callable(CruxVM *vm, CruxObject *object)
 {
 	const ObjectNativeCallable *native = (ObjectNativeCallable *)object;
 	mark_object(vm, (CruxObject *)native->name);
@@ -299,13 +299,13 @@ static void blacken_native_callable(VM *vm, CruxObject *object)
 	mark_type_record(vm, native->return_type);
 }
 
-static void blacken_iterator(VM *vm, CruxObject *object)
+static void blacken_iterator(CruxVM *vm, CruxObject *object)
 {
 	const ObjectIterator *iterator = (ObjectIterator *)object;
 	mark_value(vm, iterator->iterable);
 }
 
-static void blacken_result(VM *vm, CruxObject *object)
+static void blacken_result(CruxVM *vm, CruxObject *object)
 {
 	const ObjectResult *result = (ObjectResult *)object;
 	if (result->is_ok) {
@@ -315,26 +315,26 @@ static void blacken_result(VM *vm, CruxObject *object)
 	}
 }
 
-static void blacken_option(VM *vm, CruxObject *object)
+static void blacken_option(CruxVM *vm, CruxObject *object)
 {
 	const ObjectOption *option = (ObjectOption *)object;
 	mark_value(vm, option->value);
 }
 
-static void blacken_random(VM *vm, CruxObject *object)
+static void blacken_random(CruxVM *vm, CruxObject *object)
 {
 	(void)vm;
 	(void)object;
 }
 
-static void blacken_file(VM *vm, CruxObject *object)
+static void blacken_file(CruxVM *vm, CruxObject *object)
 {
 	const ObjectFile *file = (ObjectFile *)object;
 	mark_object(vm, (CruxObject *)file->path);
 	mark_object(vm, (CruxObject *)file->mode);
 }
 
-static void blacken_module_record(VM *vm, CruxObject *object)
+static void blacken_module_record(CruxVM *vm, CruxObject *object)
 {
 	const ObjectModuleRecord *module = (ObjectModuleRecord *)object;
 	mark_object(vm, (CruxObject *)module->path);
@@ -347,7 +347,7 @@ static void blacken_module_record(VM *vm, CruxObject *object)
 		mark_value(vm, module->globals[i]);
 	}
 
-	for (const Value *slot = module->stack; slot < module->stack_top; slot++) {
+	for (const CruxValue *slot = module->stack; slot < module->stack_top; slot++) {
 		mark_value(vm, *slot);
 	}
 	for (int i = 0; i < module->frame_count; i++) {
@@ -358,67 +358,67 @@ static void blacken_module_record(VM *vm, CruxObject *object)
 	}
 }
 
-static void blacken_struct(VM *vm, CruxObject *object)
+static void blacken_struct(CruxVM *vm, CruxObject *object)
 {
 	ObjectStruct *structure = (ObjectStruct *)object;
 	mark_object_struct(vm, structure);
 }
 
-static void blacken_struct_instance(VM *vm, CruxObject *object)
+static void blacken_struct_instance(CruxVM *vm, CruxObject *object)
 {
 	ObjectStructInstance *instance = (ObjectStructInstance *)object;
 	mark_struct_instance(vm, instance);
 }
 
-static void blacken_vector(VM *vm, CruxObject *object)
+static void blacken_vector(CruxVM *vm, CruxObject *object)
 {
 	(void)vm;
 	(void)object;
 }
 
-static void blacken_complex(VM *vm, CruxObject *object)
+static void blacken_complex(CruxVM *vm, CruxObject *object)
 {
 	(void)vm;
 	(void)object;
 }
 
-static void blacken_matrix(VM *vm, CruxObject *object)
+static void blacken_matrix(CruxVM *vm, CruxObject *object)
 {
 	(void)vm;
 	(void)object;
 }
 
-static void blacken_string(VM *vm, CruxObject *object)
+static void blacken_string(CruxVM *vm, CruxObject *object)
 {
 	(void)vm;
 	(void)object;
 }
 
-static void blacken_range(VM *vm, CruxObject *object)
+static void blacken_range(CruxVM *vm, CruxObject *object)
 {
 	(void)vm;
 	(void)object;
 }
 
-static void blacken_set(VM *vm, CruxObject *object)
+static void blacken_set(CruxVM *vm, CruxObject *object)
 {
 	ObjectSet *set = (ObjectSet *)object;
 	mark_object_table(vm, set->entries->entries, set->entries->capacity);
 }
 
-static void blacken_buffer(VM *vm, CruxObject *object)
+static void blacken_buffer(CruxVM *vm, CruxObject *object)
 {
 	(void)vm;
 	(void)object;
 }
 
-static void blacken_tuple(VM *vm, CruxObject *object)
+static void blacken_tuple(CruxVM *vm, CruxObject *object)
 {
 	const ObjectTuple *tuple = (ObjectTuple *)object;
 	mark_object_array(vm, tuple->elements, tuple->size);
 }
 
-static void blacken_type_table(VM *vm, CruxObject *object)
+static void blacken_type_table(CruxVM *vm, CruxObject *object)
 {
 	const ObjectTypeTable *table = (ObjectTypeTable *)object;
 	if (!table->entries)
@@ -432,7 +432,7 @@ static void blacken_type_table(VM *vm, CruxObject *object)
 	}
 }
 
-static void blacken_type_record(VM *vm, CruxObject *object)
+static void blacken_type_record(CruxVM *vm, CruxObject *object)
 {
 	const ObjectTypeRecord *rec = (ObjectTypeRecord *)object;
 	switch (rec->base_type) {
@@ -495,31 +495,31 @@ static void blacken_type_record(VM *vm, CruxObject *object)
 	}
 }
 
-static void free_object_string(VM *vm, CruxObject *object);
-static void free_object_function(VM *vm, CruxObject *object);
-static void free_object_native_callable(VM *vm, CruxObject *object);
-static void free_object_closure(VM *vm, CruxObject *object);
-static void free_object_upvalue(VM *vm, CruxObject *object);
-static void free_object_array(VM *vm, CruxObject *object);
-static void free_object_table_wrapper(VM *vm, CruxObject *object);
-static void free_object_error(VM *vm, CruxObject *object);
-static void free_object_result(VM *vm, CruxObject *object);
-static void free_object_option(VM *vm, CruxObject *object);
-static void free_object_random(VM *vm, CruxObject *object);
-static void free_object_file(VM *vm, CruxObject *object);
-static void free_object_module_record_wrapper(VM *vm, CruxObject *object);
-static void free_object_struct(VM *vm, CruxObject *object);
-static void free_object_struct_instance(VM *vm, CruxObject *object);
-static void free_object_vector(VM *vm, CruxObject *object);
-static void free_object_complex(VM *vm, CruxObject *object);
-static void free_object_set(VM *vm, CruxObject *object);
-static void free_object_range(VM *vm, CruxObject *object);
-static void free_object_iterator(VM *vm, CruxObject *object);
-static void free_object_buffer(VM *vm, CruxObject *object);
-static void free_object_tuple(VM *vm, CruxObject *object);
-static void free_object_matrix(VM *vm, CruxObject *object);
-static void free_object_type_record(VM *vm, CruxObject *object);
-static void free_object_type_table(VM *vm, CruxObject *object);
+static void free_object_string(CruxVM *vm, CruxObject *object);
+static void free_object_function(CruxVM *vm, CruxObject *object);
+static void free_object_native_callable(CruxVM *vm, CruxObject *object);
+static void free_object_closure(CruxVM *vm, CruxObject *object);
+static void free_object_upvalue(CruxVM *vm, CruxObject *object);
+static void free_object_array(CruxVM *vm, CruxObject *object);
+static void free_object_table_wrapper(CruxVM *vm, CruxObject *object);
+static void free_object_error(CruxVM *vm, CruxObject *object);
+static void free_object_result(CruxVM *vm, CruxObject *object);
+static void free_object_option(CruxVM *vm, CruxObject *object);
+static void free_object_random(CruxVM *vm, CruxObject *object);
+static void free_object_file(CruxVM *vm, CruxObject *object);
+static void free_object_module_record_wrapper(CruxVM *vm, CruxObject *object);
+static void free_object_struct(CruxVM *vm, CruxObject *object);
+static void free_object_struct_instance(CruxVM *vm, CruxObject *object);
+static void free_object_vector(CruxVM *vm, CruxObject *object);
+static void free_object_complex(CruxVM *vm, CruxObject *object);
+static void free_object_set(CruxVM *vm, CruxObject *object);
+static void free_object_range(CruxVM *vm, CruxObject *object);
+static void free_object_iterator(CruxVM *vm, CruxObject *object);
+static void free_object_buffer(CruxVM *vm, CruxObject *object);
+static void free_object_tuple(CruxVM *vm, CruxObject *object);
+static void free_object_matrix(CruxVM *vm, CruxObject *object);
+static void free_object_type_record(CruxVM *vm, CruxObject *object);
+static void free_object_type_table(CruxVM *vm, CruxObject *object);
 
 static const FreeFunction free_dispatch[] = {
 	[OBJECT_STRING] = free_object_string,
@@ -549,21 +549,21 @@ static const FreeFunction free_dispatch[] = {
 	[OBJECT_TYPE_TABLE] = free_object_type_table,
 };
 
-static void free_object_string(VM *vm, CruxObject *object)
+static void free_object_string(CruxVM *vm, CruxObject *object)
 {
 	const ObjectString *string = (ObjectString *)object;
 	FREE_ARRAY(vm, char, string->chars, string->byte_length + 1);
 	FREE_OBJECT(vm, ObjectString, object);
 }
 
-static void free_object_function(VM *vm, CruxObject *object)
+static void free_object_function(CruxVM *vm, CruxObject *object)
 {
 	ObjectFunction *function = (ObjectFunction *)object;
 	free_chunk(vm, &function->chunk);
 	FREE_OBJECT(vm, ObjectFunction, object);
 }
 
-static void free_object_native_callable(VM *vm, CruxObject *object)
+static void free_object_native_callable(CruxVM *vm, CruxObject *object)
 {
 	ObjectNativeCallable *native = (ObjectNativeCallable *)object;
 	if (native->arg_types) {
@@ -572,53 +572,53 @@ static void free_object_native_callable(VM *vm, CruxObject *object)
 	FREE_OBJECT(vm, ObjectNativeCallable, object);
 }
 
-static void free_object_closure(VM *vm, CruxObject *object)
+static void free_object_closure(CruxVM *vm, CruxObject *object)
 {
 	const ObjectClosure *closure = (ObjectClosure *)object;
 	FREE_ARRAY(vm, ObjectUpvalue *, closure->upvalues, closure->upvalue_count);
 	FREE_OBJECT(vm, ObjectClosure, object);
 }
 
-static void free_object_upvalue(VM *vm, CruxObject *object)
+static void free_object_upvalue(CruxVM *vm, CruxObject *object)
 {
 	FREE_OBJECT(vm, ObjectUpvalue, object);
 }
 
-static void free_object_array(VM *vm, CruxObject *object)
+static void free_object_array(CruxVM *vm, CruxObject *object)
 {
 	const ObjectArray *array = (ObjectArray *)object;
-	FREE_ARRAY(vm, Value, array->values, array->capacity);
+	FREE_ARRAY(vm, CruxValue, array->values, array->capacity);
 	FREE_OBJECT(vm, ObjectArray, object);
 }
 
-static void free_object_table_wrapper(VM *vm, CruxObject *object)
+static void free_object_table_wrapper(CruxVM *vm, CruxObject *object)
 {
 	ObjectTable *table = (ObjectTable *)object;
 	free_object_table(vm, table);
 	FREE_OBJECT(vm, ObjectTable, object);
 }
 
-static void free_object_error(VM *vm, CruxObject *object)
+static void free_object_error(CruxVM *vm, CruxObject *object)
 {
 	FREE_OBJECT(vm, ObjectError, object);
 }
 
-static void free_object_result(VM *vm, CruxObject *object)
+static void free_object_result(CruxVM *vm, CruxObject *object)
 {
 	FREE_OBJECT(vm, ObjectResult, object);
 }
 
-static void free_object_option(VM *vm, CruxObject *object)
+static void free_object_option(CruxVM *vm, CruxObject *object)
 {
 	FREE_OBJECT(vm, ObjectOption, object);
 }
 
-static void free_object_random(VM *vm, CruxObject *object)
+static void free_object_random(CruxVM *vm, CruxObject *object)
 {
 	FREE_OBJECT(vm, ObjectRandom, object);
 }
 
-static void free_object_file(VM *vm, CruxObject *object)
+static void free_object_file(CruxVM *vm, CruxObject *object)
 {
 	const ObjectFile *file = (ObjectFile *)object;
 	if (file->file != NULL) {
@@ -627,14 +627,14 @@ static void free_object_file(VM *vm, CruxObject *object)
 	FREE_OBJECT(vm, ObjectFile, object);
 }
 
-static void free_object_module_record_wrapper(VM *vm, CruxObject *object)
+static void free_object_module_record_wrapper(CruxVM *vm, CruxObject *object)
 {
 	ObjectModuleRecord *moduleRecord = (ObjectModuleRecord *)object;
 	free_object_module_record(vm, moduleRecord);
 	FREE_OBJECT(vm, ObjectModuleRecord, object);
 }
 
-static void free_object_struct(VM *vm, CruxObject *object)
+static void free_object_struct(CruxVM *vm, CruxObject *object)
 {
 	ObjectStruct *structure = (ObjectStruct *)object;
 	free_table(vm, &structure->fields);
@@ -642,14 +642,14 @@ static void free_object_struct(VM *vm, CruxObject *object)
 	FREE_OBJECT(vm, ObjectStruct, object);
 }
 
-static void free_object_struct_instance(VM *vm, CruxObject *object)
+static void free_object_struct_instance(CruxVM *vm, CruxObject *object)
 {
 	const ObjectStructInstance *instance = (ObjectStructInstance *)object;
-	FREE_ARRAY(vm, Value, instance->fields, instance->field_count);
+	FREE_ARRAY(vm, CruxValue, instance->fields, instance->field_count);
 	FREE_OBJECT(vm, ObjectStructInstance, object);
 }
 
-static void free_object_vector(VM *vm, CruxObject *object)
+static void free_object_vector(CruxVM *vm, CruxObject *object)
 {
 	const ObjectVector *vector = (ObjectVector *)object;
 	if (vector->dimensions > 4) {
@@ -658,50 +658,50 @@ static void free_object_vector(VM *vm, CruxObject *object)
 	FREE_OBJECT(vm, ObjectVector, object);
 }
 
-static void free_object_complex(VM *vm, CruxObject *object)
+static void free_object_complex(CruxVM *vm, CruxObject *object)
 {
 	FREE_OBJECT(vm, ObjectComplex, object);
 }
 
-static void free_object_set(VM *vm, CruxObject *object)
+static void free_object_set(CruxVM *vm, CruxObject *object)
 {
 	const ObjectSet *set = (ObjectSet *)object;
 	free_object_table_wrapper(vm, &set->entries->object);
 	FREE_OBJECT(vm, ObjectSet, object);
 }
 
-static void free_object_range(VM *vm, CruxObject *object)
+static void free_object_range(CruxVM *vm, CruxObject *object)
 {
 	FREE_OBJECT(vm, ObjectRange, object);
 }
 
-static void free_object_iterator(VM *vm, CruxObject *object)
+static void free_object_iterator(CruxVM *vm, CruxObject *object)
 {
 	FREE_OBJECT(vm, ObjectIterator, object);
 }
 
-static void free_object_buffer(VM *vm, CruxObject *object)
+static void free_object_buffer(CruxVM *vm, CruxObject *object)
 {
 	const ObjectBuffer *buffer = (ObjectBuffer *)object;
 	FREE_ARRAY(vm, uint8_t, buffer->data, buffer->capacity);
 	FREE_OBJECT(vm, ObjectBuffer, object);
 }
 
-static void free_object_tuple(VM *vm, CruxObject *object)
+static void free_object_tuple(CruxVM *vm, CruxObject *object)
 {
 	const ObjectTuple *tuple = (ObjectTuple *)object;
-	FREE_ARRAY(vm, Value, tuple->elements, tuple->size);
+	FREE_ARRAY(vm, CruxValue, tuple->elements, tuple->size);
 	FREE_OBJECT(vm, ObjectTuple, object);
 }
 
-static void free_object_matrix(VM *vm, CruxObject *object)
+static void free_object_matrix(CruxVM *vm, CruxObject *object)
 {
 	const ObjectMatrix *matrix = (ObjectMatrix *)object;
 	FREE_ARRAY(vm, double, matrix->data, (uint32_t)matrix->row_dim * matrix->col_dim);
 	FREE_OBJECT(vm, ObjectMatrix, object);
 }
 
-static void free_object_type_record(VM *vm, CruxObject *object)
+static void free_object_type_record(CruxVM *vm, CruxObject *object)
 {
 	ObjectTypeRecord *rec = (ObjectTypeRecord *)object;
 	if (rec->base_type == FUNCTION_TYPE) {
@@ -723,7 +723,7 @@ static void free_object_type_record(VM *vm, CruxObject *object)
 	FREE_OBJECT(vm, ObjectTypeRecord, object);
 }
 
-static void free_object_type_table(VM *vm, CruxObject *object)
+static void free_object_type_table(CruxVM *vm, CruxObject *object)
 {
 	ObjectTypeTable *table = (ObjectTypeTable *)object;
 	if (table->entries) {
@@ -735,7 +735,7 @@ static void free_object_type_table(VM *vm, CruxObject *object)
 	FREE_OBJECT(vm, ObjectTypeTable, object);
 }
 
-void mark_module_roots(VM *vm, ObjectModuleRecord *moduleRecord)
+void mark_module_roots(CruxVM *vm, ObjectModuleRecord *moduleRecord)
 {
 	if (moduleRecord->enclosing_module != NULL) {
 		mark_module_roots(vm, moduleRecord->enclosing_module);
@@ -751,7 +751,7 @@ void mark_module_roots(VM *vm, ObjectModuleRecord *moduleRecord)
 		mark_value(vm, moduleRecord->globals[i]);
 	}
 
-	for (const Value *slot = moduleRecord->stack; slot < moduleRecord->stack_top; slot++) {
+	for (const CruxValue *slot = moduleRecord->stack; slot < moduleRecord->stack_top; slot++) {
 		mark_value(vm, *slot);
 	}
 
@@ -766,7 +766,7 @@ void mark_module_roots(VM *vm, ObjectModuleRecord *moduleRecord)
 	mark_object(vm, (CruxObject *)moduleRecord);
 }
 
-void mark_struct_instance_stack(VM *vm, const StructInstanceStack *stack)
+void mark_struct_instance_stack(CruxVM *vm, const StructInstanceStack *stack)
 {
 	if (stack->structs != NULL) {
 		for (uint32_t i = 0; i < stack->count; i++) {
@@ -775,7 +775,7 @@ void mark_struct_instance_stack(VM *vm, const StructInstanceStack *stack)
 	}
 }
 
-void mark_roots(VM *vm)
+void mark_roots(CruxVM *vm)
 {
 	if (vm->current_module_record) {
 		mark_module_roots(vm, vm->current_module_record);
@@ -803,7 +803,7 @@ void mark_roots(VM *vm)
 	}
 }
 
-static void trace_references(VM *vm)
+static void trace_references(CruxVM *vm)
 {
 	while (vm->gray_count > 0) {
 		CruxObject *object = vm->gray_stack[--vm->gray_count];
@@ -811,7 +811,7 @@ static void trace_references(VM *vm)
 	}
 }
 
-static void free_object(VM *vm, CruxObject *object, bool free_all)
+static void free_object(CruxVM *vm, CruxObject *object, bool free_all)
 {
 #ifdef DEBUG_LOG_GC
 	printf("%p free type %d\n", (void *)object, object_get_type(object));
@@ -824,7 +824,7 @@ static void free_object(VM *vm, CruxObject *object, bool free_all)
 	}
 }
 
-static void sweep(VM *vm)
+static void sweep(CruxVM *vm)
 {
 	size_t slots_scanned = 0;
 	CruxObject *prev = NULL;
@@ -858,7 +858,7 @@ static void sweep(VM *vm)
 	vm->gc_sweep_slots_scanned += slots_scanned;
 }
 
-void free_objects(VM *vm, bool free_all)
+void free_objects(CruxVM *vm, bool free_all)
 {
 	CruxObject *object = vm->objects;
 	while (object != NULL) {
@@ -871,7 +871,7 @@ void free_objects(VM *vm, bool free_all)
 	vm->object_count = 0;
 }
 
-void collect_garbage(VM *vm)
+void collect_garbage(CruxVM *vm)
 {
 	if (vm->gc_status == PAUSED)
 		return;

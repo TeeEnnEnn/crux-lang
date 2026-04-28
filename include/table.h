@@ -4,11 +4,11 @@
 #include "common.h"
 #include "value.h"
 
-typedef VM VM;
+typedef CruxVM CruxVM;
 
 typedef struct {
 	ObjectString *key;
-	Value value;
+	CruxValue value;
 } Entry;
 
 typedef struct {
@@ -30,7 +30,7 @@ void init_table(Table *table);
  * @param vm Pointer to the virtual machine.
  * @param table Pointer to the Table structure to free.
  */
-void free_table(VM *vm, Table *table);
+void free_table(CruxVM *vm, Table *table);
 
 /**
  * Inserts or updates a key-value pair in the table.
@@ -38,11 +38,11 @@ void free_table(VM *vm, Table *table);
  * @param vm Pointer to the virtual machine.
  * @param table Pointer to the table to modify.
  * @param key String key to insert or update.
- * @param value Value to associate with the key.
+ * @param value CruxValue to associate with the key.
  * @return true if a new key was added or an existing key was changed from nil,
  *         false otherwise.
  */
-bool table_set(VM *vm, Table *table, ObjectString *key, Value value);
+bool table_set(CruxVM *vm, Table *table, ObjectString *key, CruxValue value);
 
 /**
  * Retrieves a value associated with a key from the table.
@@ -52,7 +52,7 @@ bool table_set(VM *vm, Table *table, ObjectString *key, Value value);
  * @param value Pointer to store the retrieved value.
  * @return true if the key was found, false otherwise.
  */
-bool table_get(const Table *table, const ObjectString *key, Value *value);
+bool table_get(const Table *table, const ObjectString *key, CruxValue *value);
 
 /**
  * Removes a key-value pair from the table.
@@ -66,7 +66,7 @@ bool table_delete(const Table *table, const ObjectString *key);
 /**
  * Copies all entries from one table to another.
  */
-void table_add_all(VM *vm, const Table *from, Table *to);
+void table_add_all(CruxVM *vm, const Table *from, Table *to);
 
 /**
  * Finds a string in the table by its content and hash.
@@ -84,12 +84,12 @@ ObjectString *table_find_string(const Table *table, const char *chars,
 /**
  * Removes all entries with unmarked keys during garbage collection.
  */
-void table_remove_white(const VM *vm, const Table *table);
+void table_remove_white(const CruxVM *vm, const Table *table);
 
 /**
  * Marks all objects in the table as reachable during garbage collection.
  */
-void mark_table(VM *vm, const Table *table);
+void mark_table(CruxVM *vm, const Table *table);
 
 bool compare_strings(const ObjectString *a, const ObjectString *b);
 

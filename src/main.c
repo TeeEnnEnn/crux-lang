@@ -9,7 +9,7 @@
 #endif
 #include "vm.h"
 
-static int repl(VM *vm)
+static int repl(CruxVM *vm)
 {
 	char *cruxDir = get_crux_dir();
 	char *historyPath = NULL;
@@ -64,7 +64,7 @@ static int repl(VM *vm)
  * - Exit code 65: Compilation error
  * - Exit code 70: Runtime error
  */
-static int runFile(VM *vm, const char *path)
+static int runFile(CruxVM *vm, const char *path)
 {
 	const FileResult fileResult = read_file(path);
 	if (fileResult.error) {
@@ -93,7 +93,7 @@ static int runFile(VM *vm, const char *path)
  */
 int main(const int argc, const char *argv[])
 {
-	VM *vm = new_vm(argc, argv);
+	CruxVM *vm = new_vm(argc, argv);
 	if (vm == NULL) {
 		return 1;
 	}

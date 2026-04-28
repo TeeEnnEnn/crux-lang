@@ -389,7 +389,7 @@ ObjectTypeRecord *parse_type_record(Compiler *compiler)
 	return type_record;
 }
 
-bool init_compiler(VM *vm, Compiler *compiler, Compiler *enclosing, const FunctionType type)
+bool init_compiler(CruxVM *vm, Compiler *compiler, Compiler *enclosing, const FunctionType type)
 {
 	if (vm == NULL)
 		return false;
@@ -477,7 +477,7 @@ bool init_compiler(VM *vm, Compiler *compiler, Compiler *enclosing, const Functi
 			}
 
 			ObjectString *name = vm->core_fns.entries[i].key;
-			Value val = vm->core_fns.entries[i].value;
+			CruxValue val = vm->core_fns.entries[i].value;
 
 			// Generate types for the type_table
 			if (IS_CRUX_NATIVE_CALLABLE(val)) {
@@ -502,7 +502,7 @@ bool init_compiler(VM *vm, Compiler *compiler, Compiler *enclosing, const Functi
 			}
 
 			// Check if it already has an index
-			Value existing_index;
+			CruxValue existing_index;
 			if (table_get(&compiler->globals, name, &existing_index)) {
 				continue;
 			}
@@ -567,7 +567,7 @@ ObjectFunction *end_compiler(Compiler *compiler)
  * Compile a source string into a function object.
  * Expects the compiler to be initialized.
  */
-ObjectFunction *compile(VM *vm, Compiler *compiler, Compiler *enclosing, char *source)
+ObjectFunction *compile(CruxVM *vm, Compiler *compiler, Compiler *enclosing, char *source)
 {
 	// Pre-scan pass
 	if (!init_compiler(vm, compiler, enclosing, TYPE_SCRIPT)) {
@@ -637,7 +637,7 @@ ObjectFunction *compile(VM *vm, Compiler *compiler, Compiler *enclosing, char *s
 	return had_error ? NULL : function;
 }
 
-void mark_compiler_roots(VM *vm, const Compiler *compiler)
+void mark_compiler_roots(CruxVM *vm, const Compiler *compiler)
 {
 	if (compiler == NULL)
 		return;

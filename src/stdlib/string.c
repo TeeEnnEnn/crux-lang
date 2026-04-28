@@ -26,7 +26,7 @@ static bool is_utf8_space(utf8_int32_t cp)
 	return false;
 }
 
-Value string_byte_length_method(VM *vm, const Value *args)
+CruxValue string_byte_length_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectString *string = AS_CRUX_STRING(args[0]);
@@ -38,7 +38,7 @@ Value string_byte_length_method(VM *vm, const Value *args)
  * arg0 -> string: String
  * Return: String
  */
-Value string_first_method(VM *vm, const Value *args)
+CruxValue string_first_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *string = AS_CRUX_STRING(args[0]);
 	if (string->byte_length == 0)
@@ -53,7 +53,7 @@ Value string_first_method(VM *vm, const Value *args)
  * arg0 -> string: String
  * Return: String
  */
-Value string_last_method(VM *vm, const Value *args)
+CruxValue string_last_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *string = AS_CRUX_STRING(args[0]);
 	if (string->byte_length == 0)
@@ -71,7 +71,7 @@ Value string_last_method(VM *vm, const Value *args)
  * arg1 -> index: Int
  * Return: Result<String>
  */
-Value string_get_method(VM *vm, const Value *args)
+CruxValue string_get_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *string = AS_CRUX_STRING(args[0]);
 	int32_t index = AS_INT(args[1]);
@@ -95,7 +95,7 @@ Value string_get_method(VM *vm, const Value *args)
  * arg0 -> string: String
  * Return: String
  */
-Value string_to_upper_method(VM *vm, const Value *args)
+CruxValue string_to_upper_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *string = AS_CRUX_STRING(args[0]);
 	utf8_int8_t *buffer = ALLOCATE(vm, utf8_int8_t, string->byte_length + 1);
@@ -110,7 +110,7 @@ Value string_to_upper_method(VM *vm, const Value *args)
  * arg0 -> string: String
  * Return: String
  */
-Value string_to_lower_method(VM *vm, const Value *args)
+CruxValue string_to_lower_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *string = AS_CRUX_STRING(args[0]);
 	utf8_int8_t *buffer = ALLOCATE(vm, utf8_int8_t, string->byte_length + 1);
@@ -125,7 +125,7 @@ Value string_to_lower_method(VM *vm, const Value *args)
  * arg0 -> string: String
  * Return: Bool
  */
-Value string_is_upper_method(VM *vm, const Value *args)
+CruxValue string_is_upper_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
@@ -147,7 +147,7 @@ Value string_is_upper_method(VM *vm, const Value *args)
  * arg0 -> string: String
  * Return: Bool
  */
-Value string_is_lower_method(VM *vm, const Value *args)
+CruxValue string_is_lower_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
@@ -169,7 +169,7 @@ Value string_is_lower_method(VM *vm, const Value *args)
  * arg0 -> string: String
  * Return: Result<String>
  */
-Value string_strip_method(VM *vm, const Value *args)
+CruxValue string_strip_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *string = AS_CRUX_STRING(args[0]);
 	if (string->byte_length == 0)
@@ -213,7 +213,7 @@ Value string_strip_method(VM *vm, const Value *args)
  * arg2 -> end: Int
  * Return: Result<String>
  */
-Value string_substring_method(VM *vm, const Value *args)
+CruxValue string_substring_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *string = AS_CRUX_STRING(args[0]);
 	int32_t startIdx = AS_INT(args[1]);
@@ -242,7 +242,7 @@ Value string_substring_method(VM *vm, const Value *args)
  * arg1 -> delimiter: String
  * Return: Result<Array<String>>
  */
-Value string_split_method(VM *vm, const Value *args)
+CruxValue string_split_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *string = AS_CRUX_STRING(args[0]);
 	const ObjectString *delim = AS_CRUX_STRING(args[1]);
@@ -282,7 +282,7 @@ Value string_split_method(VM *vm, const Value *args)
  * arg1 -> substring: String
  * Return: Result<Bool>
  */
-Value string_contains_method(VM *vm, const Value *args)
+CruxValue string_contains_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
@@ -300,7 +300,7 @@ Value string_contains_method(VM *vm, const Value *args)
  * arg1 -> prefix: String
  * Return: Bool
  */
-Value string_starts_with_method(VM *vm, const Value *args)
+CruxValue string_starts_with_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
 	const ObjectString *prefix = AS_CRUX_STRING(args[1]);
@@ -317,7 +317,7 @@ Value string_starts_with_method(VM *vm, const Value *args)
  * arg1 -> suffix: String
  * Return: Bool
  */
-Value string_ends_with_method(VM *vm, const Value *args)
+CruxValue string_ends_with_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
 	const ObjectString *suffix = AS_CRUX_STRING(args[1]);
@@ -335,7 +335,7 @@ Value string_ends_with_method(VM *vm, const Value *args)
  * arg0 -> string: String
  * Return: Bool
  */
-Value string_is_alpha_method(VM *vm, const Value *args)
+CruxValue string_is_alpha_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
@@ -353,7 +353,7 @@ Value string_is_alpha_method(VM *vm, const Value *args)
 	return BOOL_VAL(true);
 }
 
-Value string_is_digit_method(VM *vm, const Value *args)
+CruxValue string_is_digit_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
@@ -377,7 +377,7 @@ Value string_is_digit_method(VM *vm, const Value *args)
  * arg1 -> b: String
  * Returns String
  */
-Value string_concat_method(VM *vm, const Value *args)
+CruxValue string_concat_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *a = AS_CRUX_STRING(args[0]);
 	const ObjectString *b = AS_CRUX_STRING(args[1]);
@@ -400,7 +400,7 @@ Value string_concat_method(VM *vm, const Value *args)
  * arg0 -> string: String
  * Returns String
  */
-Value string_reverse_method(VM *vm, const Value *args)
+CruxValue string_reverse_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
 	utf8_int8_t *buf = malloc(str->byte_length + 1);
@@ -436,7 +436,7 @@ Value string_reverse_method(VM *vm, const Value *args)
  * arg1 -> needle: String
  * Returns Int
  */
-Value string_find_method(VM *vm, const Value *args)
+CruxValue string_find_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectString *haystack = AS_CRUX_STRING(args[0]);
@@ -466,7 +466,7 @@ Value string_find_method(VM *vm, const Value *args)
  * arg1 -> count: Int
  * Returns String
  */
-Value string_repeat_method(VM *vm, const Value *args)
+CruxValue string_repeat_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
 	int count = AS_INT(args[1]);
@@ -501,7 +501,7 @@ Value string_repeat_method(VM *vm, const Value *args)
  * arg1 -> elements: Array
  * Returns String
  */
-Value string_join_method(VM *vm, const Value *args)
+CruxValue string_join_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *sep = AS_CRUX_STRING(args[0]);
 	const ObjectArray *array = AS_CRUX_ARRAY(args[1]);
@@ -545,7 +545,7 @@ Value string_join_method(VM *vm, const Value *args)
  * arg2 -> char: String (The character to pad with)
  * Returns String
  */
-Value string_pad_left_method(VM *vm, const Value *args)
+CruxValue string_pad_left_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
 	uint32_t target_len = (uint32_t)AS_INT(args[1]);
@@ -577,7 +577,7 @@ Value string_pad_left_method(VM *vm, const Value *args)
  * arg2 -> char: String (The character to pad with)
  * Returns String
  */
-Value string_pad_right_method(VM *vm, const Value *args)
+CruxValue string_pad_right_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
 	uint32_t target_len = (uint32_t)AS_INT(args[1]);
@@ -608,7 +608,7 @@ Value string_pad_right_method(VM *vm, const Value *args)
  * arg1 -> target: String
  * Returns Int
  */
-Value string_count_method(VM *vm, const Value *args)
+CruxValue string_count_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
@@ -632,7 +632,7 @@ Value string_count_method(VM *vm, const Value *args)
  * arg0 -> string: String
  * Return: Bool
  */
-Value string_is_empty_method(VM *vm, const Value *args)
+CruxValue string_is_empty_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
@@ -644,7 +644,7 @@ Value string_is_empty_method(VM *vm, const Value *args)
  * arg0 -> string: String
  * Return: Bool
  */
-Value string_is_space_method(VM *vm, const Value *args)
+CruxValue string_is_space_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
@@ -661,7 +661,7 @@ Value string_is_space_method(VM *vm, const Value *args)
 	return BOOL_VAL(true);
 }
 
-Value string_is_al_num_method(VM *vm, const Value *args)
+CruxValue string_is_al_num_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
@@ -686,7 +686,7 @@ Value string_is_al_num_method(VM *vm, const Value *args)
  * arg2 -> replacement: String (The sequence to insert)
  * Returns Result<String>
  */
-Value string_replace_method(VM *vm, const Value *args)
+CruxValue string_replace_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *src = AS_CRUX_STRING(args[0]);
 	const ObjectString *target = AS_CRUX_STRING(args[1]);

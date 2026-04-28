@@ -268,8 +268,8 @@ typedef struct {
 
 typedef struct ObjectUpvalue {
 	CruxObject object;
-	Value *location;
-	Value closed;
+	CruxValue *location;
+	CruxValue closed;
 	ObjectUpvalue *next;
 } ObjectUpvalue;
 
@@ -282,7 +282,7 @@ typedef struct ObjectClosure {
 
 typedef struct {
 	CruxObject object;
-	Value *values;
+	CruxValue *values;
 	uint32_t size;
 	uint32_t capacity;
 } ObjectArray;
@@ -331,14 +331,14 @@ struct ObjectResult {
 	CruxObject object;
 	bool is_ok;
 	union {
-		Value value;
+		CruxValue value;
 		ObjectError *error;
 	} as;
 };
 
 typedef struct {
 	CruxObject object;
-	Value value;
+	CruxValue value;
 	bool is_some;
 } ObjectOption;
 
@@ -421,7 +421,7 @@ struct ObjectTypeRecord {
 	} as;
 };
 
-typedef Value (*CruxCallable)(VM *vm, const Value *args);
+typedef CruxValue (*CruxCallable)(CruxVM *vm, const CruxValue *args);
 
 typedef struct {
 	CruxObject object;
@@ -433,8 +433,8 @@ typedef struct {
 } ObjectNativeCallable;
 
 typedef struct {
-	Value key;
-	Value value;
+	CruxValue key;
+	CruxValue value;
 	bool is_occupied;
 } ObjectTableEntry;
 
@@ -457,7 +457,7 @@ typedef struct {
 struct ObjectStructInstance {
 	CruxObject object;
 	ObjectStruct *struct_type;
-	Value *fields;
+	CruxValue *fields;
 	uint16_t field_count;
 };
 
@@ -497,13 +497,13 @@ typedef enum {
 
 struct ObjectIterator {
 	CruxObject object;
-	Value iterable;
+	CruxValue iterable;
 	uint32_t index;
 };
 
 struct ObjectModuleRecord {
 	CruxObject object;
-	VM* owner;
+	CruxVM* owner;
 	ObjectString *path;
 	Table global_names;
 	Table publics;
@@ -511,10 +511,10 @@ struct ObjectModuleRecord {
 	ObjectClosure *module_closure;
 	ObjectModuleRecord *enclosing_module;
 	ObjectUpvalue *open_upvalues;
-	Value *globals;
-	Value *stack;
-	Value *stack_top;
-	Value *stack_limit;
+	CruxValue *globals;
+	CruxValue *stack;
+	CruxValue *stack_top;
+	CruxValue *stack_limit;
 	CallFrame *frames;
 	uint32_t global_count;
 	ModuleState state;
@@ -547,67 +547,67 @@ typedef struct {
 typedef struct {
 	CruxObject object;
 	uint32_t size;
-	Value *elements;
+	CruxValue *elements;
 } ObjectTuple;
 
-static bool is_object_type(const Value value, const ObjectType type)
+static bool is_object_type(const CruxValue value, const ObjectType type)
 {
 	return IS_CRUX_OBJECT(value) && object_get_type(AS_CRUX_OBJECT(value)) == type;
 }
 
-ObjectError *new_error(VM *vm, ObjectString *message, ErrorType type, bool is_panic);
-ObjectUpvalue *new_upvalue(VM *vm, Value *slot);
-ObjectClosure *new_closure(VM *vm, ObjectFunction *function);
-ObjectNativeCallable *new_native_callable(VM *vm, CruxCallable function, int arity, ObjectString *name,
+ObjectError *new_error(CruxVM *vm, ObjectString *message, ErrorType type, bool is_panic);
+ObjectUpvalue *new_upvalue(CruxVM *vm, CruxValue *slot);
+ObjectClosure *new_closure(CruxVM *vm, ObjectFunction *function);
+ObjectNativeCallable *new_native_callable(CruxVM *vm, CruxCallable function, int arity, ObjectString *name,
 										  ObjectTypeRecord **arg_types, ObjectTypeRecord *return_type);
-ObjectFunction *new_function(VM *vm);
-ObjectTable *new_object_table(VM *vm, int element_count);
-ObjectResult *new_ok_result(VM *vm, Value value);
-ObjectResult *new_error_result(VM *vm, ObjectError *error);
-ObjectArray *new_array(VM *vm, uint32_t element_count);
-ObjectString *take_string(VM *vm, char *chars, uint32_t length);
-ObjectString *copy_string(VM *vm, const char *chars, uint32_t length);
-ObjectString *to_string(VM *vm, Value value);
-void print_object(Value value, bool in_collection);
-void print_type_to(FILE *stream, Value value);
-int sprint_type_to(char *buffer, size_t size, Value value);
-void print_value_to(FILE *stream, Value value, bool inCollection);
+ObjectFunction *new_function(CruxVM *vm);
+ObjectTable *new_object_table(CruxVM *vm, int element_count);
+ObjectResult *new_ok_result(CruxVM *vm, CruxValue value);
+ObjectResult *new_error_result(CruxVM *vm, ObjectError *error);
+ObjectArray *new_array(CruxVM *vm, uint32_t element_count);
+ObjectString *take_string(CruxVM *vm, char *chars, uint32_t length);
+ObjectString *copy_string(CruxVM *vm, const char *chars, uint32_t length);
+ObjectString *to_string(CruxVM *vm, CruxValue value);
+void print_object(CruxValue value, bool in_collection);
+void print_type_to(FILE *stream, CruxValue value);
+int sprint_type_to(char *buffer, size_t size, CruxValue value);
+void print_value_to(FILE *stream, CruxValue value, bool inCollection);
 void print_error_type_to(FILE *stream, ErrorType type);
-void free_object_table(VM *vm, ObjectTable *table);
-void free_object_module_record(VM *vm, ObjectModuleRecord *record);
-bool object_table_set(VM *vm, ObjectTable *table, Value key, Value value);
-bool object_table_get(ObjectTableEntry *entries, uint32_t size, uint32_t capacity, Value key, Value *value);
-void mark_object_table(VM *vm, const ObjectTableEntry *entries, uint32_t capacity);
-bool ensure_capacity(VM *vm, ObjectArray *array, uint32_t capacity_needed);
-bool array_set(VM *vm, const ObjectArray *array, uint32_t index, Value value);
-bool array_add(VM *vm, ObjectArray *array, Value value, uint32_t index);
-bool array_add_back(VM *vm, ObjectArray *array, Value value);
-ObjectRandom *new_random(VM *vm);
-ObjectFile *new_object_file(VM *vm, ObjectString *path, ObjectString *mode);
-ObjectModuleRecord *new_object_module_record(VM *vm, ObjectString *path, bool is_repl, bool is_main);
-bool object_table_remove(ObjectTable *table, Value key);
-bool object_table_contains_key(ObjectTable *table, Value key);
-ObjectStruct *new_struct_type(VM *vm, ObjectString *name);
-ObjectStructInstance *new_struct_instance(VM *vm, ObjectStruct *struct_type, uint16_t field_count);
-ObjectVector *new_vector(VM *vm, uint32_t dimensions);
-void free_module_record(VM *vm, ObjectModuleRecord *module_record);
-ObjectComplex *new_complex_number(VM *vm, double real, double imaginary);
-ObjectMatrix *new_matrix(VM *vm, uint16_t row_dim, uint16_t col_dim);
-ObjectRange *new_range(VM *vm, uint64_t start, uint64_t end, uint64_t step);
-ObjectIterator *new_iterator(VM *vm, Value iterable);
-ObjectSet *new_set(VM *vm, uint32_t element_count);
-ObjectBuffer *new_buffer(VM *vm, uint32_t buffer_size);
-ObjectTuple *new_tuple(VM *vm, uint32_t size);
-void mark_object_type_table(VM *vm, ObjectTypeTable *table);
-ObjectTypeTable *new_type_table(VM *vm, int capacity);
-bool set_add_value(VM *vm, ObjectSet *set, Value value);
+void free_object_table(CruxVM *vm, ObjectTable *table);
+void free_object_module_record(CruxVM *vm, ObjectModuleRecord *record);
+bool object_table_set(CruxVM *vm, ObjectTable *table, CruxValue key, CruxValue value);
+bool object_table_get(ObjectTableEntry *entries, uint32_t size, uint32_t capacity, CruxValue key, CruxValue *value);
+void mark_object_table(CruxVM *vm, const ObjectTableEntry *entries, uint32_t capacity);
+bool ensure_capacity(CruxVM *vm, ObjectArray *array, uint32_t capacity_needed);
+bool array_set(CruxVM *vm, const ObjectArray *array, uint32_t index, CruxValue value);
+bool array_add(CruxVM *vm, ObjectArray *array, CruxValue value, uint32_t index);
+bool array_add_back(CruxVM *vm, ObjectArray *array, CruxValue value);
+ObjectRandom *new_random(CruxVM *vm);
+ObjectFile *new_object_file(CruxVM *vm, ObjectString *path, ObjectString *mode);
+ObjectModuleRecord *new_object_module_record(CruxVM *vm, ObjectString *path, bool is_repl, bool is_main);
+bool object_table_remove(ObjectTable *table, CruxValue key);
+bool object_table_contains_key(ObjectTable *table, CruxValue key);
+ObjectStruct *new_struct_type(CruxVM *vm, ObjectString *name);
+ObjectStructInstance *new_struct_instance(CruxVM *vm, ObjectStruct *struct_type, uint16_t field_count);
+ObjectVector *new_vector(CruxVM *vm, uint32_t dimensions);
+void free_module_record(CruxVM *vm, ObjectModuleRecord *module_record);
+ObjectComplex *new_complex_number(CruxVM *vm, double real, double imaginary);
+ObjectMatrix *new_matrix(CruxVM *vm, uint16_t row_dim, uint16_t col_dim);
+ObjectRange *new_range(CruxVM *vm, uint64_t start, uint64_t end, uint64_t step);
+ObjectIterator *new_iterator(CruxVM *vm, CruxValue iterable);
+ObjectSet *new_set(CruxVM *vm, uint32_t element_count);
+ObjectBuffer *new_buffer(CruxVM *vm, uint32_t buffer_size);
+ObjectTuple *new_tuple(CruxVM *vm, uint32_t size);
+void mark_object_type_table(CruxVM *vm, ObjectTypeTable *table);
+ObjectTypeTable *new_type_table(CruxVM *vm, int capacity);
+bool set_add_value(CruxVM *vm, ObjectSet *set, CruxValue value);
 bool validate_range_values(int32_t start, int32_t step, int32_t end, const char **error_message);
 
 uint32_t range_len(const ObjectRange *range);
 bool range_contains(const ObjectRange *range, int32_t value);
-bool iterate_next(ObjectModuleRecord *module_record, ObjectIterator *iterator, Value *result);
+bool iterate_next(ObjectModuleRecord *module_record, ObjectIterator *iterator, CruxValue *result);
 
-ObjectOption *new_option(VM *vm, Value value, bool is_some);
+ObjectOption *new_option(CruxVM *vm, CruxValue value, bool is_some);
 
 uint32_t hash_string(const char *key, const size_t length);
 #endif

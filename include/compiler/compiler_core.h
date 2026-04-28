@@ -142,7 +142,7 @@ typedef struct {
 } MatchCompiler;
 
 struct Compiler {
-	VM *owner;
+	CruxVM *owner;
 	Compiler *enclosing;
 	Compiler *enclosed;
 	ObjectFunction *function;
@@ -183,8 +183,8 @@ typedef struct {
 #define T_NIL new_type_rec(compiler->owner, NIL_TYPE)
 #define T_ERROR new_type_rec(compiler->owner, ERROR_TYPE)
 
-void mark_compiler_roots(VM *vm, const Compiler *compiler);
-ObjectFunction *compile(VM *vm, Compiler *compiler, Compiler *enclosing, char *source);
+void mark_compiler_roots(CruxVM *vm, const Compiler *compiler);
+ObjectFunction *compile(CruxVM *vm, Compiler *compiler, Compiler *enclosing, char *source);
 
 ObjectTypeRecord *parse_type_record(Compiler *compiler);
 void push_type_record(Compiler *compiler, ObjectTypeRecord *type_record);
@@ -219,9 +219,9 @@ void patch_jump(const Compiler *compiler, int offset);
 
 void emit_return(const Compiler *compiler);
 
-uint16_t make_constant(const Compiler *compiler, Value value);
+uint16_t make_constant(const Compiler *compiler, CruxValue value);
 
-void emit_constant(const Compiler *compiler, Value value);
+void emit_constant(const Compiler *compiler, CruxValue value);
 
 void push_loop_context(Compiler *compiler, LoopType type, int continueTarget);
 
@@ -365,7 +365,7 @@ TypeMask type_token_type_to_mask(CruxTokenType token_type);
 bool check_previous_op_code(const Compiler *compiler, OpCode op, int distance);
 bool set_previous_op_code(const Compiler *compiler, OpCode op, int distance);
 
-bool init_compiler(VM *vm, Compiler *compiler, Compiler *enclosing, const FunctionType type);
+bool init_compiler(CruxVM *vm, Compiler *compiler, Compiler *enclosing, const FunctionType type);
 
 ObjectFunction *end_compiler(Compiler *compiler);
 

@@ -15,7 +15,7 @@ static bool range_is_empty(const ObjectRange *range)
  * arg2 -> end of the range
  * Return: Result<Range>
  */
-Value new_range_function(VM *vm, const Value *args)
+CruxValue new_range_function(CruxVM *vm, const CruxValue *args)
 {
 	int32_t start = AS_INT(args[0]);
 	int32_t step = AS_INT(args[1]);
@@ -39,7 +39,7 @@ Value new_range_function(VM *vm, const Value *args)
  * arg1 -> value
  * Return: Bool
  */
-Value contains_range_method(VM *vm, const Value *args)
+CruxValue contains_range_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectRange *range = AS_CRUX_RANGE(args[0]);
@@ -52,7 +52,7 @@ Value contains_range_method(VM *vm, const Value *args)
  * arg0 -> range
  * Return: Array
  */
-Value to_array_range_method(VM *vm, const Value *args)
+CruxValue to_array_range_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectRange *range = AS_CRUX_RANGE(args[0]);
 	int32_t len = range_len(range);
@@ -77,7 +77,7 @@ Value to_array_range_method(VM *vm, const Value *args)
  * arg0 -> range
  * Return: Int
  */
-Value start_range_method(VM *vm, const Value *args)
+CruxValue start_range_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectRange *range = AS_CRUX_RANGE(args[0]);
@@ -89,7 +89,7 @@ Value start_range_method(VM *vm, const Value *args)
  * arg0 -> range
  * Return: Int
  */
-Value end_range_method(VM *vm, const Value *args)
+CruxValue end_range_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectRange *range = AS_CRUX_RANGE(args[0]);
@@ -101,7 +101,7 @@ Value end_range_method(VM *vm, const Value *args)
  * arg0 -> range
  * Return: Int
  */
-Value step_range_method(VM *vm, const Value *args)
+CruxValue step_range_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectRange *range = AS_CRUX_RANGE(args[0]);
@@ -113,7 +113,7 @@ Value step_range_method(VM *vm, const Value *args)
  * arg0 -> range
  * Return: Bool
  */
-Value is_empty_range_method(VM *vm, const Value *args)
+CruxValue is_empty_range_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectRange *range = AS_CRUX_RANGE(args[0]);
@@ -125,7 +125,7 @@ Value is_empty_range_method(VM *vm, const Value *args)
  * arg0 -> range
  * Return: Range
  */
-Value reversed_range_method(VM *vm, const Value *args)
+CruxValue reversed_range_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectRange *range = AS_CRUX_RANGE(args[0]);

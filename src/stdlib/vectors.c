@@ -138,7 +138,7 @@ static double vector_magnitude(const ObjectVector *vec)
  * arg1 -> components: Array
  * Returns Result<Vector>
  */
-Value new_vector_function(VM *vm, const Value *args)
+CruxValue new_vector_function(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[1]);
 
@@ -160,7 +160,7 @@ Value new_vector_function(VM *vm, const Value *args)
 	push(vm->current_module_record, OBJECT_VAL(vector));
 
 	double *components = VECTOR_COMPONENTS(vector);
-	const Value *array_values = array->values;
+	const CruxValue *array_values = array->values;
 
 	for (uint32_t i = 0; i < copy_count; i++) {
 		components[i] = TO_DOUBLE(array_values[i]);
@@ -179,7 +179,7 @@ Value new_vector_function(VM *vm, const Value *args)
  * Computes the dot product of two vectors (vectors must have the same
  * dimension) arg0 -> vector: Vector arg1 -> other: Vector Returns Result<Float>
  */
-Value vector_dot_method(VM *vm, const Value *args)
+CruxValue vector_dot_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectVector *vec1 = AS_CRUX_VECTOR(args[0]);
 	const ObjectVector *vec2 = AS_CRUX_VECTOR(args[1]);
@@ -200,7 +200,7 @@ Value vector_dot_method(VM *vm, const Value *args)
 	return OBJECT_VAL(new_ok_result(vm, FLOAT_VAL(result)));
 }
 
-Value vector_add_value(VM *vm, const ObjectVector *vec1, const ObjectVector *vec2)
+CruxValue vector_add_value(CruxVM *vm, const ObjectVector *vec1, const ObjectVector *vec2)
 {
 	if (vec1->dimensions != vec2->dimensions) {
 		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension for addition.", TYPE);
@@ -219,7 +219,7 @@ Value vector_add_value(VM *vm, const ObjectVector *vec1, const ObjectVector *vec
 	return OBJECT_VAL(res);
 }
 
-Value vector_subtract_value(VM *vm, const ObjectVector *vec1, const ObjectVector *vec2)
+CruxValue vector_subtract_value(CruxVM *vm, const ObjectVector *vec1, const ObjectVector *vec2)
 {
 	if (vec1->dimensions != vec2->dimensions) {
 		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension for subtraction.", TYPE);
@@ -238,7 +238,7 @@ Value vector_subtract_value(VM *vm, const ObjectVector *vec1, const ObjectVector
 	return OBJECT_VAL(res);
 }
 
-Value vector_scalar_multiply_value(VM *vm, const ObjectVector *vec, const double scalar)
+CruxValue vector_scalar_multiply_value(CruxVM *vm, const ObjectVector *vec, const double scalar)
 {
 	ObjectVector *result_vector = new_vector(vm, vec->dimensions);
 	push(vm->current_module_record, OBJECT_VAL(result_vector));
@@ -252,7 +252,7 @@ Value vector_scalar_multiply_value(VM *vm, const ObjectVector *vec, const double
 	return OBJECT_VAL(res);
 }
 
-Value vector_scalar_divide_value(VM *vm, const ObjectVector *vec, const double scalar)
+CruxValue vector_scalar_divide_value(CruxVM *vm, const ObjectVector *vec, const double scalar)
 {
 	if (IS_ZERO_SCALAR(scalar)) {
 		return MAKE_GC_SAFE_ERROR(vm, "Cannot divide by zero.", MATH);
@@ -270,7 +270,7 @@ Value vector_scalar_divide_value(VM *vm, const ObjectVector *vec, const double s
 	return OBJECT_VAL(res);
 }
 
-Value vector_component_divide_value(VM *vm, const ObjectVector *vec1, const ObjectVector *vec2)
+CruxValue vector_component_divide_value(CruxVM *vm, const ObjectVector *vec1, const ObjectVector *vec2)
 {
 	if (vec1->dimensions != vec2->dimensions) {
 		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension for division.", TYPE);
@@ -295,7 +295,7 @@ Value vector_component_divide_value(VM *vm, const ObjectVector *vec1, const Obje
 	return OBJECT_VAL(res);
 }
 
-Value vector_cross_value(VM *vm, const ObjectVector *vec1, const ObjectVector *vec2)
+CruxValue vector_cross_value(CruxVM *vm, const ObjectVector *vec1, const ObjectVector *vec2)
 {
 	if (vec1->dimensions != 3 || vec2->dimensions != 3) {
 		return MAKE_GC_SAFE_ERROR(vm, "cross product is only defined for 3-D vectors.", TYPE);
@@ -323,7 +323,7 @@ Value vector_cross_value(VM *vm, const ObjectVector *vec1, const ObjectVector *v
  * arg1 -> other: Vector
  * Returns Result<Vector>
  */
-Value vector_add_method(VM *vm, const Value *args)
+CruxValue vector_add_method(CruxVM *vm, const CruxValue *args)
 {
 	return vector_add_value(vm, AS_CRUX_VECTOR(args[0]), AS_CRUX_VECTOR(args[1]));
 }
@@ -334,7 +334,7 @@ Value vector_add_method(VM *vm, const Value *args)
  * arg1 -> other: Vector
  * Returns Result<Vector>
  */
-Value vector_subtract_method(VM *vm, const Value *args)
+CruxValue vector_subtract_method(CruxVM *vm, const CruxValue *args)
 {
 	return vector_subtract_value(vm, AS_CRUX_VECTOR(args[0]), AS_CRUX_VECTOR(args[1]));
 }
@@ -345,7 +345,7 @@ Value vector_subtract_method(VM *vm, const Value *args)
  * arg1 -> scalar: Float
  * Returns Result<Vector>
  */
-Value vector_multiply_method(VM *vm, const Value *args)
+CruxValue vector_multiply_method(CruxVM *vm, const CruxValue *args)
 {
 	return vector_scalar_multiply_value(vm, AS_CRUX_VECTOR(args[0]), TO_DOUBLE(args[1]));
 }
@@ -356,7 +356,7 @@ Value vector_multiply_method(VM *vm, const Value *args)
  * arg1 -> scalar: Float
  * Returns Result<Vector>
  */
-Value vector_divide_method(VM *vm, const Value *args)
+CruxValue vector_divide_method(CruxVM *vm, const CruxValue *args)
 {
 	return vector_scalar_divide_value(vm, AS_CRUX_VECTOR(args[0]), TO_DOUBLE(args[1]));
 }
@@ -366,7 +366,7 @@ Value vector_divide_method(VM *vm, const Value *args)
  * arg0 -> vector: Vector
  * Returns Float
  */
-Value vector_magnitude_method(VM *vm, const Value *args)
+CruxValue vector_magnitude_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectVector *vec = AS_CRUX_VECTOR(args[0]);
@@ -380,7 +380,7 @@ Value vector_magnitude_method(VM *vm, const Value *args)
  * arg0 -> vector: Vector
  * Returns Result<Vector>
  */
-Value vector_normalize_method(VM *vm, const Value *args)
+CruxValue vector_normalize_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectVector *vec = AS_CRUX_VECTOR(args[0]);
 
@@ -407,7 +407,7 @@ Value vector_normalize_method(VM *vm, const Value *args)
  * arg1 -> other: Vector
  * Returns Result<Float>
  */
-Value vector_distance_method(VM *vm, const Value *args)
+CruxValue vector_distance_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectVector *vec1 = AS_CRUX_VECTOR(args[0]);
 	const ObjectVector *vec2 = AS_CRUX_VECTOR(args[1]);
@@ -434,7 +434,7 @@ Value vector_distance_method(VM *vm, const Value *args)
  * arg1 -> other: Vector
  * Returns Result<Vector>
  */
-Value vector_cross_method(VM *vm, const Value *args)
+CruxValue vector_cross_method(CruxVM *vm, const CruxValue *args)
 {
 	return vector_cross_value(vm, AS_CRUX_VECTOR(args[0]), AS_CRUX_VECTOR(args[1]));
 }
@@ -445,7 +445,7 @@ Value vector_cross_method(VM *vm, const Value *args)
  * arg1 -> other: Vector
  * Returns Result<Float>
  */
-Value vector_angle_between_method(VM *vm, const Value *args)
+CruxValue vector_angle_between_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectVector *vec1 = AS_CRUX_VECTOR(args[0]);
 	const ObjectVector *vec2 = AS_CRUX_VECTOR(args[1]);
@@ -481,7 +481,7 @@ Value vector_angle_between_method(VM *vm, const Value *args)
  * arg2 -> t: Float (interpolation factor between 0 and 1)
  * Returns Result<Vector>
  */
-Value vector_lerp_method(VM *vm, const Value *args)
+CruxValue vector_lerp_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectVector *vec1 = AS_CRUX_VECTOR(args[0]);
 	const ObjectVector *vec2 = AS_CRUX_VECTOR(args[1]);
@@ -513,7 +513,7 @@ Value vector_lerp_method(VM *vm, const Value *args)
  * arg1 -> normal: Vector
  * Returns Result<Vector>
  */
-Value vector_reflect_method(VM *vm, const Value *args)
+CruxValue vector_reflect_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectVector *incident = AS_CRUX_VECTOR(args[0]);
 	const ObjectVector *normal = AS_CRUX_VECTOR(args[1]);
@@ -553,7 +553,7 @@ Value vector_reflect_method(VM *vm, const Value *args)
  * arg1 -> other: Vector
  * Returns Bool
  */
-Value vector_equals_method(VM *vm, const Value *args)
+CruxValue vector_equals_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectVector *vec1 = AS_CRUX_VECTOR(args[0]);
@@ -576,7 +576,7 @@ Value vector_equals_method(VM *vm, const Value *args)
  * arg0 -> vector: Vector
  * Returns Float
  */
-Value vector_x_method(VM *vm, const Value *args)
+CruxValue vector_x_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 
@@ -593,7 +593,7 @@ Value vector_x_method(VM *vm, const Value *args)
  * arg0 -> vector: Vector
  * Returns Float
  */
-Value vector_y_method(VM *vm, const Value *args)
+CruxValue vector_y_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 
@@ -610,7 +610,7 @@ Value vector_y_method(VM *vm, const Value *args)
  * arg0 -> vector: Vector
  * Returns Float
  */
-Value vector_z_method(VM *vm, const Value *args)
+CruxValue vector_z_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 
@@ -627,7 +627,7 @@ Value vector_z_method(VM *vm, const Value *args)
  * arg0 -> vector: Vector
  * Returns Float
  */
-Value vector_w_method(VM *vm, const Value *args)
+CruxValue vector_w_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 
@@ -644,7 +644,7 @@ Value vector_w_method(VM *vm, const Value *args)
  * arg0 -> vector: Vector
  * Returns Int
  */
-Value vector_dimension_method(VM *vm, const Value *args)
+CruxValue vector_dimension_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 

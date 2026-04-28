@@ -15,9 +15,9 @@
 
 #define FREE_ARRAY(vm, type, pointer, oldCount) reallocate(vm, pointer, sizeof(type) * (oldCount), 0)
 
-void *allocate_object_with_gc(VM *vm, size_t size);
+void *allocate_object_with_gc(CruxVM *vm, size_t size);
 
-CruxObject *allocate_pooled_object(VM *vm, size_t size, ObjectType type);
+CruxObject *allocate_pooled_object(CruxVM *vm, size_t size, ObjectType type);
 
 #define ALLOCATE_OBJECT(vm, type, objectType) (type *)allocate_pooled_object(vm, sizeof(type), objectType)
 
@@ -25,7 +25,7 @@ CruxObject *allocate_pooled_object(VM *vm, size_t size, ObjectType type);
  * @brief Reallocates a block of memory.
  *
  * This function acts as a wrapper around `realloc` and `free`, providing
- * garbage collection integration and debugging features. It updates the VM's
+ * garbage collection integration and debugging features. It updates the CruxVM's
  * `bytesAllocated` counter, potentially triggers garbage collection if
  * allocation exceeds the `nextGC` threshold, and handles allocation failures.
  *
@@ -41,14 +41,14 @@ CruxObject *allocate_pooled_object(VM *vm, size_t size, ObjectType type);
  * `newSize` is zero. Exits the program if allocation fails and `realloc`
  * returns `NULL` when `newSize` is not zero.
  */
-void *reallocate(VM *vm, void *pointer, size_t oldSize, size_t newSize);
+void *reallocate(CruxVM *vm, void *pointer, size_t oldSize, size_t newSize);
 
 /**
- * @brief Marks a Value as reachable during garbage collection.
+ * @brief Marks a CruxValue as reachable during garbage collection.
  * @param vm The virtual machine.
- * @param value The Value to mark.
+ * @param value The CruxValue to mark.
  */
-void mark_value(VM *vm, Value value);
+void mark_value(CruxVM *vm, CruxValue value);
 
 /**
  * @brief Performs a full garbage collection cycle.
@@ -62,20 +62,20 @@ void mark_value(VM *vm, Value value);
  *
  * @param vm The virtual machine.
  */
-void collect_garbage(VM *vm);
+void collect_garbage(CruxVM *vm);
 
 /**
- * @brief Frees all remaining objects in the VM's object list.
+ * @brief Frees all remaining objects in the CruxVM's object list.
  *
- * This function is called when the VM is shut down to free all objects that
+ * This function is called when the CruxVM is shut down to free all objects that
  * are still allocated. It iterates through the object list and frees each
  * object using `freeObject`. It also frees the gray stack.
  *
  * @param vm The virtual machine.
  */
-void free_objects(VM *vm, bool free_all);
+void free_objects(CruxVM *vm, bool free_all);
 
-void mark_object_internal(VM* vm, CruxObject* object);
+void mark_object_internal(CruxVM* vm, CruxObject* object);
 
 
 /**
@@ -89,7 +89,7 @@ void mark_object_internal(VM* vm, CruxObject* object);
  * @param object The object to mark. If `NULL`, the function returns
  * immediately.
  */
-static inline void mark_object(VM *vm, CruxObject *object)
+static inline void mark_object(CruxVM *vm, CruxObject *object)
 {
 	if (object == NULL || object_is_marked(object) || object_is_immortal(object))
 		return;

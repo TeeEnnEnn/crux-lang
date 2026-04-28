@@ -5,10 +5,10 @@
 /**
  * args: [Result]
  * Unwraps a result
- * Returns Value if Ok, otherwise returns an error value
+ * Returns CruxValue if Ok, otherwise returns an error value
  *  -> Any | Error
  */
-Value result_unwrap_method(VM *vm, const Value *args)
+CruxValue result_unwrap_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectResult *result = AS_CRUX_RESULT(args[0]);
@@ -23,7 +23,7 @@ Value result_unwrap_method(VM *vm, const Value *args)
  * Returns true if the result is Ok
  *  -> Bool
  */
-Value result_is_ok_method(VM *vm, const Value *args)
+CruxValue result_is_ok_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	return BOOL_VAL(AS_CRUX_RESULT(args[0])->is_ok);
@@ -34,7 +34,7 @@ Value result_is_ok_method(VM *vm, const Value *args)
  * Returns true if the result is Err
  *  -> Bool
  */
-Value result_is_err_method(VM *vm, const Value *args)
+CruxValue result_is_err_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	return BOOL_VAL(!AS_CRUX_RESULT(args[0])->is_ok);
@@ -45,7 +45,7 @@ Value result_is_err_method(VM *vm, const Value *args)
  * Returns the value if Ok, otherwise returns the default value
  *  -> Any
  */
-Value result_unwrap_or_method(VM *vm, const Value *args)
+CruxValue result_unwrap_or_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectResult *result = AS_CRUX_RESULT(args[0]);

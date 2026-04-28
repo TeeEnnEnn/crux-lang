@@ -11,7 +11,7 @@ typedef struct {
 
 /**
  * Displays a runtime error message with formatting and stack trace.
- * Jumps to VM destruction
+ * Jumps to CruxVM destruction
  *
  * NOTE!: Any code called after this will not execute
  */
@@ -22,7 +22,7 @@ void runtime_panic(ObjectModuleRecord *module_record,
  * Creates a formatted error message for type mismatches with type
  * information.
  */
-char *type_error_message(VM *vm, Value value, const char *expected_type);
+char *type_error_message(CruxVM *vm, CruxValue value, const char *expected_type);
 
 void print_error_line(int line, const char *source, int startCol, int length);
 

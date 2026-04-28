@@ -6,13 +6,13 @@
 #include "panic.h"
 #include "value.h"
 
-static void add_gc_stat(VM *vm, ObjectTable *table, const char *name, const Value value)
+static void add_gc_stat(CruxVM *vm, ObjectTable *table, const char *name, const CruxValue value)
 {
 	ObjectString *key = copy_string(vm, name, (uint32_t)strlen(name));
 	object_table_set(vm, table, OBJECT_VAL(key), value);
 }
 
-static size_t compute_next_gc_threshold(const VM *vm)
+static size_t compute_next_gc_threshold(const CruxVM *vm)
 {
 	const size_t growth_target = (size_t)((double)vm->bytes_allocated * vm->heap_growth_factor);
 	const size_t delta_target = vm->bytes_allocated + vm->min_gc_growth_delta;
@@ -28,7 +28,7 @@ static size_t compute_next_gc_threshold(const VM *vm)
  * Turns the garbage collector off
  * Returns Nil
  */
-Value gc_off_function(VM *vm, const Value *args)
+CruxValue gc_off_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	vm->gc_status = PAUSED;
@@ -39,7 +39,7 @@ Value gc_off_function(VM *vm, const Value *args)
  * Turns the garbage collector on
  * Returns Nil
  */
-Value gc_on_function(VM *vm, const Value *args)
+CruxValue gc_on_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	vm->gc_status = RUNNING;
@@ -51,7 +51,7 @@ Value gc_on_function(VM *vm, const Value *args)
  * arg0 -> growthFactor: Float | Int (Must be greater than 1.0)
  * Returns Result<Nil>
  */
-Value gc_set_heap_growth_function(VM *vm, const Value *args)
+CruxValue gc_set_heap_growth_function(CruxVM *vm, const CruxValue *args)
 {
 	double growth_factor = TO_DOUBLE(args[0]);
 	if (growth_factor <= 1.0) {
@@ -62,7 +62,7 @@ Value gc_set_heap_growth_function(VM *vm, const Value *args)
 	return OBJECT_VAL(new_ok_result(vm, NIL_VAL));
 }
 
-Value gc_set_min_heap_function(VM *vm, const Value *args)
+CruxValue gc_set_min_heap_function(CruxVM *vm, const CruxValue *args)
 {
 	const double min_heap = TO_DOUBLE(args[0]);
 	if (min_heap < 0.0) {
@@ -74,7 +74,7 @@ Value gc_set_min_heap_function(VM *vm, const Value *args)
 	return OBJECT_VAL(new_ok_result(vm, NIL_VAL));
 }
 
-Value gc_set_min_growth_function(VM *vm, const Value *args)
+CruxValue gc_set_min_growth_function(CruxVM *vm, const CruxValue *args)
 {
 	const double min_growth = TO_DOUBLE(args[0]);
 	if (min_growth < 0.0) {
@@ -90,7 +90,7 @@ Value gc_set_min_growth_function(VM *vm, const Value *args)
  * Collect garbage
  * Returns Nil
  */
-Value gc_collect_function(VM *vm, const Value *args)
+CruxValue gc_collect_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	collect_garbage(vm);
@@ -101,7 +101,7 @@ Value gc_collect_function(VM *vm, const Value *args)
  * Returns the number of bytes allocated
  * Returns Float
  */
-Value gc_heap_used_function(VM *vm, const Value *args)
+CruxValue gc_heap_used_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	return FLOAT_VAL((double)vm->bytes_allocated);
@@ -111,7 +111,7 @@ Value gc_heap_used_function(VM *vm, const Value *args)
  * Returns the current GC heap capacity
  * Returns Float
  */
-Value gc_heap_capacity_function(VM *vm, const Value *args)
+CruxValue gc_heap_capacity_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	return FLOAT_VAL((double)vm->next_gc);
@@ -121,13 +121,13 @@ Value gc_heap_capacity_function(VM *vm, const Value *args)
  * Returns whether the GC is currently on
  * Returns Bool
  */
-Value gc_is_on_function(VM *vm, const Value *args)
+CruxValue gc_is_on_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	return BOOL_VAL(vm->gc_status == RUNNING);
 }
 
-Value gc_stats_function(VM *vm, const Value *args)
+CruxValue gc_stats_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 

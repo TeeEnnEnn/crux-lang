@@ -182,7 +182,7 @@ const ObjectNativeCallable *lookup_stdlib_method(const Compiler *compiler, const
 												 const Token *name_token)
 {
 	const ObjectString *name = copy_string(compiler->owner, name_token->start, name_token->length);
-	Value value;
+	CruxValue value;
 	if (!table_get(type_table, name, &value))
 		return NULL;
 	if (!IS_CRUX_NATIVE_CALLABLE(value))
@@ -264,7 +264,7 @@ void emit_return(const Compiler *compiler)
 	emit_word(compiler, OP_NIL_RETURN);
 }
 
-uint16_t make_constant(const Compiler *compiler, const Value value)
+uint16_t make_constant(const Compiler *compiler, const CruxValue value)
 {
 	const int constant = add_constant(compiler->owner, current_chunk(compiler), value);
 	if (constant >= UINT16_MAX) {
@@ -274,7 +274,7 @@ uint16_t make_constant(const Compiler *compiler, const Value value)
 	return (uint16_t)constant;
 }
 
-void emit_constant(const Compiler *compiler, const Value value)
+void emit_constant(const Compiler *compiler, const CruxValue value)
 {
 	const uint16_t constant = make_constant(compiler, value);
 	if (constant >= UINT16_MAX) {
@@ -729,7 +729,7 @@ bool resolve_assignment_target(Compiler *compiler, const Token name, uint16_t *s
 			type_table_get(comp->type_table, name_str, target_type);
 		}
 		if (global_index == -1) {
-			Value index_value;
+			CruxValue index_value;
 			if (table_get(&comp->globals, name_str, &index_value)) {
 				global_index = AS_INT(index_value);
 			}
@@ -813,7 +813,7 @@ ObjectTypeRecord *matrix_multiply_result_type(Compiler *compiler, const ObjectTy
 
 ObjectModuleRecord *compile_module_statically(Compiler *compiler, ObjectString *path)
 {
-	Value cached_val;
+	CruxValue cached_val;
 	if (table_get(&compiler->owner->module_cache, path, &cached_val)) {
 		ObjectModuleRecord *mod = AS_CRUX_MODULE_RECORD(cached_val);
 		if (mod->state == STATE_LOADING) {

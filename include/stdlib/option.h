@@ -3,9 +3,9 @@
 
 #include "value.h"
 
-Value option_is_some_method(VM *vm, const Value *args);
-Value option_is_none_method(VM *vm, const Value *args);
-Value option_unwrap_method(VM *vm, const Value *args);
-Value option_unwrap_or_method(VM *vm, const Value *args);
+CruxValue option_is_some_method(CruxVM *vm, const CruxValue *args);
+CruxValue option_is_none_method(CruxVM *vm, const CruxValue *args);
+CruxValue option_unwrap_method(CruxVM *vm, const CruxValue *args);
+CruxValue option_unwrap_or_method(CruxVM *vm, const CruxValue *args);
 
 #endif // CRUX_STDLIB_OPTION_H

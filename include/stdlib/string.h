@@ -3,35 +3,35 @@
 
 #include "object.h"
 
-Value string_byte_length_method(VM *vm, const Value *args);
-Value string_first_method(VM *vm, const Value *args);
-Value string_last_method(VM *vm, const Value *args);
-Value string_get_method(VM *vm, const Value *args);
-Value string_is_upper_method(VM *vm, const Value *args);
-Value string_is_lower_method(VM *vm, const Value *args);
-Value string_strip_method(VM *vm, const Value *args);
-Value string_substring_method(VM *vm, const Value *args);
-Value string_replace_method(VM *vm, const Value *args);
-Value string_split_method(VM *vm, const Value *args);
-Value string_contains_method(VM *vm, const Value *args);
-Value string_starts_with_method(VM *vm, const Value *args);
-Value string_ends_with_method(VM *vm, const Value *args);
-Value string_concat_method(VM *vm, const Value *args);
+CruxValue string_byte_length_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_first_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_last_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_get_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_is_upper_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_is_lower_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_strip_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_substring_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_replace_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_split_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_contains_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_starts_with_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_ends_with_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_concat_method(CruxVM *vm, const CruxValue *args);
 
-Value string_to_upper_method(VM *vm, const Value *args);
-Value string_to_lower_method(VM *vm, const Value *args);
+CruxValue string_to_upper_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_to_lower_method(CruxVM *vm, const CruxValue *args);
 
-Value string_is_al_num_method(VM *vm, const Value *args);
-Value string_is_alpha_method(VM *vm, const Value *args);
-Value string_is_digit_method(VM *vm, const Value *args);
-Value string_reverse_method(VM *vm, const Value *args);
-Value string_find_method(VM *vm, const Value *args);
-Value string_repeat_method(VM *vm, const Value *args);
-Value string_join_method(VM *vm, const Value *args);
+CruxValue string_is_al_num_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_is_alpha_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_is_digit_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_reverse_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_find_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_repeat_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_join_method(CruxVM *vm, const CruxValue *args);
 
-Value string_pad_left_method(VM *vm, const Value *args);
-Value string_pad_right_method(VM *vm, const Value *args);
-Value string_count_method(VM *vm, const Value *args);
-Value string_is_empty_method(VM *vm, const Value *args);
-Value string_is_space_method(VM *vm, const Value *args);
+CruxValue string_pad_left_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_pad_right_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_count_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_is_empty_method(CruxVM *vm, const CruxValue *args);
+CruxValue string_is_space_method(CruxVM *vm, const CruxValue *args);
 #endif // STRING_H

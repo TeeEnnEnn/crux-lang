@@ -13,10 +13,10 @@
  * arg1 -> value: Any
  * Returns Result<Nil>
  */
-Value array_push_method(VM *vm, const Value *args)
+CruxValue array_push_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectArray *array = AS_CRUX_ARRAY(args[0]);
-	const Value to_add = args[1];
+	const CruxValue to_add = args[1];
 
 	if (!array_add(vm, array, to_add, array->size)) {
 		return MAKE_GC_SAFE_ERROR(vm, "Failed to add element to array.", RUNTIME);
@@ -30,7 +30,7 @@ Value array_push_method(VM *vm, const Value *args)
  * arg0 -> array: Array
  * Returns Result<Any>
  */
-Value array_pop_method(VM *vm, const Value *args)
+CruxValue array_pop_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 
@@ -38,7 +38,7 @@ Value array_pop_method(VM *vm, const Value *args)
 		return MAKE_GC_SAFE_ERROR(vm, "Cannot remove a value from an empty array.", BOUNDS);
 	}
 
-	const Value popped = array->values[array->size - 1];
+	const CruxValue popped = array->values[array->size - 1];
 	array->values[array->size - 1] = NIL_VAL;
 	array->size--;
 
@@ -52,11 +52,11 @@ Value array_pop_method(VM *vm, const Value *args)
  * arg2 -> value: Any
  * Returns Result<Nil>
  */
-Value array_insert_method(VM *vm, const Value *args)
+CruxValue array_insert_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 
-	const Value toInsert = args[2];
+	const CruxValue toInsert = args[2];
 	const uint32_t insert_at = AS_INT(args[1]);
 
 	if (insert_at > array->size) {
@@ -75,7 +75,7 @@ Value array_insert_method(VM *vm, const Value *args)
  * arg1 -> index: Int
  * Returns Result<Any>
  */
-Value array_remove_at_method(VM *vm, const Value *args)
+CruxValue array_remove_at_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 
@@ -85,7 +85,7 @@ Value array_remove_at_method(VM *vm, const Value *args)
 		return MAKE_GC_SAFE_ERROR(vm, "<index> is out of bounds.", BOUNDS);
 	}
 
-	const Value removed_element = array->values[removeAt];
+	const CruxValue removed_element = array->values[removeAt];
 
 	for (uint32_t i = removeAt; i < array->size - 1; i++) {
 		array->values[i] = array->values[i + 1];
@@ -101,7 +101,7 @@ Value array_remove_at_method(VM *vm, const Value *args)
  * arg1 -> other: Array
  * Returns Result<Array>
  */
-Value array_concat_method(VM *vm, const Value *args)
+CruxValue array_concat_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 	const ObjectArray *targetArray = AS_CRUX_ARRAY(args[1]);
@@ -132,7 +132,7 @@ Value array_concat_method(VM *vm, const Value *args)
  * arg2 -> end: Int
  * Returns Result<Array>
  */
-Value array_slice_method(VM *vm, const Value *args)
+CruxValue array_slice_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 	const uint32_t start_index = (uint32_t)AS_INT(args[1]);
@@ -169,11 +169,11 @@ Value array_slice_method(VM *vm, const Value *args)
  * arg0 -> array: Array
  * Returns Result<Nil>
  */
-Value array_reverse_method(VM *vm, const Value *args)
+CruxValue array_reverse_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 
-	Value *values = ALLOCATE(vm, Value, array->size);
+	CruxValue *values = ALLOCATE(vm, CruxValue, array->size);
 
 	if (values == NULL) {
 		return MAKE_GC_SAFE_ERROR(vm, "Failed to allocate memory when reversing array.", MEMORY);
@@ -187,7 +187,7 @@ Value array_reverse_method(VM *vm, const Value *args)
 		array->values[i] = values[array->size - 1 - i];
 	}
 
-	FREE(vm, Value, values);
+	FREE(vm, CruxValue, values);
 
 	return OBJECT_VAL(new_ok_result(vm, NIL_VAL));
 }
@@ -198,17 +198,17 @@ Value array_reverse_method(VM *vm, const Value *args)
  * arg1 -> value: Any
  * Returns Result<Int>
  */
-Value array_index_of_method(VM *vm, const Value *args)
+CruxValue array_index_of_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
-	const Value target = args[1];
+	const CruxValue target = args[1];
 
 	for (uint32_t i = 0; i < array->size; i++) {
 		if (values_equal(target, array->values[i])) {
 			return OBJECT_VAL(new_ok_result(vm, INT_VAL(i)));
 		}
 	}
-	return MAKE_GC_SAFE_ERROR(vm, "Value could not be found in the array.", VALUE);
+	return MAKE_GC_SAFE_ERROR(vm, "CruxValue could not be found in the array.", VALUE);
 }
 
 /**
@@ -217,11 +217,11 @@ Value array_index_of_method(VM *vm, const Value *args)
  * arg1 -> value: Any
  * Returns Bool
  */
-Value array_contains_method(VM *vm, const Value *args)
+CruxValue array_contains_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
-	const Value target = args[1];
+	const CruxValue target = args[1];
 
 	for (uint32_t i = 0; i < array->size; i++) {
 		if (values_equal(target, array->values[i])) {
@@ -236,7 +236,7 @@ Value array_contains_method(VM *vm, const Value *args)
  * arg0 -> array: Array
  * Returns Nil
  */
-Value array_clear_method(VM *vm, const Value *args)
+CruxValue array_clear_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	(void)vm;
@@ -256,7 +256,7 @@ Value array_clear_method(VM *vm, const Value *args)
  * arg1 -> other: Array
  * Returns Bool
  */
-Value arrayEqualsMethod(VM *vm, const Value *args)
+CruxValue arrayEqualsMethod(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
@@ -281,18 +281,18 @@ Value arrayEqualsMethod(VM *vm, const Value *args)
  * arg1 -> func: Function (takes 1 argument)
  * Returns Result<Array>
  */
-Value array_map_method(VM *vm, const Value *args)
+CruxValue array_map_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 	ObjectModuleRecord *currentModuleRecord = vm->current_module_record;
 
-	const Value callable = args[1];
+	const CruxValue callable = args[1];
 
 	ObjectArray *resultArray = new_array(vm, array->size);
 	push(currentModuleRecord, OBJECT_VAL(resultArray));
 
 	for (uint32_t i = 0; i < array->size; i++) {
-		const Value arrayValue = array->values[i];
+		const CruxValue arrayValue = array->values[i];
 		push(currentModuleRecord, callable);
 		push(currentModuleRecord, arrayValue);
 		InterpretResult res;
@@ -325,19 +325,19 @@ Value array_map_method(VM *vm, const Value *args)
  * arg1 -> func: Function (takes 1 argument, returns Bool)
  * Returns Result<Array>
  */
-Value array_filter_method(VM *vm, const Value *args)
+CruxValue array_filter_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectModuleRecord *currentModuleRecord = vm->current_module_record;
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 
-	const Value callable = args[1];
+	const CruxValue callable = args[1];
 
 	ObjectArray *resultArray = new_array(vm, array->size);
 	push(currentModuleRecord, OBJECT_VAL(resultArray));
 
 	uint32_t addCount = 0;
 	for (uint32_t i = 0; i < array->size; i++) {
-		const Value arrayValue = array->values[i];
+		const CruxValue arrayValue = array->values[i];
 		push(currentModuleRecord, callable);
 		push(currentModuleRecord, arrayValue);
 		InterpretResult res;
@@ -373,17 +373,17 @@ Value array_filter_method(VM *vm, const Value *args)
  * arg2 -> initial: Any
  * Returns Result<Any>
  */
-Value array_reduce_method(VM *vm, const Value *args)
+CruxValue array_reduce_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 	ObjectModuleRecord *currentModuleRecord = vm->current_module_record;
 
-	const Value callable = args[1];
+	const CruxValue callable = args[1];
 
-	Value accumulator = args[2];
+	CruxValue accumulator = args[2];
 
 	for (uint32_t i = 0; i < array->size; i++) {
-		const Value arrayValue = array->values[i];
+		const CruxValue arrayValue = array->values[i];
 
 		push(currentModuleRecord, callable);
 		push(currentModuleRecord, arrayValue);
@@ -415,7 +415,7 @@ Value array_reduce_method(VM *vm, const Value *args)
 	return OBJECT_VAL(new_ok_result(vm, accumulator));
 }
 
-static int compare_values(const Value a, const Value b)
+static int compare_values(const CruxValue a, const CruxValue b)
 {
 	if (IS_INT(a) && IS_INT(b)) {
 		const int64_t aVal = AS_INT(a);
@@ -465,7 +465,7 @@ static bool all_elements_sortable(const ObjectArray *array)
 	bool hasInt = false, hasFloat = false, hasString = false;
 
 	for (uint32_t i = 0; i < array->size; i++) {
-		const Value val = array->values[i];
+		const CruxValue val = array->values[i];
 		if (IS_INT(val)) {
 			hasInt = true;
 		} else if (IS_FLOAT(val)) {
@@ -484,26 +484,26 @@ static bool all_elements_sortable(const ObjectArray *array)
 	return true;
 }
 
-static int partition(Value *arr, const int low, const int high)
+static int partition(CruxValue *arr, const int low, const int high)
 {
-	const Value pivot = arr[high];
+	const CruxValue pivot = arr[high];
 	int i = (low - 1);
 
 	for (int j = low; j <= high - 1; j++) {
 		if (compare_values(arr[j], pivot) <= 0) {
 			i++;
-			const Value temp = arr[i];
+			const CruxValue temp = arr[i];
 			arr[i] = arr[j];
 			arr[j] = temp;
 		}
 	}
-	const Value temp = arr[i + 1];
+	const CruxValue temp = arr[i + 1];
 	arr[i + 1] = arr[high];
 	arr[high] = temp;
 	return (i + 1);
 }
 
-static void quick_sort(Value *arr, const int low, const int high)
+static void quick_sort(CruxValue *arr, const int low, const int high)
 {
 	if (low < high) {
 		const int pi = partition(arr, low, high);
@@ -517,7 +517,7 @@ static void quick_sort(Value *arr, const int low, const int high)
  * arg0 -> array: Array
  * Returns Result<Array>
  */
-Value array_sort_method(VM *vm, const Value *args)
+CruxValue array_sort_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 
@@ -551,7 +551,7 @@ Value array_sort_method(VM *vm, const Value *args)
  * arg1 -> separator: String
  * Returns Result<String>
  */
-Value array_join_method(VM *vm, const Value *args)
+CruxValue array_join_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 	const ObjectString *separator = AS_CRUX_STRING(args[1]);

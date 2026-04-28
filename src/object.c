@@ -29,7 +29,7 @@
  * @return A pointer to the newly allocated and initialized Object.
  */
 
-CruxObject *allocate_pooled_object(VM *vm, const size_t size, const ObjectType type)
+CruxObject *allocate_pooled_object(CruxVM *vm, const size_t size, const ObjectType type)
 {
 	CruxObject *object = allocate_object_with_gc(vm, size);
 	object_init(object, vm->objects, type, false, false);
@@ -69,13 +69,13 @@ static uint32_t calculateCollectionCapacity(uint32_t n)
 }
 
 /**
- * @brief Generates a hash code for a Value.
+ * @brief Generates a hash code for a CruxValue.
  *
- * @param value The Value to hash.
+ * @param value The CruxValue to hash.
  *
- * @return A 32-bit hash code for the Value.
+ * @return A 32-bit hash code for the CruxValue.
  */
-static uint32_t hashValue(const Value value)
+static uint32_t hashValue(const CruxValue value)
 {
 	if (IS_CRUX_STRING(value)) {
 		return AS_CRUX_STRING(value)->hash;
@@ -97,7 +97,7 @@ static uint32_t hashValue(const Value value)
 	return 0u;
 }
 
-int sprint_type_to(char *buffer, size_t size, const Value value)
+int sprint_type_to(char *buffer, size_t size, const CruxValue value)
 {
 	if (size == 0)
 		return 0;
@@ -249,14 +249,14 @@ int sprint_type_to(char *buffer, size_t size, const Value value)
 	return written;
 }
 
-void print_type_to(FILE *stream, const Value value)
+void print_type_to(FILE *stream, const CruxValue value)
 {
 	char buffer[256];
 	sprint_type_to(buffer, sizeof(buffer), value);
 	fprintf(stream, "%s", buffer);
 }
 
-ObjectUpvalue *new_upvalue(VM *vm, Value *slot)
+ObjectUpvalue *new_upvalue(CruxVM *vm, CruxValue *slot)
 {
 	ObjectUpvalue *upvalue = ALLOCATE_OBJECT(vm, ObjectUpvalue, OBJECT_UPVALUE);
 	upvalue->location = slot;
@@ -265,7 +265,7 @@ ObjectUpvalue *new_upvalue(VM *vm, Value *slot)
 	return upvalue;
 }
 
-ObjectClosure *new_closure(VM *vm, ObjectFunction *function)
+ObjectClosure *new_closure(CruxVM *vm, ObjectFunction *function)
 {
 	push(vm->current_module_record, OBJECT_VAL(function));
 	ObjectUpvalue **upvalues = ALLOCATE(vm, ObjectUpvalue *, function->upvalue_count);
@@ -285,7 +285,7 @@ ObjectClosure *new_closure(VM *vm, ObjectFunction *function)
 
 /**
  * @brief Allocates a new string object. calculates and stores the
- * string's hash value and interns the string in the VM's string table.
+ * string's hash value and interns the string in the CruxVM's string table.
  *
  * @param vm The virtual machine.
  * @param chars The character array for the string. This memory is assumed to be
@@ -295,7 +295,7 @@ ObjectClosure *new_closure(VM *vm, ObjectFunction *function)
  *
  * @return A pointer to the newly created and interned ObjectString.
  */
-static ObjectString *allocate_string(VM *vm, utf8_int8_t *chars, const uint32_t byte_length, const uint32_t hash)
+static ObjectString *allocate_string(CruxVM *vm, utf8_int8_t *chars, const uint32_t byte_length, const uint32_t hash)
 {
 	ObjectString *string = ALLOCATE_OBJECT(vm, ObjectString, OBJECT_STRING);
 	string->byte_length = byte_length;
@@ -333,7 +333,7 @@ uint32_t hash_string(const char *key, const size_t length)
 	return hash;
 }
 
-ObjectString *copy_string(VM *vm, const char *chars, const uint32_t length)
+ObjectString *copy_string(CruxVM *vm, const char *chars, const uint32_t length)
 {
 	const uint32_t hash = hash_string(chars, length);
 
@@ -447,7 +447,7 @@ static void print_function_to(FILE *stream, const ObjectFunction *function)
 	fprintf(stream, "<fn %s>", function->name->chars);
 }
 
-static void print_array_to(FILE *stream, const Value *values, const uint32_t size)
+static void print_array_to(FILE *stream, const CruxValue *values, const uint32_t size)
 {
 	fprintf(stream, "[");
 	for (uint32_t i = 0; i < size; i++) {
@@ -527,7 +527,7 @@ static void print_result_to(FILE *stream, const ObjectResult *result)
 	}
 }
 
-void print_object_to(FILE *stream, const Value value, const bool in_collection)
+void print_object_to(FILE *stream, const CruxValue value, const bool in_collection)
 {
 	switch (OBJECT_TYPE(value)) {
 	case OBJECT_STRING: {
@@ -701,7 +701,7 @@ void print_object_to(FILE *stream, const Value value, const bool in_collection)
 	}
 }
 
-void print_value_to(FILE *stream, const Value value, const bool inCollection)
+void print_value_to(FILE *stream, const CruxValue value, const bool inCollection)
 {
 	if (IS_BOOL(value)) {
 		fprintf(stream, AS_BOOL(value) ? "true" : "false");
@@ -716,17 +716,17 @@ void print_value_to(FILE *stream, const Value value, const bool inCollection)
 	}
 }
 
-void print_value(const Value value, const bool inCollection)
+void print_value(const CruxValue value, const bool inCollection)
 {
 	print_value_to(stdout, value, inCollection);
 }
 
-void print_object(const Value value, const bool in_collection)
+void print_object(const CruxValue value, const bool in_collection)
 {
 	print_object_to(stdout, value, in_collection);
 }
 
-ObjectString *take_string(VM *vm, char *chars, const uint32_t length)
+ObjectString *take_string(CruxVM *vm, char *chars, const uint32_t length)
 {
 	const uint32_t hash = hash_string(chars, length);
 
@@ -740,7 +740,7 @@ ObjectString *take_string(VM *vm, char *chars, const uint32_t length)
 	return allocate_string(vm, chars, length, hash);
 }
 
-ObjectString *to_string(VM *vm, const Value value)
+ObjectString *to_string(CruxVM *vm, const CruxValue value)
 {
 	if (!IS_CRUX_OBJECT(value)) {
 		char buffer[32];
@@ -947,7 +947,7 @@ ObjectString *to_string(VM *vm, const Value value)
 	}
 }
 
-ObjectFunction *new_function(VM *vm)
+ObjectFunction *new_function(CruxVM *vm)
 {
 	ObjectFunction *function = ALLOCATE_OBJECT(vm, ObjectFunction, OBJECT_FUNCTION);
 	function->arity = 0;
@@ -969,7 +969,7 @@ ObjectFunction *new_function(VM *vm)
  * @param return_type The type of the function's returned value
  * @return The GC owned object
  */
-ObjectNativeCallable *new_native_callable(VM *vm, const CruxCallable function, const int arity, ObjectString *name,
+ObjectNativeCallable *new_native_callable(CruxVM *vm, const CruxCallable function, const int arity, ObjectString *name,
 										  ObjectTypeRecord **arg_types, ObjectTypeRecord *return_type)
 {
 	push(vm->current_module_record, OBJECT_VAL(name));
@@ -987,7 +987,7 @@ ObjectNativeCallable *new_native_callable(VM *vm, const CruxCallable function, c
 	return native;
 }
 
-ObjectTable *new_object_table(VM *vm, const int element_count)
+ObjectTable *new_object_table(CruxVM *vm, const int element_count)
 {
 	ObjectTable *table = ALLOCATE_OBJECT(vm, ObjectTable, OBJECT_TABLE);
 	push(vm->current_module_record, OBJECT_VAL(table));
@@ -1005,7 +1005,7 @@ ObjectTable *new_object_table(VM *vm, const int element_count)
 	return table;
 }
 
-void free_object_table(VM *vm, ObjectTable *table)
+void free_object_table(CruxVM *vm, ObjectTable *table)
 {
 	FREE_ARRAY(vm, ObjectTableEntry, table->entries, table->capacity);
 	table->entries = NULL;
@@ -1013,7 +1013,7 @@ void free_object_table(VM *vm, ObjectTable *table)
 	table->size = 0;
 }
 
-ObjectFile *new_object_file(VM *vm, ObjectString *path, ObjectString *mode)
+ObjectFile *new_object_file(CruxVM *vm, ObjectString *path, ObjectString *mode)
 {
 	// TODO: Make this open files in non existent directories
 	push(vm->current_module_record, OBJECT_VAL(path));
@@ -1044,12 +1044,12 @@ ObjectFile *new_object_file(VM *vm, ObjectString *path, ObjectString *mode)
  *
  * @param entries The array of ObjectTableEntry.
  * @param capacity The capacity of the table's entry array.
- * @param key The key Value to search for.
+ * @param key The key CruxValue to search for.
  *
  * @return A pointer to the ObjectTableEntry for the key, or a pointer to an
  * empty entry (possibly a tombstone) if the key is not found.
  */
-static ObjectTableEntry *find_entry(ObjectTableEntry *entries, const uint16_t capacity, const Value key)
+static ObjectTableEntry *find_entry(ObjectTableEntry *entries, const uint16_t capacity, const CruxValue key)
 {
 	const uint32_t hash = hashValue(key);
 	uint32_t index = hash & (capacity - 1);
@@ -1081,7 +1081,7 @@ static ObjectTableEntry *find_entry(ObjectTableEntry *entries, const uint16_t ca
  * @return true if the capacity adjustment was successful, false otherwise
  * (e.g., memory allocation failure).
  */
-static bool adjust_capacity(VM *vm, ObjectTable *table, const int capacity)
+static bool adjust_capacity(CruxVM *vm, ObjectTable *table, const int capacity)
 {
 	push(vm->current_module_record, OBJECT_VAL(table));
 	ObjectTableEntry *entries = ALLOCATE(vm, ObjectTableEntry, capacity);
@@ -1118,7 +1118,7 @@ static bool adjust_capacity(VM *vm, ObjectTable *table, const int capacity)
 	return true;
 }
 
-bool object_table_set(VM *vm, ObjectTable *table, const Value key, const Value value)
+bool object_table_set(CruxVM *vm, ObjectTable *table, const CruxValue key, const CruxValue value)
 {
 	if (table->size + 1 > table->capacity * TABLE_MAX_LOAD) {
 		const int capacity = GROW_CAPACITY(table->capacity);
@@ -1146,7 +1146,7 @@ bool object_table_set(VM *vm, ObjectTable *table, const Value key, const Value v
 	return true;
 }
 
-bool object_table_remove(ObjectTable *table, const Value key)
+bool object_table_remove(ObjectTable *table, const CruxValue key)
 {
 	if (!table) {
 		return false;
@@ -1162,7 +1162,7 @@ bool object_table_remove(ObjectTable *table, const Value key)
 	return true;
 }
 
-bool object_table_contains_key(ObjectTable *table, const Value key)
+bool object_table_contains_key(ObjectTable *table, const CruxValue key)
 {
 	if (!table)
 		return false;
@@ -1173,7 +1173,7 @@ bool object_table_contains_key(ObjectTable *table, const Value key)
 	return entry->is_occupied;
 }
 
-bool entriesContainsKey(ObjectTableEntry *entries, const Value key, const uint32_t capacity)
+bool entriesContainsKey(ObjectTableEntry *entries, const CruxValue key, const uint32_t capacity)
 {
 	if (!entries)
 		return false;
@@ -1181,8 +1181,8 @@ bool entriesContainsKey(ObjectTableEntry *entries, const Value key, const uint32
 	return entry->is_occupied;
 }
 
-bool object_table_get(ObjectTableEntry *entries, const uint32_t size, const uint32_t capacity, const Value key,
-					  Value *value)
+bool object_table_get(ObjectTableEntry *entries, const uint32_t size, const uint32_t capacity, const CruxValue key,
+					  CruxValue *value)
 {
 	if (size == 0) {
 		return false;
@@ -1196,13 +1196,13 @@ bool object_table_get(ObjectTableEntry *entries, const uint32_t size, const uint
 	return true;
 }
 
-ObjectArray *new_array(VM *vm, const uint32_t element_count)
+ObjectArray *new_array(CruxVM *vm, const uint32_t element_count)
 {
 	ObjectArray *array = ALLOCATE_OBJECT(vm, ObjectArray, OBJECT_ARRAY);
 	push(vm->current_module_record, OBJECT_VAL(array));
 	array->capacity = calculateCollectionCapacity(element_count);
 	array->size = 0;
-	array->values = ALLOCATE(vm, Value, array->capacity);
+	array->values = ALLOCATE(vm, CruxValue, array->capacity);
 	for (uint32_t i = 0; i < array->capacity; i++) {
 		array->values[i] = NIL_VAL;
 	}
@@ -1210,7 +1210,7 @@ ObjectArray *new_array(VM *vm, const uint32_t element_count)
 	return array;
 }
 
-bool ensure_capacity(VM *vm, ObjectArray *array, const uint32_t capacity_needed)
+bool ensure_capacity(CruxVM *vm, ObjectArray *array, const uint32_t capacity_needed)
 {
 	if (capacity_needed <= array->capacity) {
 		return true;
@@ -1223,7 +1223,7 @@ bool ensure_capacity(VM *vm, ObjectArray *array, const uint32_t capacity_needed)
 		newCapacity *= 2;
 	}
 	push(vm->current_module_record, OBJECT_VAL(array));
-	Value *newArray = GROW_ARRAY(vm, Value, array->values, array->capacity, newCapacity);
+	CruxValue *newArray = GROW_ARRAY(vm, CruxValue, array->values, array->capacity, newCapacity);
 	pop(vm->current_module_record);
 	if (newArray == NULL) {
 		return false;
@@ -1236,7 +1236,7 @@ bool ensure_capacity(VM *vm, ObjectArray *array, const uint32_t capacity_needed)
 	return true;
 }
 
-bool array_set(VM *vm, const ObjectArray *array, const uint32_t index, const Value value)
+bool array_set(CruxVM *vm, const ObjectArray *array, const uint32_t index, const CruxValue value)
 {
 	if (index >= array->size) {
 		return false;
@@ -1248,7 +1248,7 @@ bool array_set(VM *vm, const ObjectArray *array, const uint32_t index, const Val
 	return true;
 }
 
-bool array_add(VM *vm, ObjectArray *array, const Value value, const uint32_t index)
+bool array_add(CruxVM *vm, ObjectArray *array, const CruxValue value, const uint32_t index)
 {
 	if (!ensure_capacity(vm, array, array->size + 1)) {
 		return false;
@@ -1261,7 +1261,7 @@ bool array_add(VM *vm, ObjectArray *array, const Value value, const uint32_t ind
 	return true;
 }
 
-bool array_add_back(VM *vm, ObjectArray *array, const Value value)
+bool array_add_back(CruxVM *vm, ObjectArray *array, const CruxValue value)
 {
 	if (!ensure_capacity(vm, array, array->size + 1)) {
 		return false;
@@ -1271,7 +1271,7 @@ bool array_add_back(VM *vm, ObjectArray *array, const Value value)
 	return true;
 }
 
-ObjectError *new_error(VM *vm, ObjectString *message, const ErrorType type, const bool is_panic)
+ObjectError *new_error(CruxVM *vm, ObjectString *message, const ErrorType type, const bool is_panic)
 {
 	push(vm->current_module_record, OBJECT_VAL(message));
 	ObjectError *error = ALLOCATE_OBJECT(vm, ObjectError, OBJECT_ERROR);
@@ -1282,7 +1282,7 @@ ObjectError *new_error(VM *vm, ObjectString *message, const ErrorType type, cons
 	return error;
 }
 
-ObjectResult *new_ok_result(VM *vm, const Value value)
+ObjectResult *new_ok_result(CruxVM *vm, const CruxValue value)
 {
 	push(vm->current_module_record, value);
 	ObjectResult *result = ALLOCATE_OBJECT(vm, ObjectResult, OBJECT_RESULT);
@@ -1292,7 +1292,7 @@ ObjectResult *new_ok_result(VM *vm, const Value value)
 	return result;
 }
 
-ObjectResult *new_error_result(VM *vm, ObjectError *error)
+ObjectResult *new_error_result(CruxVM *vm, ObjectError *error)
 {
 	push(vm->current_module_record, OBJECT_VAL(error));
 	ObjectResult *result = ALLOCATE_OBJECT(vm, ObjectResult, OBJECT_RESULT);
@@ -1302,7 +1302,7 @@ ObjectResult *new_error_result(VM *vm, ObjectError *error)
 	return result;
 }
 
-ObjectRandom *new_random(VM *vm)
+ObjectRandom *new_random(CruxVM *vm)
 {
 	ObjectRandom *random = ALLOCATE_OBJECT(vm, ObjectRandom, OBJECT_RANDOM);
 #ifdef _WIN32
@@ -1315,7 +1315,7 @@ ObjectRandom *new_random(VM *vm)
 	return random;
 }
 
-void free_module_record(VM *vm, ObjectModuleRecord *module_record)
+void free_module_record(CruxVM *vm, ObjectModuleRecord *module_record)
 {
 	if (module_record == NULL)
 		return;
@@ -1323,7 +1323,7 @@ void free_module_record(VM *vm, ObjectModuleRecord *module_record)
 	free_object_module_record(vm, module_record);
 }
 
-ObjectModuleRecord *new_object_module_record(VM *vm, ObjectString *path, const bool is_repl, const bool is_main)
+ObjectModuleRecord *new_object_module_record(CruxVM *vm, ObjectString *path, const bool is_repl, const bool is_main)
 {
 	GC_STATUS previous = vm->gc_status;
 	vm->gc_status = PAUSED;
@@ -1338,7 +1338,7 @@ ObjectModuleRecord *new_object_module_record(VM *vm, ObjectString *path, const b
 	module_record->module_closure = NULL;
 	module_record->enclosing_module = NULL;
 
-	module_record->stack = (Value *)malloc(STACK_MAX * sizeof(Value));
+	module_record->stack = (CruxValue *)malloc(STACK_MAX * sizeof(CruxValue));
 	module_record->stack_top = module_record->stack;
 	module_record->stack_limit = module_record->stack + STACK_MAX;
 	module_record->open_upvalues = NULL;
@@ -1362,10 +1362,10 @@ ObjectModuleRecord *new_object_module_record(VM *vm, ObjectString *path, const b
 
 /**
  * Frees ObjectModuleRecord internals
- * @param vm The VM
+ * @param vm The CruxVM
  * @param record The ObjectModuleRecord to free
  */
-void free_object_module_record(VM *vm, ObjectModuleRecord *record)
+void free_object_module_record(CruxVM *vm, ObjectModuleRecord *record)
 {
 	free(record->frames);
 	record->frames = NULL;
@@ -1379,7 +1379,7 @@ void free_object_module_record(VM *vm, ObjectModuleRecord *record)
 	free_table(vm, &record->publics);
 }
 
-ObjectStruct *new_struct_type(VM *vm, ObjectString *name)
+ObjectStruct *new_struct_type(CruxVM *vm, ObjectString *name)
 {
 	push(vm->current_module_record, OBJECT_VAL(name));
 	ObjectStruct *structObject = ALLOCATE_OBJECT(vm, ObjectStruct, OBJECT_STRUCT);
@@ -1390,7 +1390,7 @@ ObjectStruct *new_struct_type(VM *vm, ObjectString *name)
 	return structObject;
 }
 
-ObjectStructInstance *new_struct_instance(VM *vm, ObjectStruct *struct_type, const uint16_t field_count)
+ObjectStructInstance *new_struct_instance(CruxVM *vm, ObjectStruct *struct_type, const uint16_t field_count)
 {
 	push(vm->current_module_record, OBJECT_VAL(struct_type));
 	ObjectStructInstance *struct_instance = ALLOCATE_OBJECT(vm, ObjectStructInstance, OBJECT_STRUCT_INSTANCE);
@@ -1398,7 +1398,7 @@ ObjectStructInstance *new_struct_instance(VM *vm, ObjectStruct *struct_type, con
 	struct_instance->struct_type = struct_type;
 	struct_instance->fields = NULL;
 	struct_instance->field_count = 0;
-	struct_instance->fields = ALLOCATE(vm, Value, field_count);
+	struct_instance->fields = ALLOCATE(vm, CruxValue, field_count);
 	for (int i = 0; i < field_count; i++) {
 		struct_instance->fields[i] = NIL_VAL;
 	}
@@ -1408,7 +1408,7 @@ ObjectStructInstance *new_struct_instance(VM *vm, ObjectStruct *struct_type, con
 	return struct_instance;
 }
 
-ObjectVector *new_vector(VM *vm, const uint32_t dimensions)
+ObjectVector *new_vector(CruxVM *vm, const uint32_t dimensions)
 {
 	ObjectVector *vector = ALLOCATE_OBJECT(vm, ObjectVector, OBJECT_VECTOR);
 	push(vm->current_module_record, OBJECT_VAL(vector));
@@ -1420,7 +1420,7 @@ ObjectVector *new_vector(VM *vm, const uint32_t dimensions)
 	return vector;
 }
 
-ObjectComplex *new_complex_number(VM *vm, const double real, const double imaginary)
+ObjectComplex *new_complex_number(CruxVM *vm, const double real, const double imaginary)
 {
 	ObjectComplex *complex_number = ALLOCATE_OBJECT(vm, ObjectComplex, OBJECT_COMPLEX);
 	complex_number->real = real;
@@ -1428,7 +1428,7 @@ ObjectComplex *new_complex_number(VM *vm, const double real, const double imagin
 	return complex_number;
 }
 
-ObjectMatrix *new_matrix(VM *vm, const uint16_t row_dim, const uint16_t col_dim)
+ObjectMatrix *new_matrix(CruxVM *vm, const uint16_t row_dim, const uint16_t col_dim)
 {
 	ObjectMatrix *matrix = ALLOCATE_OBJECT(vm, ObjectMatrix, OBJECT_MATRIX);
 	matrix->row_dim = row_dim;
@@ -1439,7 +1439,7 @@ ObjectMatrix *new_matrix(VM *vm, const uint16_t row_dim, const uint16_t col_dim)
 	return matrix;
 }
 
-ObjectRange *new_range(VM *vm, uint64_t start, uint64_t end, uint64_t step)
+ObjectRange *new_range(CruxVM *vm, uint64_t start, uint64_t end, uint64_t step)
 {
 	ObjectRange *range = ALLOCATE_OBJECT(vm, ObjectRange, OBJECT_RANGE);
 	range->start = start;
@@ -1448,7 +1448,7 @@ ObjectRange *new_range(VM *vm, uint64_t start, uint64_t end, uint64_t step)
 	return range;
 }
 
-ObjectIterator *new_iterator(VM *vm, Value iterable)
+ObjectIterator *new_iterator(CruxVM *vm, CruxValue iterable)
 {
 	ObjectIterator *iterator = ALLOCATE_OBJECT(vm, ObjectIterator, OBJECT_ITERATOR);
 	iterator->iterable = iterable;
@@ -1456,7 +1456,7 @@ ObjectIterator *new_iterator(VM *vm, Value iterable)
 	return iterator;
 }
 
-ObjectSet *new_set(VM *vm, uint32_t element_count)
+ObjectSet *new_set(CruxVM *vm, uint32_t element_count)
 {
 	ObjectSet *set = ALLOCATE_OBJECT(vm, ObjectSet, OBJECT_SET);
 	push(vm->current_module_record, OBJECT_VAL(set));
@@ -1465,7 +1465,7 @@ ObjectSet *new_set(VM *vm, uint32_t element_count)
 	return set;
 }
 
-ObjectBuffer *new_buffer(VM *vm, uint32_t buffer_size)
+ObjectBuffer *new_buffer(CruxVM *vm, uint32_t buffer_size)
 {
 	ObjectBuffer *buffer = ALLOCATE_OBJECT(vm, ObjectBuffer, OBJECT_BUFFER);
 	buffer->capacity = buffer_size;
@@ -1478,18 +1478,18 @@ ObjectBuffer *new_buffer(VM *vm, uint32_t buffer_size)
 	return buffer;
 }
 
-ObjectTuple *new_tuple(VM *vm, uint32_t size)
+ObjectTuple *new_tuple(CruxVM *vm, uint32_t size)
 {
 	ObjectTuple *tuple = ALLOCATE_OBJECT(vm, ObjectTuple, OBJECT_TUPLE);
 	tuple->elements = NULL;
 	tuple->size = size;
 	push(vm->current_module_record, OBJECT_VAL(tuple));
-	tuple->elements = ALLOCATE(vm, Value, size);
+	tuple->elements = ALLOCATE(vm, CruxValue, size);
 	pop(vm->current_module_record);
 	return tuple;
 }
 
-ObjectTypeRecord *new_type_rec(VM *vm, TypeMask base_type)
+ObjectTypeRecord *new_type_rec(CruxVM *vm, TypeMask base_type)
 {
 	ObjectTypeRecord *rec = ALLOCATE_OBJECT(vm, ObjectTypeRecord, OBJECT_TYPE_RECORD);
 	rec->base_type = base_type;
@@ -1497,7 +1497,7 @@ ObjectTypeRecord *new_type_rec(VM *vm, TypeMask base_type)
 	return rec;
 }
 
-ObjectTypeTable *new_type_table(VM *vm, const int capacity)
+ObjectTypeTable *new_type_table(CruxVM *vm, const int capacity)
 {
 	TypeEntry *entries = ALLOCATE(vm, TypeEntry, capacity);
 	for (int i = 0; i < capacity; i++) {
@@ -1512,7 +1512,7 @@ ObjectTypeTable *new_type_table(VM *vm, const int capacity)
 	return table;
 }
 
-void mark_object_type_table(VM *vm, ObjectTypeTable *table)
+void mark_object_type_table(CruxVM *vm, ObjectTypeTable *table)
 {
 	for (int i = 0; i < table->capacity; i++) {
 		mark_object(vm, (CruxObject *)table->entries[i].key);
@@ -1523,7 +1523,7 @@ void mark_object_type_table(VM *vm, ObjectTypeTable *table)
 /**
  * Adds a value to a set, validating hashability and deduplicating by key.
  */
-bool set_add_value(VM *vm, ObjectSet *set, Value value)
+bool set_add_value(CruxVM *vm, ObjectSet *set, CruxValue value)
 {
 	if (!IS_CRUX_HASHABLE(value)) {
 		return false;
@@ -1573,9 +1573,9 @@ bool range_contains(const ObjectRange *range, int32_t value)
  * Returns true if there is a next value, false otherwise.
  * result is set to the next value if there is one.
  */
-bool iterate_next(ObjectModuleRecord *module_record, ObjectIterator *iterator, Value *result)
+bool iterate_next(ObjectModuleRecord *module_record, ObjectIterator *iterator, CruxValue *result)
 {
-	const Value iterable = iterator->iterable;
+	const CruxValue iterable = iterator->iterable;
 
 	if (!IS_CRUX_OBJECT(iterable)) {
 		runtime_panic(module_record, TYPE, "Cannot iterate over a non-iterable value");
@@ -1672,7 +1672,7 @@ bool iterate_next(ObjectModuleRecord *module_record, ObjectIterator *iterator, V
 	}
 }
 
-ObjectOption *new_option(VM *vm, Value value, bool is_some)
+ObjectOption *new_option(CruxVM *vm, CruxValue value, bool is_some)
 {
 	ObjectOption *option = ALLOCATE_OBJECT(vm, ObjectOption, OBJECT_OPTION);
 	option->value = value;

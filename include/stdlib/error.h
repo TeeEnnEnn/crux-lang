@@ -4,10 +4,10 @@
 #include "object.h"
 #include "value.h"
 
-Value error_function(VM *vm, const Value *args);
-Value panic_function(VM *vm, const Value *args);
-Value assert_function(VM *vm, const Value *args);
-Value error_type_method(VM *vm, const Value *args);
-Value error_message_method(VM *vm, const Value *args);
+CruxValue error_function(CruxVM *vm, const CruxValue *args);
+CruxValue panic_function(CruxVM *vm, const CruxValue *args);
+CruxValue assert_function(CruxVM *vm, const CruxValue *args);
+CruxValue error_type_method(CruxVM *vm, const CruxValue *args);
+CruxValue error_message_method(CruxVM *vm, const CruxValue *args);
 
 #endif // ERROR_H

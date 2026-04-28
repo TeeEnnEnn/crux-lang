@@ -27,7 +27,7 @@ typedef enum { INTERPRET_OK = 0, INTERPRET_COMPILE_ERROR = 1, INTERPRET_RUNTIME_
 typedef struct {
 	ObjectClosure *closure;
 	uint16_t *ip;
-	Value *slots;
+	CruxValue *slots;
 } CallFrame;
 
 typedef struct {
@@ -36,8 +36,8 @@ typedef struct {
 } NativeModule;
 
 typedef struct {
-	Value match_target;
-	Value match_bind;
+	CruxValue match_target;
+	CruxValue match_bind;
 	bool is_match_target;
 	bool is_match_bind;
 } MatchHandler;
@@ -76,7 +76,7 @@ typedef enum {
 	RUNNING,
 } GC_STATUS;
 
-struct VM {
+struct CruxVM {
 	CruxObject *objects; // Head of global object linked list
 	size_t object_count;
 
@@ -182,38 +182,38 @@ struct VM {
 
 #define PEEK(module_record, distance) ((module_record)->stack_top[-1 - (distance)])
 
-VM *new_vm(int argc, const char **argv);
+CruxVM *new_vm(int argc, const char **argv);
 
-bool init_vm(VM *vm, int argc, const char **argv);
+bool init_vm(CruxVM *vm, int argc, const char **argv);
 
-void free_vm(VM *vm);
+void free_vm(CruxVM *vm);
 
-InterpretResult interpret(VM *vm, char *source);
+InterpretResult interpret(CruxVM *vm, char *source);
 
-InterpretResult run(VM *vm, bool is_anonymous_frame);
+InterpretResult run(CruxVM *vm, bool is_anonymous_frame);
 
 void reset_stack(ObjectModuleRecord *moduleRecord);
 
-void close_upvalues(ObjectModuleRecord *moduleRecord, const Value *last);
+void close_upvalues(ObjectModuleRecord *moduleRecord, const CruxValue *last);
 
-void init_import_stack(VM *vm);
+void init_import_stack(CruxVM *vm);
 
-void free_import_stack(VM *vm);
+void free_import_stack(CruxVM *vm);
 
 // Returns false on allocation error
-bool push_import_stack(VM *vm, ObjectString *path);
+bool push_import_stack(CruxVM *vm, ObjectString *path);
 
-void pop_import_stack(VM *vm);
+void pop_import_stack(CruxVM *vm);
 
-bool is_in_import_stack(const VM *vm, const ObjectString *path);
+bool is_in_import_stack(const CruxVM *vm, const ObjectString *path);
 
-ObjectResult *execute_callable(VM *vm, Value callable, int arg_count, InterpretResult *result);
+ObjectResult *execute_callable(CruxVM *vm, CruxValue callable, int arg_count, InterpretResult *result);
 
 bool get_module_global_index(const ObjectModuleRecord *module_record, const ObjectString *name, uint32_t *index_out);
 
-bool is_falsy(Value value);
+bool is_falsy(CruxValue value);
 
-void pop_push(ObjectModuleRecord *moduleRecord, Value value);
+void pop_push(ObjectModuleRecord *moduleRecord, CruxValue value);
 
 #define pop_two(module_record)                                                                                         \
 	pop((module_record));                                                                                              \
@@ -223,9 +223,9 @@ void pop_push(ObjectModuleRecord *moduleRecord, Value value);
 	pop((module_record));                                                                                              \
 	push((module_record), (value))
 
-bool binary_operation(VM *vm, OpCode operation);
+bool binary_operation(CruxVM *vm, OpCode operation);
 
-bool concatenate(VM *vm);
+bool concatenate(CruxVM *vm);
 
 /**
  * Calls a value as a function with the given arguments.
@@ -234,7 +234,7 @@ bool concatenate(VM *vm);
  * @param arg_count Number of arguments on the stack
  * @return true if the call succeeds, false otherwise
  */
-bool call_value(VM *vm, Value callee, int arg_count);
+bool call_value(CruxVM *vm, CruxValue callee, int arg_count);
 
 /**
  * Captures a local variable in an upvalue for closures.
@@ -242,12 +242,12 @@ bool call_value(VM *vm, Value callee, int arg_count);
  * @param local Pointer to the local variable to capture
  * @return The created or reused upvalue
  */
-ObjectUpvalue *capture_upvalue(VM *vm, Value *local);
+ObjectUpvalue *capture_upvalue(CruxVM *vm, CruxValue *local);
 
-bool handle_invoke(VM *vm, int arg_count, Value receiver, Value original, Value value);
+bool handle_invoke(CruxVM *vm, int arg_count, CruxValue receiver, CruxValue original, CruxValue value);
 
-bool get_iterator_from_value(VM *vm, Value value, Value *iterator_out);
-bool get_next_option_from_iterator(VM *vm, Value iterator, Value *option_out);
+bool get_iterator_from_value(CruxVM *vm, CruxValue value, CruxValue *iterator_out);
+bool get_next_option_from_iterator(CruxVM *vm, CruxValue iterator, CruxValue *option_out);
 
 /**
  * Invokes a method on an object with the given arguments.
@@ -256,16 +256,16 @@ bool get_next_option_from_iterator(VM *vm, Value iterator, Value *option_out);
  * @param arg_count Number of arguments on the stack
  * @return true if the method invocation succeeds, false otherwise
  */
-bool invoke(VM *vm, const ObjectString *name, int arg_count);
+bool invoke(CruxVM *vm, const ObjectString *name, int arg_count);
 
 /**
  * Defines a method on a class.
  * @param vm The virtual machine
  * @param name The name of the method
  */
-void define_method(VM *vm, ObjectString *name);
+void define_method(CruxVM *vm, ObjectString *name);
 
-InterpretResult global_compound_operation(VM *vm, uint16_t index, OpCode opcode, char *operation);
+InterpretResult global_compound_operation(CruxVM *vm, uint16_t index, OpCode opcode, char *operation);
 
 /**
  * Calls a function closure with the given arguments.
@@ -276,16 +276,16 @@ InterpretResult global_compound_operation(VM *vm, uint16_t index, OpCode opcode,
  */
 bool call(ObjectModuleRecord *module_record, ObjectClosure *closure, int arg_count);
 
-Value typeof_value(VM *vm, Value value);
+CruxValue typeof_value(CruxVM *vm, CruxValue value);
 
-ObjectStructInstance *pop_struct_stack(VM *vm);
-bool pushStructStack(VM *vm, ObjectStructInstance *struct_instance);
-ObjectStructInstance *peek_struct_stack(const VM *vm);
+ObjectStructInstance *pop_struct_stack(CruxVM *vm);
+bool pushStructStack(CruxVM *vm, ObjectStructInstance *struct_instance);
+ObjectStructInstance *peek_struct_stack(const CruxVM *vm);
 
-bool handle_compound_assignment(ObjectModuleRecord *currentModuleRecord, Value *target, Value operand, OpCode op);
+bool handle_compound_assignment(ObjectModuleRecord *currentModuleRecord, CruxValue *target, CruxValue operand, OpCode op);
 bool range_indices_in_bounds(const ObjectRange *range, const uint32_t collection_size);
-bool collect_string_codepoint_starts(VM *vm, const ObjectString *string, const utf8_int8_t ***starts_out);
+bool collect_string_codepoint_starts(CruxVM *vm, const ObjectString *string, const utf8_int8_t ***starts_out);
 
-bool bind_core_globals(VM *vm, ObjectModuleRecord *module_record);
+bool bind_core_globals(CruxVM *vm, ObjectModuleRecord *module_record);
 
 #endif // VM_H

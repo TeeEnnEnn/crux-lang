@@ -8,7 +8,7 @@
  * arg0 -> array
  * returns -> Tuple
  */
-Value new_tuple_function(VM *vm, const Value *args)
+CruxValue new_tuple_function(CruxVM *vm, const CruxValue *args)
 {
 	ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 	ObjectTuple *tuple = new_tuple(vm, array->size);
@@ -24,7 +24,7 @@ Value new_tuple_function(VM *vm, const Value *args)
  * arg0 -> tuple
  * returns -> Bool
  */
-Value is_empty_tuple_method(VM *vm, const Value *args)
+CruxValue is_empty_tuple_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectTuple *tuple = AS_CRUX_TUPLE(args[0]);
@@ -37,11 +37,11 @@ Value is_empty_tuple_method(VM *vm, const Value *args)
  * arg1 -> value
  * returns -> Bool
  */
-Value contains_tuple_method(VM *vm, const Value *args)
+CruxValue contains_tuple_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectTuple *tuple = AS_CRUX_TUPLE(args[0]);
-	Value value = args[1];
+	CruxValue value = args[1];
 	for (uint32_t i = 0; i < tuple->size; i++) {
 		if (values_equal(tuple->elements[i], value)) {
 			return BOOL_VAL(true);
@@ -55,7 +55,7 @@ Value contains_tuple_method(VM *vm, const Value *args)
  * arg0 -> tuple
  * returns -> Array
  */
-Value to_array_tuple_method(VM *vm, const Value *args)
+CruxValue to_array_tuple_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectTuple *tuple = AS_CRUX_TUPLE(args[0]);
 	ObjectArray *array = new_array(vm, tuple->size);
@@ -69,9 +69,9 @@ Value to_array_tuple_method(VM *vm, const Value *args)
 /**
  * Gets the first element of a tuple.
  * arg0 -> tuple
- * returns -> Value
+ * returns -> CruxValue
  */
-Value first_tuple_method(VM *vm, const Value *args)
+CruxValue first_tuple_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectTuple *tuple = AS_CRUX_TUPLE(args[0]);
 	if (tuple->size == 0) {
@@ -84,9 +84,9 @@ Value first_tuple_method(VM *vm, const Value *args)
 /**
  * Gets the last element of a tuple.
  * arg0 -> tuple
- * returns -> Value
+ * returns -> CruxValue
  */
-Value last_tuple_method(VM *vm, const Value *args)
+CruxValue last_tuple_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectTuple *tuple = AS_CRUX_TUPLE(args[0]);
 	if (tuple->size == 0) {
@@ -102,7 +102,7 @@ Value last_tuple_method(VM *vm, const Value *args)
  * arg1 -> tuple2
  * returns -> Bool
  */
-Value equals_tuple_method(VM *vm, const Value *args)
+CruxValue equals_tuple_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectTuple *tuple1 = AS_CRUX_TUPLE(args[0]);
@@ -122,9 +122,9 @@ Value equals_tuple_method(VM *vm, const Value *args)
  * Gets an element from a tuple.
  * arg0 -> tuple
  * arg1 -> index
- * returns -> Value
+ * returns -> CruxValue
  */
-Value get_tuple_method(VM *vm, const Value *args)
+CruxValue get_tuple_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectTuple *tuple = AS_CRUX_TUPLE(args[0]);
 	uint32_t index = AS_INT(args[1]);
@@ -140,9 +140,9 @@ Value get_tuple_method(VM *vm, const Value *args)
  * arg0 -> tuple
  * arg1 -> start
  * arg2 -> end
- * returns -> Result<Array<Value>>
+ * returns -> Result<Array<CruxValue>>
  */
-Value slice_tuple_method(VM *vm, const Value *args)
+CruxValue slice_tuple_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectTuple *tuple = AS_CRUX_TUPLE(args[0]);
 	uint32_t start = (uint32_t)AS_INT(args[1]);
@@ -167,15 +167,15 @@ Value slice_tuple_method(VM *vm, const Value *args)
  * arg1 -> value
  * returns -> Int
  */
-Value index_tuple_method(VM *vm, const Value *args)
+CruxValue index_tuple_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectTuple *tuple = AS_CRUX_TUPLE(args[0]);
-	Value value = args[1];
+	CruxValue value = args[1];
 	for (uint32_t i = 0; i < tuple->size; i++) {
 		if (values_equal(tuple->elements[i], value)) {
 			ObjectResult *result = new_ok_result(vm, INT_VAL(i));
 			return OBJECT_VAL(result);
 		}
 	}
-	return MAKE_GC_SAFE_ERROR(vm, "Value not found", VALUE);
+	return MAKE_GC_SAFE_ERROR(vm, "CruxValue not found", VALUE);
 }

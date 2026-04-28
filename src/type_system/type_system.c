@@ -20,7 +20,7 @@ static ObjectString make_lookup_string(const char *chars, const uint32_t length)
 	return key;
 }
 
-TypeMask get_type_mask(Value value)
+TypeMask get_type_mask(CruxValue value)
 {
 	if (IS_BOOL(value))
 		return BOOL_TYPE;
@@ -121,7 +121,7 @@ void type_mask_name(const TypeMask mask, char *buf, const int buf_size)
 	}
 }
 
-bool runtime_types_compatible(const TypeMask expected, const Value actual)
+bool runtime_types_compatible(const TypeMask expected, const CruxValue actual)
 {
 	if (expected == ANY_TYPE || expected == UNION_TYPE) // TODO: escape hatch for union types. fix later
 		return true;
@@ -133,7 +133,7 @@ bool runtime_types_compatible(const TypeMask expected, const Value actual)
  * Creates a new array type record with the given element type.
  * Roots the element type
  */
-ObjectTypeRecord *new_array_type_rec(VM *vm, ObjectTypeRecord *element_type)
+ObjectTypeRecord *new_array_type_rec(CruxVM *vm, ObjectTypeRecord *element_type)
 {
 	push(vm->current_module_record, OBJECT_VAL(element_type));
 	ObjectTypeRecord *rec = new_type_rec(vm, ARRAY_TYPE);
@@ -142,7 +142,7 @@ ObjectTypeRecord *new_array_type_rec(VM *vm, ObjectTypeRecord *element_type)
 	return rec;
 }
 
-ObjectTypeRecord *new_iterator_type_rec(VM *vm, ObjectTypeRecord *element_type)
+ObjectTypeRecord *new_iterator_type_rec(CruxVM *vm, ObjectTypeRecord *element_type)
 {
 	push(vm->current_module_record, OBJECT_VAL(element_type));
 	ObjectTypeRecord *rec = new_type_rec(vm, ITERATOR_TYPE);
@@ -155,7 +155,7 @@ ObjectTypeRecord *new_iterator_type_rec(VM *vm, ObjectTypeRecord *element_type)
  * Creates a new table type record with the given key and value types.
  * Roots the key and value types
  */
-ObjectTypeRecord *new_table_type_rec(VM *vm, ObjectTypeRecord *key_type, ObjectTypeRecord *value_type)
+ObjectTypeRecord *new_table_type_rec(CruxVM *vm, ObjectTypeRecord *key_type, ObjectTypeRecord *value_type)
 {
 	push(vm->current_module_record, OBJECT_VAL(key_type));
 	push(vm->current_module_record, OBJECT_VAL(value_type));
@@ -171,7 +171,7 @@ ObjectTypeRecord *new_table_type_rec(VM *vm, ObjectTypeRecord *key_type, ObjectT
  * Creates a new result type record with the given ok type.
  * Roots the ok type
  */
-ObjectTypeRecord *new_result_type_rec(VM *vm, ObjectTypeRecord *ok_type)
+ObjectTypeRecord *new_result_type_rec(CruxVM *vm, ObjectTypeRecord *ok_type)
 {
 	push(vm->current_module_record, OBJECT_VAL(ok_type));
 	ObjectTypeRecord *rec = new_type_rec(vm, RESULT_TYPE);
@@ -180,7 +180,7 @@ ObjectTypeRecord *new_result_type_rec(VM *vm, ObjectTypeRecord *ok_type)
 	return rec;
 }
 
-ObjectTypeRecord *new_option_type_rec(VM *vm, ObjectTypeRecord *some_type)
+ObjectTypeRecord *new_option_type_rec(CruxVM *vm, ObjectTypeRecord *some_type)
 {
 	push(vm->current_module_record, OBJECT_VAL(some_type));
 	ObjectTypeRecord *rec = new_type_rec(vm, OPTION_TYPE);
@@ -193,7 +193,7 @@ ObjectTypeRecord *new_option_type_rec(VM *vm, ObjectTypeRecord *some_type)
  * Creates a new struct type record with the given definition and field types.
  * Roots the definition and field types
  */
-ObjectTypeRecord *new_struct_type_rec(VM *vm, ObjectStruct *definition, ObjectTypeTable *field_types,
+ObjectTypeRecord *new_struct_type_rec(CruxVM *vm, ObjectStruct *definition, ObjectTypeTable *field_types,
 									  const int field_count)
 {
 	push(vm->current_module_record, OBJECT_VAL(definition));
@@ -210,7 +210,7 @@ ObjectTypeRecord *new_struct_type_rec(VM *vm, ObjectStruct *definition, ObjectTy
 /**
  * Creates a new vector type record with the given dimensions.
  */
-ObjectTypeRecord *new_vector_type_rec(VM *vm, const int dimensions)
+ObjectTypeRecord *new_vector_type_rec(CruxVM *vm, const int dimensions)
 {
 	ObjectTypeRecord *rec = new_type_rec(vm, VECTOR_TYPE);
 	rec->as.vector_type.dimensions = dimensions;
@@ -221,7 +221,7 @@ ObjectTypeRecord *new_vector_type_rec(VM *vm, const int dimensions)
  * Creates a new tuple type record with the given element types.
  * Roots the element types
  */
-ObjectTypeRecord *new_tuple_type_rec(VM *vm, ObjectTypeRecord **element_types, const int element_count)
+ObjectTypeRecord *new_tuple_type_rec(CruxVM *vm, ObjectTypeRecord **element_types, const int element_count)
 {
 	for (int i = 0; i < element_count; i++) {
 		push(vm->current_module_record, OBJECT_VAL(element_types[i]));
@@ -238,7 +238,7 @@ ObjectTypeRecord *new_tuple_type_rec(VM *vm, ObjectTypeRecord **element_types, c
 /**
  * Creates a new matrix type record with the given dimensions.
  */
-ObjectTypeRecord *new_matrix_type_rec(VM *vm, const int rows, const int cols)
+ObjectTypeRecord *new_matrix_type_rec(CruxVM *vm, const int rows, const int cols)
 {
 	ObjectTypeRecord *rec = new_type_rec(vm, MATRIX_TYPE);
 	rec->as.matrix_type.rows = rows;
@@ -250,7 +250,7 @@ ObjectTypeRecord *new_matrix_type_rec(VM *vm, const int rows, const int cols)
  * Creates a new function type record with the given argument types, return type, and argument count.
  * Roots the argument types and return type
  */
-ObjectTypeRecord *new_function_type_rec(VM *vm, ObjectTypeRecord **arg_types, const int arg_count,
+ObjectTypeRecord *new_function_type_rec(CruxVM *vm, ObjectTypeRecord **arg_types, const int arg_count,
 										ObjectTypeRecord *return_type)
 {
 	for (int i = 0; i < arg_count; i++) {
@@ -272,7 +272,7 @@ ObjectTypeRecord *new_function_type_rec(VM *vm, ObjectTypeRecord **arg_types, co
  * Creates a new set type record with the given element type.
  * Roots the element type
  */
-ObjectTypeRecord *new_set_type_rec(VM *vm, ObjectTypeRecord *element_type)
+ObjectTypeRecord *new_set_type_rec(CruxVM *vm, ObjectTypeRecord *element_type)
 {
 	push(vm->current_module_record, OBJECT_VAL(element_type));
 	ObjectTypeRecord *rec = new_type_rec(vm, SET_TYPE);
@@ -285,7 +285,7 @@ ObjectTypeRecord *new_set_type_rec(VM *vm, ObjectTypeRecord *element_type)
  * Creates a new shape type record with the given element types.
  * Roots the element types
  */
-ObjectTypeRecord *new_shape_type_rec(VM *vm, ObjectTypeTable *element_types, const int element_count)
+ObjectTypeRecord *new_shape_type_rec(CruxVM *vm, ObjectTypeTable *element_types, const int element_count)
 {
 	push(vm->current_module_record, OBJECT_VAL(element_types));
 	ObjectTypeRecord *rec = new_type_rec(vm, SHAPE_TYPE);
@@ -299,7 +299,7 @@ ObjectTypeRecord *new_shape_type_rec(VM *vm, ObjectTypeTable *element_types, con
  * Creates a new union type record with the given element types and names.
  * Roots the element types and names
  */
-ObjectTypeRecord *new_union_type_rec(VM *vm, ObjectTypeRecord **element_types, ObjectString **element_names,
+ObjectTypeRecord *new_union_type_rec(CruxVM *vm, ObjectTypeRecord **element_types, ObjectString **element_names,
 									 const int element_count)
 {
 	if (element_names != NULL) {
@@ -771,7 +771,7 @@ void type_record_name(const ObjectTypeRecord *rec, char *buf, const int buf_size
 	type_record_name_impl(rec, buf, buf_size, seen, 0);
 }
 
-ObjectTypeRecord *type_from_string(VM *vm, const ObjectTypeTable *type_table, const char *str)
+ObjectTypeRecord *type_from_string(CruxVM *vm, const ObjectTypeTable *type_table, const char *str)
 {
 	if (strcmp(str, "Int") == 0)
 		return new_type_rec(vm, INT_TYPE);
@@ -863,7 +863,7 @@ ObjectTypeRecord *type_from_string(VM *vm, const ObjectTypeTable *type_table, co
 	return new_type_rec(vm, ANY_TYPE);
 }
 
-ObjectTypeRecord *strip_type(VM *vm, ObjectTypeRecord *union_type, ObjectTypeRecord *to_remove)
+ObjectTypeRecord *strip_type(CruxVM *vm, ObjectTypeRecord *union_type, ObjectTypeRecord *to_remove)
 {
 	if (!union_type || !to_remove)
 		return union_type;

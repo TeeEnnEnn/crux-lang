@@ -109,7 +109,7 @@ static void struct_declaration(Compiler *compiler, bool is_public)
 												  compiler->parser->previous.length);
 			push(compiler->owner->current_module_record, OBJECT_VAL(fieldName));
 
-			Value fieldNameCheck;
+			CruxValue fieldNameCheck;
 			if (table_get(&structObject->fields, fieldName, &fieldNameCheck)) {
 				compiler_panic(compiler->parser,
 							   "Duplicate field name in struct "

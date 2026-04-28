@@ -93,7 +93,7 @@ static int whence_from_string(const char *s)
  * This is shared by fs_read_all_method and the convenience
  * fs_read_file_function.
  */
-static bool read_remaining(VM *vm, FILE *fp, ObjectString **out_str)
+static bool read_remaining(CruxVM *vm, FILE *fp, ObjectString **out_str)
 {
 	/* Record current position, seek to end to get size, seek back. */
 	const fs_off_t start = FS_FTELL(fp);
@@ -129,7 +129,7 @@ static bool read_remaining(VM *vm, FILE *fp, ObjectString **out_str)
  * arg1 -> mode: String (e.g., "r", "w", "a")
  * Returns Result<File>
  */
-Value fs_open_function(VM *vm, const Value *args)
+CruxValue fs_open_function(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *path_str = AS_CRUX_STRING(args[0]);
 	ObjectString *mode_str = AS_CRUX_STRING(args[1]);
@@ -162,7 +162,7 @@ Value fs_open_function(VM *vm, const Value *args)
  * arg0 -> file: File
  * Returns Result<Nil>
  */
-Value fs_close_method(VM *vm, const Value *args)
+CruxValue fs_close_method(CruxVM *vm, const CruxValue *args)
 {
 	REQUIRE_OPEN_FILE(args, "close");
 
@@ -182,7 +182,7 @@ Value fs_close_method(VM *vm, const Value *args)
  * arg0 -> file: File
  * Returns Result<Nil>
  */
-Value fs_flush_method(VM *vm, const Value *args)
+CruxValue fs_flush_method(CruxVM *vm, const CruxValue *args)
 {
 	REQUIRE_OPEN_FILE(args, "flush");
 
@@ -201,7 +201,7 @@ Value fs_flush_method(VM *vm, const Value *args)
  * arg1 -> n: Int
  * Returns Result<String>
  */
-Value fs_read_method(VM *vm, const Value *args)
+CruxValue fs_read_method(CruxVM *vm, const CruxValue *args)
 {
 	REQUIRE_OPEN_FILE(args, "read");
 
@@ -246,7 +246,7 @@ Value fs_read_method(VM *vm, const Value *args)
  * arg0 -> file: File
  * Returns Result<String>
  */
-Value fs_readln_method(VM *vm, const Value *args)
+CruxValue fs_readln_method(CruxVM *vm, const CruxValue *args)
 {
 	REQUIRE_OPEN_FILE(args, "read");
 
@@ -297,7 +297,7 @@ Value fs_readln_method(VM *vm, const Value *args)
  * arg0 -> file: File
  * Returns Result<String>
  */
-Value fs_read_all_method(VM *vm, const Value *args)
+CruxValue fs_read_all_method(CruxVM *vm, const CruxValue *args)
 {
 	REQUIRE_OPEN_FILE(args, "read");
 
@@ -325,7 +325,7 @@ Value fs_read_all_method(VM *vm, const Value *args)
  * arg0 -> file: File
  * Returns Result<Array<String>>
  */
-Value fs_read_lines_method(VM *vm, const Value *args)
+CruxValue fs_read_lines_method(CruxVM *vm, const CruxValue *args)
 {
 	REQUIRE_OPEN_FILE(args, "read");
 
@@ -403,7 +403,7 @@ Value fs_read_lines_method(VM *vm, const Value *args)
  * arg1 -> content: String
  * Returns Result<Nil>
  */
-Value fs_write_method(VM *vm, const Value *args)
+CruxValue fs_write_method(CruxVM *vm, const CruxValue *args)
 {
 	REQUIRE_OPEN_FILE(args, "write");
 
@@ -434,7 +434,7 @@ Value fs_write_method(VM *vm, const Value *args)
  * arg1 -> content: String
  * Returns Result<Nil>
  */
-Value fs_writeln_method(VM *vm, const Value *args)
+CruxValue fs_writeln_method(CruxVM *vm, const CruxValue *args)
 {
 	REQUIRE_OPEN_FILE(args, "write");
 
@@ -470,7 +470,7 @@ Value fs_writeln_method(VM *vm, const Value *args)
  * arg2 -> whence: String ("start", "current", or "end")
  * Returns Result<Nil>
  */
-Value fs_seek_method(VM *vm, const Value *args)
+CruxValue fs_seek_method(CruxVM *vm, const CruxValue *args)
 {
 	REQUIRE_OPEN_FILE(args, "seek");
 
@@ -510,7 +510,7 @@ Value fs_seek_method(VM *vm, const Value *args)
  * arg0 -> file: File
  * Returns Result<Int>
  */
-Value fs_tell_method(VM *vm, const Value *args)
+CruxValue fs_tell_method(CruxVM *vm, const CruxValue *args)
 {
 	REQUIRE_OPEN_FILE(args, "tell");
 
@@ -530,7 +530,7 @@ Value fs_tell_method(VM *vm, const Value *args)
  * arg0 -> file: File
  * Returns Bool
  */
-Value fs_is_open_method(VM *vm, const Value *args)
+CruxValue fs_is_open_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectFile *file = AS_CRUX_FILE(args[0]);
@@ -542,7 +542,7 @@ Value fs_is_open_method(VM *vm, const Value *args)
  * arg0 -> path: String
  * Returns Bool
  */
-Value fs_exists_function(VM *vm, const Value *args)
+CruxValue fs_exists_function(CruxVM *vm, const CruxValue *args)
 {
 	char *resolved = resolve_path(vm->current_module_record->path->chars, AS_C_STRING(args[0]));
 	if (resolved == NULL) {
@@ -560,7 +560,7 @@ Value fs_exists_function(VM *vm, const Value *args)
  * arg0 -> path: String
  * Returns Bool
  */
-Value fs_is_file_function(VM *vm, const Value *args)
+CruxValue fs_is_file_function(CruxVM *vm, const CruxValue *args)
 {
 	char *resolved = resolve_path(vm->current_module_record->path->chars, AS_C_STRING(args[0]));
 	if (resolved == NULL) {
@@ -581,7 +581,7 @@ Value fs_is_file_function(VM *vm, const Value *args)
  * arg0 -> path: String
  * Returns Bool
  */
-Value fs_is_dir_function(VM *vm, const Value *args)
+CruxValue fs_is_dir_function(CruxVM *vm, const CruxValue *args)
 {
 	char *resolved = resolve_path(vm->current_module_record->path->chars, AS_C_STRING(args[0]));
 	if (resolved == NULL) {
@@ -602,7 +602,7 @@ Value fs_is_dir_function(VM *vm, const Value *args)
  * arg0 -> path: String
  * Returns Result<Float>
  */
-Value fs_file_size_function(VM *vm, const Value *args)
+CruxValue fs_file_size_function(CruxVM *vm, const CruxValue *args)
 {
 	char *resolved = resolve_path(vm->current_module_record->path->chars, AS_C_STRING(args[0]));
 	if (resolved == NULL) {
@@ -629,7 +629,7 @@ Value fs_file_size_function(VM *vm, const Value *args)
  * arg0 -> path: String
  * Returns Result<Nil>
  */
-Value fs_remove_function(VM *vm, const Value *args)
+CruxValue fs_remove_function(CruxVM *vm, const CruxValue *args)
 {
 	char *resolved = resolve_path(vm->current_module_record->path->chars, AS_C_STRING(args[0]));
 	if (resolved == NULL) {
@@ -659,7 +659,7 @@ Value fs_remove_function(VM *vm, const Value *args)
 /*
  * rename(from: string, to: string) -> Result<nil>
  */
-Value fs_rename_function(VM *vm, const Value *args)
+CruxValue fs_rename_function(CruxVM *vm, const CruxValue *args)
 {
 	char *resolved_from = resolve_path(vm->current_module_record->path->chars, AS_C_STRING(args[0]));
 	if (resolved_from == NULL) {
@@ -699,7 +699,7 @@ Value fs_rename_function(VM *vm, const Value *args)
  * arg1 -> to: String
  * Returns Result<Nil>
  */
-Value fs_copy_file_function(VM *vm, const Value *args)
+CruxValue fs_copy_file_function(CruxVM *vm, const CruxValue *args)
 {
 	char *resolved_from = resolve_path(vm->current_module_record->path->chars, AS_C_STRING(args[0]));
 	if (resolved_from == NULL) {
@@ -782,7 +782,7 @@ Value fs_copy_file_function(VM *vm, const Value *args)
  * arg0 -> path: String
  * Returns Result<Nil>
  */
-Value fs_mkdir_function(VM *vm, const Value *args)
+CruxValue fs_mkdir_function(CruxVM *vm, const CruxValue *args)
 {
 	char *resolved = resolve_path(vm->current_module_record->path->chars, AS_C_STRING(args[0]));
 	if (resolved == NULL) {
@@ -813,7 +813,7 @@ Value fs_mkdir_function(VM *vm, const Value *args)
  * arg0 -> path: String
  * Returns Result<String>
  */
-Value fs_read_file_function(VM *vm, const Value *args)
+CruxValue fs_read_file_function(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *path_str = AS_CRUX_STRING(args[0]);
 
@@ -848,7 +848,7 @@ Value fs_read_file_function(VM *vm, const Value *args)
  * arg1 -> content: String
  * Returns Result<Nil>
  */
-Value fs_write_file_function(VM *vm, const Value *args)
+CruxValue fs_write_file_function(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *path_str = AS_CRUX_STRING(args[0]);
 	const ObjectString *content = AS_CRUX_STRING(args[1]);
@@ -881,7 +881,7 @@ Value fs_write_file_function(VM *vm, const Value *args)
  * arg1 -> content: String
  * Returns Result<Nil>
  */
-Value fs_append_file_function(VM *vm, const Value *args)
+CruxValue fs_append_file_function(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *path_str = AS_CRUX_STRING(args[0]);
 	const ObjectString *content = AS_CRUX_STRING(args[1]);
@@ -913,7 +913,7 @@ Value fs_append_file_function(VM *vm, const Value *args)
  * arg0 -> path: String
  * Returns Result<Nil>
  */
-Value fs_remove_dir_function(VM *vm, const Value *args)
+CruxValue fs_remove_dir_function(CruxVM *vm, const CruxValue *args)
 {
 	char *resolved = resolve_path(vm->current_module_record->path->chars, AS_C_STRING(args[0]));
 	if (resolved == NULL) {

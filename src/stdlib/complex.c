@@ -9,7 +9,7 @@
  * arg0 -> complex: Complex
  * Returns Float
  */
-Value complex_real_method(VM *vm, const Value *args)
+CruxValue complex_real_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 
@@ -22,7 +22,7 @@ Value complex_real_method(VM *vm, const Value *args)
  * arg0 -> complex: Complex
  * Returns Float
  */
-Value complex_imag_method(VM *vm, const Value *args)
+CruxValue complex_imag_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectComplex *complex_number = AS_CRUX_COMPLEX(args[0]);
@@ -35,7 +35,7 @@ Value complex_imag_method(VM *vm, const Value *args)
  * arg1 -> imag: Float
  * Returns Complex
  */
-Value new_complex_function(VM *vm, const Value *args)
+CruxValue new_complex_function(CruxVM *vm, const CruxValue *args)
 {
 	const double real = TO_DOUBLE(args[0]);
 	const double imag = TO_DOUBLE(args[1]);
@@ -43,26 +43,26 @@ Value new_complex_function(VM *vm, const Value *args)
 	return OBJECT_VAL(comp);
 }
 
-Value complex_add_value(VM *vm, const ObjectComplex *lhs, const ObjectComplex *rhs)
+CruxValue complex_add_value(CruxVM *vm, const ObjectComplex *lhs, const ObjectComplex *rhs)
 {
 	(void)vm;
 	return OBJECT_VAL(new_complex_number(vm, lhs->real + rhs->real, lhs->imag + rhs->imag));
 }
 
-Value complex_subtract_value(VM *vm, const ObjectComplex *lhs, const ObjectComplex *rhs)
+CruxValue complex_subtract_value(CruxVM *vm, const ObjectComplex *lhs, const ObjectComplex *rhs)
 {
 	(void)vm;
 	return OBJECT_VAL(new_complex_number(vm, lhs->real - rhs->real, lhs->imag - rhs->imag));
 }
 
-Value complex_multiply_value(VM *vm, const ObjectComplex *lhs, const ObjectComplex *rhs)
+CruxValue complex_multiply_value(CruxVM *vm, const ObjectComplex *lhs, const ObjectComplex *rhs)
 {
 	const double real = lhs->real * rhs->real - lhs->imag * rhs->imag;
 	const double imag = lhs->real * rhs->imag + lhs->imag * rhs->real;
 	return OBJECT_VAL(new_complex_number(vm, real, imag));
 }
 
-Value complex_divide_value(VM *vm, const ObjectComplex *lhs, const ObjectComplex *rhs)
+CruxValue complex_divide_value(CruxVM *vm, const ObjectComplex *lhs, const ObjectComplex *rhs)
 {
 	const double c = rhs->real;
 	const double d = rhs->imag;
@@ -71,12 +71,12 @@ Value complex_divide_value(VM *vm, const ObjectComplex *lhs, const ObjectComplex
 										 (lhs->imag * c - lhs->real * d) / denom));
 }
 
-Value complex_scalar_multiply_value(VM *vm, const ObjectComplex *value, const double scalar)
+CruxValue complex_scalar_multiply_value(CruxVM *vm, const ObjectComplex *value, const double scalar)
 {
 	return OBJECT_VAL(new_complex_number(vm, value->real * scalar, value->imag * scalar));
 }
 
-Value complex_scalar_divide_value(VM *vm, const ObjectComplex *value, const double scalar)
+CruxValue complex_scalar_divide_value(CruxVM *vm, const ObjectComplex *value, const double scalar)
 {
 	if (fabs(scalar) < 1e-10) {
 		return MAKE_GC_SAFE_ERROR(vm, "Division by zero.", MATH);
@@ -90,7 +90,7 @@ Value complex_scalar_divide_value(VM *vm, const ObjectComplex *value, const doub
  * arg1 -> other: Complex
  * Returns Complex
  */
-Value add_complex_number_method(VM *vm, const Value *args)
+CruxValue add_complex_number_method(CruxVM *vm, const CruxValue *args)
 {
 	return complex_add_value(vm, AS_CRUX_COMPLEX(args[0]), AS_CRUX_COMPLEX(args[1]));
 }
@@ -101,7 +101,7 @@ Value add_complex_number_method(VM *vm, const Value *args)
  * arg1 -> other: Complex
  * Returns Complex
  */
-Value sub_complex_number_method(VM *vm, const Value *args)
+CruxValue sub_complex_number_method(CruxVM *vm, const CruxValue *args)
 {
 	return complex_subtract_value(vm, AS_CRUX_COMPLEX(args[0]), AS_CRUX_COMPLEX(args[1]));
 }
@@ -112,7 +112,7 @@ Value sub_complex_number_method(VM *vm, const Value *args)
  * arg1 -> other: Complex
  * Returns Complex
  */
-Value mul_complex_number_method(VM *vm, const Value *args)
+CruxValue mul_complex_number_method(CruxVM *vm, const CruxValue *args)
 {
 	return complex_multiply_value(vm, AS_CRUX_COMPLEX(args[0]), AS_CRUX_COMPLEX(args[1]));
 }
@@ -123,7 +123,7 @@ Value mul_complex_number_method(VM *vm, const Value *args)
  * arg1 -> other: Complex
  * Returns Complex
  */
-Value div_complex_number_method(VM *vm, const Value *args)
+CruxValue div_complex_number_method(CruxVM *vm, const CruxValue *args)
 {
 	return complex_divide_value(vm, AS_CRUX_COMPLEX(args[0]), AS_CRUX_COMPLEX(args[1]));
 }
@@ -134,7 +134,7 @@ Value div_complex_number_method(VM *vm, const Value *args)
  * arg1 -> scalar: Float
  * Returns Complex
  */
-Value scale_complex_number_method(VM *vm, const Value *args)
+CruxValue scale_complex_number_method(CruxVM *vm, const CruxValue *args)
 {
 	return complex_scalar_multiply_value(vm, AS_CRUX_COMPLEX(args[0]), TO_DOUBLE(args[1]));
 }
@@ -144,7 +144,7 @@ Value scale_complex_number_method(VM *vm, const Value *args)
  * arg0 -> complex: Complex
  * Returns Float
  */
-Value magnitude_complex_number_method(VM *vm, const Value *args)
+CruxValue magnitude_complex_number_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectComplex *complex_number = AS_CRUX_COMPLEX(args[0]);
@@ -161,7 +161,7 @@ Value magnitude_complex_number_method(VM *vm, const Value *args)
  * arg0 -> complex: Complex
  * Returns Float
  */
-Value square_magnitude_complex_number_method(VM *vm, const Value *args)
+CruxValue square_magnitude_complex_number_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectComplex *complex_number = AS_CRUX_COMPLEX(args[0]);
@@ -178,7 +178,7 @@ Value square_magnitude_complex_number_method(VM *vm, const Value *args)
  * arg0 -> complex: Complex
  * Returns Complex
  */
-Value conjugate_complex_number_method(VM *vm, const Value *args)
+CruxValue conjugate_complex_number_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectComplex *complex_number = AS_CRUX_COMPLEX(args[0]);
 	ObjectComplex *conjugate = new_complex_number(vm, complex_number->real,

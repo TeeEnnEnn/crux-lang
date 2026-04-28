@@ -363,7 +363,7 @@ void use_statement(Compiler *compiler)
 			ObjectString *real_name = copy_string(compiler->owner, name_tok.start, name_tok.length);
 			ObjectString *alias_name = copy_string(compiler->owner, alias_tok.start, alias_tok.length);
 
-			Value callable_value;
+			CruxValue callable_value;
 			if (!table_get(module->names, real_name, &callable_value)) {
 				compiler_panicf(compiler->parser, NAME, "Failed to find name '%s' in module '%s'.", real_name->chars,
 								native_module_name->chars);
@@ -450,7 +450,7 @@ void use_statement(Compiler *compiler)
 				resolved_type = T_ANY; // Dynamic imports don't know the type
 			}
 
-			// Emit the original name so the VM can look it up in the module's `publics`
+			// Emit the original name so the CruxVM can look it up in the module's `publics`
 			uint16_t original_name_const = make_constant(compiler, OBJECT_VAL(real_name));
 			emit_word(compiler, original_name_const);
 

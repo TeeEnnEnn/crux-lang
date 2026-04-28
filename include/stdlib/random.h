@@ -4,12 +4,12 @@
 #include "object.h"
 #include "vm.h"
 
-Value random_seed_method(VM *vm, const Value *args);
-Value random_int_method(VM *vm, const Value *args);
-Value random_float_method(VM *vm, const Value *args);
-Value random_bool_method(VM *vm, const Value *args);
-Value random_choice_method(VM *vm, const Value *args);
+CruxValue random_seed_method(CruxVM *vm, const CruxValue *args);
+CruxValue random_int_method(CruxVM *vm, const CruxValue *args);
+CruxValue random_float_method(CruxVM *vm, const CruxValue *args);
+CruxValue random_bool_method(CruxVM *vm, const CruxValue *args);
+CruxValue random_choice_method(CruxVM *vm, const CruxValue *args);
 
-Value random_next_method(VM *vm, const Value *args);
-Value random_init_function(VM *vm, const Value *args);
+CruxValue random_next_method(CruxVM *vm, const CruxValue *args);
+CruxValue random_init_function(CruxVM *vm, const CruxValue *args);
 #endif // RANDOM_H

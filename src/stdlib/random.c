@@ -14,7 +14,7 @@
  * arg1 -> seed: Int
  * Returns Nil
  */
-Value random_seed_method(VM *vm, const Value *args)
+CruxValue random_seed_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const uint64_t seedInt = (uint64_t)AS_INT(args[1]);
@@ -44,7 +44,7 @@ double get_next(ObjectRandom *random)
  * arg0 -> random: Random
  * Returns Float
  */
-Value random_next_method(VM *vm, const Value *args)
+CruxValue random_next_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	ObjectRandom *random = AS_CRUX_RANDOM(args[0]);
@@ -55,7 +55,7 @@ Value random_next_method(VM *vm, const Value *args)
  * Creates a new Random number generator instance
  * Returns Random
  */
-Value random_init_function(VM *vm, const Value *args)
+CruxValue random_init_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	ObjectRandom *random_obj = new_random(vm);
@@ -69,10 +69,10 @@ Value random_init_function(VM *vm, const Value *args)
  * arg2 -> max: Int
  * Returns Result<Int>
  */
-Value random_int_method(VM *vm, const Value *args)
+CruxValue random_int_method(CruxVM *vm, const CruxValue *args)
 {
-	const Value min = args[1];
-	const Value max = args[2];
+	const CruxValue min = args[1];
+	const CruxValue max = args[2];
 
 	const int32_t minInt = AS_INT(min);
 	const int32_t maxInt = AS_INT(max);
@@ -98,10 +98,10 @@ Value random_int_method(VM *vm, const Value *args)
  * arg2 -> max: Float
  * Returns Result<Float>
  */
-Value random_float_method(VM *vm, const Value *args)
+CruxValue random_float_method(CruxVM *vm, const CruxValue *args)
 {
-	const Value min = args[1];
-	const Value max = args[2];
+	const CruxValue min = args[1];
+	const CruxValue max = args[2];
 
 	const double minDouble = IS_FLOAT(min) ? AS_FLOAT(min)
 					       : (double)AS_INT(min);
@@ -129,7 +129,7 @@ Value random_float_method(VM *vm, const Value *args)
  * arg1 -> probability: Float
  * Returns Result<Bool>
  */
-Value random_bool_method(VM *vm, const Value *args)
+CruxValue random_bool_method(CruxVM *vm, const CruxValue *args)
 {
 	const double prob = TO_DOUBLE(args[1]);
 
@@ -152,7 +152,7 @@ Value random_bool_method(VM *vm, const Value *args)
  * arg1 -> array: Array
  * Returns Result<Any>
  */
-Value random_choice_method(VM *vm, const Value *args)
+CruxValue random_choice_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *arr = AS_CRUX_ARRAY(args[1]);
 	if (arr->size == 0) {

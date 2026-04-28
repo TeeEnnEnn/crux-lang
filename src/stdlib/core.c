@@ -9,7 +9,7 @@
 #include "utf8.h"
 #include "value.h"
 
-static Value get_length(const Value value)
+static CruxValue get_length(const CruxValue value)
 {
 	if (IS_CRUX_ARRAY(value)) {
 		return INT_VAL(AS_CRUX_ARRAY(value)->size);
@@ -49,17 +49,17 @@ static Value get_length(const Value value)
  * Returns the length of a value (works with Array, String, Table, Vector,
  * Matrix) arg0 -> value: Any Returns Int
  */
-Value length_function(VM *vm, const Value *args)
+CruxValue length_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
-	const Value value = args[0];
-	const Value length = get_length(value);
+	const CruxValue value = args[0];
+	const CruxValue length = get_length(value);
 	return length;
 }
 
-static Value cast_array(VM *vm, const Value *args, bool *success)
+static CruxValue cast_array(CruxVM *vm, const CruxValue *args, bool *success)
 {
-	const Value value = args[0];
+	const CruxValue value = args[0];
 
 	if (IS_CRUX_ARRAY(value)) {
 		return value;
@@ -88,7 +88,7 @@ static Value cast_array(VM *vm, const Value *args, bool *success)
 			cursor += char_bytes;
 		}
 
-		const Value result = OBJECT_VAL(array);
+		const CruxValue result = OBJECT_VAL(array);
 		pop(vm->current_module_record); // array
 		return result;
 	}
@@ -114,7 +114,7 @@ static Value cast_array(VM *vm, const Value *args, bool *success)
 			}
 		}
 
-		const Value result = OBJECT_VAL(array);
+		const CruxValue result = OBJECT_VAL(array);
 		pop(vm->current_module_record); // array
 		return result;
 	}
@@ -122,15 +122,15 @@ static Value cast_array(VM *vm, const Value *args, bool *success)
 	ObjectArray *array = new_array(vm, 1);
 	push(vm->current_module_record, OBJECT_VAL(array));
 	array_add(vm, array, value, 0);
-	const Value result = OBJECT_VAL(array);
+	const CruxValue result = OBJECT_VAL(array);
 	pop(vm->current_module_record); // array
 	return result;
 }
 
-static Value cast_table(VM *vm, const Value *args)
+static CruxValue cast_table(CruxVM *vm, const CruxValue *args)
 {
 	ObjectModuleRecord *moduleRecord = vm->current_module_record;
-	const Value value = args[0];
+	const CruxValue value = args[0];
 
 	if (IS_CRUX_TABLE(value)) {
 		return value;
@@ -142,12 +142,12 @@ static Value cast_table(VM *vm, const Value *args)
 		push(vm->current_module_record, OBJECT_VAL(table));
 
 		for (uint32_t i = 0; i < array->size; i++) {
-			const Value k = INT_VAL(i);
-			const Value v = array->values[i];
+			const CruxValue k = INT_VAL(i);
+			const CruxValue v = array->values[i];
 			object_table_set(vm, table, k, v);
 		}
 
-		const Value result = OBJECT_VAL(table);
+		const CruxValue result = OBJECT_VAL(table);
 		pop(vm->current_module_record); // table
 		return result;
 	}
@@ -167,7 +167,7 @@ static Value cast_table(VM *vm, const Value *args)
 			cursor += char_bytes;
 		}
 
-		const Value result = OBJECT_VAL(table);
+		const CruxValue result = OBJECT_VAL(table);
 		pop(vm->current_module_record); // table
 		return result;
 	}
@@ -175,12 +175,12 @@ static Value cast_table(VM *vm, const Value *args)
 	ObjectTable *table = new_object_table(vm, 1);
 	push(vm->current_module_record, OBJECT_VAL(table));
 	object_table_set(vm, table, INT_VAL(0), value);
-	const Value result = OBJECT_VAL(table);
+	const CruxValue result = OBJECT_VAL(table);
 	pop(vm->current_module_record); // table
 	return result;
 }
 
-static Value cast_int(VM *vm, const Value arg, bool *success)
+static CruxValue cast_int(CruxVM *vm, const CruxValue arg, bool *success)
 {
 	(void)vm;
 	if (IS_INT(arg)) {
@@ -218,10 +218,10 @@ static Value cast_int(VM *vm, const Value arg, bool *success)
 	return NIL_VAL;
 }
 
-static Value cast_float(VM *vm, const Value *args, bool *success)
+static CruxValue cast_float(CruxVM *vm, const CruxValue *args, bool *success)
 {
 	(void)vm;
-	const Value value = args[0];
+	const CruxValue value = args[0];
 
 	if (IS_FLOAT(value)) {
 		*success = true;
@@ -261,11 +261,11 @@ static Value cast_float(VM *vm, const Value *args, bool *success)
  * arg0 -> value: Any
  * Returns Result<Int>
  */
-Value int_function(VM *vm, const Value *args)
+CruxValue int_function(CruxVM *vm, const CruxValue *args)
 {
 	bool success = false;
-	const Value argument = args[0];
-	const Value value = cast_int(vm, argument, &success);
+	const CruxValue argument = args[0];
+	const CruxValue value = cast_int(vm, argument, &success);
 	if (!success) {
 		return MAKE_GC_SAFE_ERROR(vm, "Failed to convert value to integer.", RUNTIME);
 	}
@@ -277,10 +277,10 @@ Value int_function(VM *vm, const Value *args)
  * arg0 -> value: Any
  * Returns Result<Float>
  */
-Value float_function(VM *vm, const Value *args)
+CruxValue float_function(CruxVM *vm, const CruxValue *args)
 {
 	bool success = true;
-	const Value value = cast_float(vm, args, &success);
+	const CruxValue value = cast_float(vm, args, &success);
 	if (!success) {
 		return MAKE_GC_SAFE_ERROR(vm, "Failed to convert value to float.", RUNTIME);
 	}
@@ -292,9 +292,9 @@ Value float_function(VM *vm, const Value *args)
  * arg0 -> value: Any
  * Returns String
  */
-Value string_function(VM *vm, const Value *args)
+CruxValue string_function(CruxVM *vm, const CruxValue *args)
 {
-	const Value value = args[0];
+	const CruxValue value = args[0];
 	ObjectString *str = to_string(vm, value);
 	return OBJECT_VAL(str);
 }
@@ -304,10 +304,10 @@ Value string_function(VM *vm, const Value *args)
  * arg0 -> value: Any
  * Returns Result<Array>
  */
-Value array_function(VM *vm, const Value *args)
+CruxValue array_function(CruxVM *vm, const CruxValue *args)
 {
 	bool success = true;
-	const Value array = cast_array(vm, args, &success);
+	const CruxValue array = cast_array(vm, args, &success);
 	if (!success) {
 		return MAKE_GC_SAFE_ERROR(vm, "Failed to convert value to array.", RUNTIME);
 	}
@@ -319,9 +319,9 @@ Value array_function(VM *vm, const Value *args)
  * arg0 -> value: Any
  * Returns Result<Table>
  */
-Value table_function(VM *vm, const Value *args)
+CruxValue table_function(CruxVM *vm, const CruxValue *args)
 {
-	const Value table = cast_table(vm, args);
+	const CruxValue table = cast_table(vm, args);
 	return OBJECT_VAL(table);
 }
 
@@ -331,7 +331,7 @@ Value table_function(VM *vm, const Value *args)
  * arg1 -> values: Table
  * Returns Result<Nil>
  */
-Value format_function(VM *vm, const Value *args)
+CruxValue format_function(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectString *str = AS_CRUX_STRING(args[0]);
 	const ObjectTable *table = AS_CRUX_TABLE(args[1]);
@@ -339,7 +339,7 @@ Value format_function(VM *vm, const Value *args)
 	typedef struct {
 		uint32_t byte_start;
 		uint32_t byte_end;
-		Value value;
+		CruxValue value;
 	} FormatToken;
 
 	uint32_t tokens_capacity = 8;
@@ -385,7 +385,7 @@ Value format_function(VM *vm, const Value *args)
 
 			push(vm->current_module_record, OBJECT_VAL(key));
 
-			Value val;
+			CruxValue val;
 			bool found = object_table_get(table->entries, table->size, table->capacity, OBJECT_VAL(key), &val);
 
 			if (!found) {
@@ -431,18 +431,18 @@ Value format_function(VM *vm, const Value *args)
 	return OBJECT_VAL(new_ok_result(vm, NIL_VAL));
 }
 
-Value iter_function(VM *vm, const Value *args)
+CruxValue iter_function(CruxVM *vm, const CruxValue *args)
 {
-	Value iterator;
+	CruxValue iterator;
 	if (!get_iterator_from_value(vm, args[0], &iterator)) {
 		return MAKE_GC_SAFE_ERROR(vm, "Expected an iterable object.", VALUE);
 	}
 	return OBJECT_VAL(new_ok_result(vm, iterator));
 }
 
-Value next_function(VM *vm, const Value *args)
+CruxValue next_function(CruxVM *vm, const CruxValue *args)
 {
-	Value option;
+	CruxValue option;
 	if (!get_next_option_from_iterator(vm, args[0], &option)) {
 		ObjectOption *none = new_option(vm, NIL_VAL, false);
 		return OBJECT_VAL(none);

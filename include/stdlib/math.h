@@ -3,32 +3,32 @@
 
 #include "value.h"
 
-Value pow_function(VM *vm, const Value *args);
-Value sqrt_function(VM *vm, const Value *args);
-Value abs_function(VM *vm, const Value *args);
+CruxValue pow_function(CruxVM *vm, const CruxValue *args);
+CruxValue sqrt_function(CruxVM *vm, const CruxValue *args);
+CruxValue abs_function(CruxVM *vm, const CruxValue *args);
 
-Value sin_function(VM *vm, const Value *args);
-Value cos_function(VM *vm, const Value *args);
-Value tan_function(VM *vm, const Value *args);
+CruxValue sin_function(CruxVM *vm, const CruxValue *args);
+CruxValue cos_function(CruxVM *vm, const CruxValue *args);
+CruxValue tan_function(CruxVM *vm, const CruxValue *args);
 
-Value asin_function(VM *vm, const Value *args);
-Value acos_function(VM *vm, const Value *args);
-Value atan_function(VM *vm, const Value *args);
+CruxValue asin_function(CruxVM *vm, const CruxValue *args);
+CruxValue acos_function(CruxVM *vm, const CruxValue *args);
+CruxValue atan_function(CruxVM *vm, const CruxValue *args);
 
-Value exp_function(VM *vm, const Value *args);
-Value ln_function(VM *vm, const Value *args);
-Value log10_function(VM *vm, const Value *args);
+CruxValue exp_function(CruxVM *vm, const CruxValue *args);
+CruxValue ln_function(CruxVM *vm, const CruxValue *args);
+CruxValue log10_function(CruxVM *vm, const CruxValue *args);
 
-Value ceil_function(VM *vm, const Value *args);
-Value floor_function(VM *vm, const Value *args);
-Value round_function(VM *vm, const Value *args);
+CruxValue ceil_function(CruxVM *vm, const CruxValue *args);
+CruxValue floor_function(CruxVM *vm, const CruxValue *args);
+CruxValue round_function(CruxVM *vm, const CruxValue *args);
 
-Value min_function(VM *vm, const Value *args);
-Value max_function(VM *vm, const Value *args);
+CruxValue min_function(CruxVM *vm, const CruxValue *args);
+CruxValue max_function(CruxVM *vm, const CruxValue *args);
 
-Value pi_function(VM *vm, const Value *args);
-Value e_function(VM *vm, const Value *args);
-Value nan_function(VM *vm, const Value *args);
-Value inf_function(VM *vm, const Value *args);
+CruxValue pi_function(CruxVM *vm, const CruxValue *args);
+CruxValue e_function(CruxVM *vm, const CruxValue *args);
+CruxValue nan_function(CruxVM *vm, const CruxValue *args);
+CruxValue inf_function(CruxVM *vm, const CruxValue *args);
 
 #endif // MATH_H

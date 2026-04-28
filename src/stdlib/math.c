@@ -1,6 +1,7 @@
-#include "stdlib/math.h"
 #include <math.h>
+
 #include "panic.h"
+#include "stdlib/math.h"
 #include "value.h"
 
 /**
@@ -9,7 +10,7 @@
  * arg1 -> exponent: Float
  * Returns Float
  */
-Value pow_function(VM *vm, const Value *args)
+CruxValue pow_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const double base = TO_DOUBLE(args[0]);
@@ -22,7 +23,7 @@ Value pow_function(VM *vm, const Value *args)
  * Calculates the square root of a number. Returns an error for negative
  * numbers. arg0 -> number: Float Returns Result<Float>
  */
-Value sqrt_function(VM *vm, const Value *args)
+CruxValue sqrt_function(CruxVM *vm, const CruxValue *args)
 {
 	const double number = TO_DOUBLE(args[0]);
 	if (number < 0) {
@@ -56,7 +57,7 @@ static double absolute_float(const double x)
  * arg0 -> x: Float | Int
  * Returns Int or Float (same type as input)
  */
-Value abs_function(VM *vm, const Value *args)
+CruxValue abs_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	return IS_INT(args[0]) ? INT_VAL(absolute_int(AS_INT(args[0])))
@@ -68,7 +69,7 @@ Value abs_function(VM *vm, const Value *args)
  * arg0 -> angle: Float
  * Returns Float
  */
-Value sin_function(VM *vm, const Value *args)
+CruxValue sin_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	return FLOAT_VAL(sin(TO_DOUBLE(args[0])));
@@ -79,7 +80,7 @@ Value sin_function(VM *vm, const Value *args)
  * arg0 -> angle: Float
  * Returns Float
  */
-Value cos_function(VM *vm, const Value *args)
+CruxValue cos_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	return FLOAT_VAL(cos(TO_DOUBLE(args[0])));
@@ -90,7 +91,7 @@ Value cos_function(VM *vm, const Value *args)
  * arg0 -> angle: Float
  * Returns Float
  */
-Value tan_function(VM *vm, const Value *args)
+CruxValue tan_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	return FLOAT_VAL(tan(TO_DOUBLE(args[0])));
@@ -100,7 +101,7 @@ Value tan_function(VM *vm, const Value *args)
  * Calculates the arcsine (inverse sine) of a value. Argument must be between -1
  * and 1. arg0 -> value: Float Returns Result<Float>
  */
-Value asin_function(VM *vm, const Value *args)
+CruxValue asin_function(CruxVM *vm, const CruxValue *args)
 {
 	const double num = TO_DOUBLE(args[0]);
 	if (num < -1 || num > 1) {
@@ -116,7 +117,7 @@ Value asin_function(VM *vm, const Value *args)
  * Calculates the arccosine (inverse cosine) of a value. Argument must be
  * between -1 and 1. arg0 -> value: Float Returns Result<Float>
  */
-Value acos_function(VM *vm, const Value *args)
+CruxValue acos_function(CruxVM *vm, const CruxValue *args)
 {
 	const double num = TO_DOUBLE(args[0]);
 	if (num < -1 || num > 1) {
@@ -132,7 +133,7 @@ Value acos_function(VM *vm, const Value *args)
  * arg0 -> value: Float
  * Returns Float
  */
-Value atan_function(VM *vm, const Value *args)
+CruxValue atan_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	return FLOAT_VAL(atan(TO_DOUBLE(args[0])));
@@ -143,7 +144,7 @@ Value atan_function(VM *vm, const Value *args)
  * arg0 -> x: Float
  * Returns Float
  */
-Value exp_function(VM *vm, const Value *args)
+CruxValue exp_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	return FLOAT_VAL(exp(TO_DOUBLE(args[0])));
@@ -153,7 +154,7 @@ Value exp_function(VM *vm, const Value *args)
  * Calculates the natural logarithm (base e) of a number. Argument must be
  * positive. arg0 -> number: Float Returns Result<Float>
  */
-Value ln_function(VM *vm, const Value *args)
+CruxValue ln_function(CruxVM *vm, const CruxValue *args)
 {
 	const double number = TO_DOUBLE(args[0]);
 	if (number < 0) {
@@ -170,7 +171,7 @@ Value ln_function(VM *vm, const Value *args)
  * arg0 -> number: Float
  * Returns Result<Float>
  */
-Value log10_function(VM *vm, const Value *args)
+CruxValue log10_function(CruxVM *vm, const CruxValue *args)
 {
 	const double number = TO_DOUBLE(args[0]);
 	if (number < 0) {
@@ -188,7 +189,7 @@ Value log10_function(VM *vm, const Value *args)
  * arg0 -> number: Float
  * Returns Float
  */
-Value ceil_function(VM *vm, const Value *args)
+CruxValue ceil_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	return FLOAT_VAL(ceil(TO_DOUBLE(args[0])));
@@ -199,7 +200,7 @@ Value ceil_function(VM *vm, const Value *args)
  * arg0 -> number: Float
  * Returns Float
  */
-Value floor_function(VM *vm, const Value *args)
+CruxValue floor_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	return FLOAT_VAL(floor(TO_DOUBLE(args[0])));
@@ -210,7 +211,7 @@ Value floor_function(VM *vm, const Value *args)
  * arg0 -> number: Float
  * Returns Float
  */
-Value round_function(VM *vm, const Value *args)
+CruxValue round_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	return FLOAT_VAL(round(TO_DOUBLE(args[0])));
@@ -220,7 +221,7 @@ Value round_function(VM *vm, const Value *args)
  * Returns the mathematical constant pi (π)
  * Returns Float
  */
-Value pi_function(VM *vm, const Value *args)
+CruxValue pi_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	(void)vm;
@@ -231,7 +232,7 @@ Value pi_function(VM *vm, const Value *args)
  * Returns the mathematical constant e (Euler's number)
  * Returns Float
  */
-Value e_function(VM *vm, const Value *args)
+CruxValue e_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	(void)vm;
@@ -242,7 +243,7 @@ Value e_function(VM *vm, const Value *args)
  * Returns NaN (Not a Number) - a special floating-point value
  * Returns Float
  */
-Value nan_function(VM *vm, const Value *args)
+CruxValue nan_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	(void)vm;
@@ -253,7 +254,7 @@ Value nan_function(VM *vm, const Value *args)
  * Returns positive infinity
  * Returns Float
  */
-Value inf_function(VM *vm, const Value *args)
+CruxValue inf_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)args;
 	(void)vm;
@@ -266,7 +267,7 @@ Value inf_function(VM *vm, const Value *args)
  * arg1 -> b: Float
  * Returns Float
  */
-Value min_function(VM *vm, const Value *args)
+CruxValue min_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const double a = TO_DOUBLE(args[0]);
@@ -280,7 +281,7 @@ Value min_function(VM *vm, const Value *args)
  * arg1 -> b: Float
  * Returns Float
  */
-Value max_function(VM *vm, const Value *args)
+CruxValue max_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const double a = TO_DOUBLE(args[0]);

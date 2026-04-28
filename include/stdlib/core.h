@@ -3,15 +3,15 @@
 
 #include "value.h"
 
-Value length_function(VM *vm, const Value *args);
-Value int_function(VM *vm, const Value *args);
-Value float_function(VM *vm, const Value *args);
-Value string_function(VM *vm, const Value *args);
-Value array_function(VM *vm, const Value *args);
-Value table_function(VM *vm, const Value *args);
-Value format_function(VM *vm, const Value *args);
+CruxValue length_function(CruxVM *vm, const CruxValue *args);
+CruxValue int_function(CruxVM *vm, const CruxValue *args);
+CruxValue float_function(CruxVM *vm, const CruxValue *args);
+CruxValue string_function(CruxVM *vm, const CruxValue *args);
+CruxValue array_function(CruxVM *vm, const CruxValue *args);
+CruxValue table_function(CruxVM *vm, const CruxValue *args);
+CruxValue format_function(CruxVM *vm, const CruxValue *args);
 
-Value iter_function(VM *vm, const Value *args);
-Value next_function(VM *vm, const Value *args);
+CruxValue iter_function(CruxVM *vm, const CruxValue *args);
+CruxValue next_function(CruxVM *vm, const CruxValue *args);
 
 #endif // CORE_H

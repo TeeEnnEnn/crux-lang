@@ -955,7 +955,7 @@ void named_variable(Compiler *compiler, Token name, const bool can_assign)
 				type_table_get(comp->type_table, name_str, &var_type);
 			}
 			if (global_index == -1) {
-				Value index_val;
+				CruxValue index_val;
 				if (table_get(&comp->globals, name_str, &index_val)) {
 					global_index = AS_INT(index_val);
 					arg = global_index;
@@ -1047,7 +1047,7 @@ void binary(Compiler *compiler, bool can_assign)
 
 	ObjectTypeRecord *result_type = NULL;
 	push(compiler->owner->current_module_record, NIL_VAL);
-	Value *result_slot = compiler->owner->current_module_record->stack_top - 1;
+	CruxValue *result_slot = compiler->owner->current_module_record->stack_top - 1;
 
 	const bool either_any = (left_type && left_type->base_type == ANY_TYPE) ||
 							(right_type && right_type->base_type == ANY_TYPE) || !left_type || !right_type;
@@ -1483,7 +1483,7 @@ void dot(Compiler *compiler, const bool can_assign)
 	int field_index = -1;
 	if (object_type->base_type == STRUCT_TYPE) {
 		ObjectString *field_name = AS_CRUX_STRING(current_chunk(compiler)->constants.values[name_constant]);
-		Value index_val;
+		CruxValue index_val;
 		if (table_get(&object_type->as.struct_type.definition->fields, field_name, &index_val)) {
 			field_index = AS_INT(index_val);
 		}
@@ -1604,7 +1604,7 @@ void dot(Compiler *compiler, const bool can_assign)
 			}
 
 		} else if (object_type->base_type != ANY_TYPE) {
-			const VM *vm = compiler->owner;
+			const CruxVM *vm = compiler->owner;
 			const Table *type_table = NULL;
 
 			switch (object_type->base_type) {
@@ -1808,7 +1808,7 @@ void struct_instance(Compiler *compiler, const bool can_assign)
 				const ObjectStruct *definition = struct_type->as.struct_type.definition;
 
 				// ensure field exists on the struct
-				Value field_index_val;
+				CruxValue field_index_val;
 				if (!table_get(&definition->fields, fieldName, &field_index_val)) {
 					compiler_panicf(compiler->parser, NAME, "Struct has no field '%.*s'.", (int)fieldName->byte_length,
 									fieldName->chars);

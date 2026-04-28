@@ -12,6 +12,6 @@ typedef struct {
 	ObjectTypeRecord *return_type;
 } Callable;
 
-bool initialize_std_lib(VM *vm);
+bool initialize_std_lib(CruxVM *vm);
 
 #endif // STD_H
