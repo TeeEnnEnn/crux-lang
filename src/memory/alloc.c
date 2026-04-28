@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "alloc.h"
+#include "crux.h"
 #include "garbage_collector.h"
 #include "object.h"
 #include "panic.h"
@@ -28,7 +29,7 @@ void *alloc_memory(CruxVM *vm, size_t size)
 void free_memory(CruxVM *vm, void *ptr, const size_t size)
 {
 	if (!ptr || size == 0) {
-		fprintf(stderr, "Error: NULL pointer given for memory to free.\n");
+		vm_error(vm, Crux_ERROR_RUNTIME, 0, "Error: NULL pointer given for memory to free.\n");
 		return;
 	}
 
@@ -61,7 +62,8 @@ void *allocate_object_with_gc(CruxVM *vm, const size_t size)
 			if (vm->current_module_record) {
 				runtime_panic(vm->current_module_record, MEMORY, "Failed to allocate %zu bytes.", size);
 			} else {
-				fprintf(stderr, "Fatal error - Out of Memory: Failed to allocate %zu bytes.\n", size);
+				vm_error(vm, Crux_ERROR_RUNTIME, 0, "Fatal error - Out of Memory: Failed to allocate %zu bytes.\n", size);
+
 				longjmp(vm->jump_buffer, INTERPRET_RUNTIME_ERROR);
 			}
 		}

@@ -77,6 +77,7 @@ typedef enum {
 } GC_STATUS;
 
 struct CruxVM {
+	CruxConfiguration config;
 	CruxObject *objects; // Head of global object linked list
 	size_t object_count;
 
@@ -182,9 +183,9 @@ struct CruxVM {
 
 #define PEEK(module_record, distance) ((module_record)->stack_top[-1 - (distance)])
 
-CruxVM *new_vm(int argc, const char **argv);
+CruxVM *new_vm(CruxConfiguration *config);
 
-bool init_vm(CruxVM *vm, int argc, const char **argv);
+bool init_vm(CruxVM *vm, CruxConfiguration *config);
 
 void free_vm(CruxVM *vm);
 
@@ -287,5 +288,8 @@ bool range_indices_in_bounds(const ObjectRange *range, const uint32_t collection
 bool collect_string_codepoint_starts(CruxVM *vm, const ObjectString *string, const utf8_int8_t ***starts_out);
 
 bool bind_core_globals(CruxVM *vm, ObjectModuleRecord *module_record);
+
+void vm_print(CruxVM* vm, const char* format, ...) 	__attribute__((format(printf, 2, 3)));
+void vm_error(CruxVM *vm, CruxErrorType error_type, int line_number, const char *format, ...) __attribute__((format(printf, 4, 5)));
 
 #endif // VM_H

@@ -120,6 +120,7 @@ InterpretResult run(CruxVM *vm, const bool is_anonymous_frame)
 									&&OP_SET_UPVALUE_MODULUS,
 									&&OP_USE_MODULE,
 									&&OP_FINISH_USE,
+									&&OP_FINISH_PUB_USE,
 									&&OP_TYPEOF,
 									&&OP_STRUCT,
 									&&OP_STRUCT_INSTANCE_START,
@@ -1184,8 +1185,10 @@ OP_USE_MODULE: {
 	return INTERPRET_RUNTIME_ERROR;
 }
 
-OP_FINISH_USE: {
+OP_FINISH_USE:
+OP_FINISH_PUB_USE: {
 	uint16_t nameCount = READ_SHORT();
+    bool is_public_reexport = (instruction == OP_FINISH_PUB_USE);
 
 	CruxValue moduleValue = pop(current_module_record);
 	if (!IS_CRUX_MODULE_RECORD(moduleValue)) {
@@ -1215,6 +1218,9 @@ OP_FINISH_USE: {
 			push(current_module_record, value);
 		} else {
 			current_module_record->globals[global_index] = value;
+            if (is_public_reexport) {
+                table_set(vm, &current_module_record->publics, export_name, value);
+            }
 		}
 	}
 
@@ -2360,15 +2366,15 @@ OP_2_FLOAT: {
 }
 
 end: {
-	printf("        ");
+	vm_print(vm, "        ");
 	for (CruxValue *slot = current_module_record->stack; slot < current_module_record->stack_top; slot++) {
-		printf("[");
-		print_value(*slot, false);
-		printf("]");
+		vm_print(vm, "[");
+		print_value(vm, *slot, false);
+		vm_print(vm, "]");
 	}
-	printf("\n");
+	vm_print(vm, "\n");
 
-	disassemble_instruction(&frame->closure->function->chunk, (int)(frame->ip - frame->closure->function->chunk.code));
+	disassemble_instruction(vm, &frame->closure->function->chunk, (int)(frame->ip - frame->closure->function->chunk.code));
 
 	instruction = READ_SHORT();
 	goto *dispatchTable[instruction];

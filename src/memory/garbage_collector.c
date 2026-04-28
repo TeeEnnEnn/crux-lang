@@ -236,9 +236,9 @@ static const BlackenFunction blacken_dispatch[] = {
 static void blacken_object(CruxVM *vm, CruxObject *object)
 {
 #ifdef DEBUG_LOG_GC
-	printf("%p blacken ", (void *)object);
+	vm_print(vm, "%p blacken ", (void *)object);
 	print_value(OBJECT_VAL(object), false);
-	printf("\n");
+	vm_print(vm, "\n");
 #endif
 
 	const ObjectType type = object_get_type(object);
@@ -814,7 +814,7 @@ static void trace_references(CruxVM *vm)
 static void free_object(CruxVM *vm, CruxObject *object, bool free_all)
 {
 #ifdef DEBUG_LOG_GC
-	printf("%p free type %d\n", (void *)object, object_get_type(object));
+	vm_print(vm, "%p free type %d\n", (void *)object, object_get_type(object));
 #endif
 	if (object == NULL || (object_is_immortal(object) && !free_all))
 		return;
@@ -882,7 +882,7 @@ void collect_garbage(CruxVM *vm)
 	vm->gc_last_bytes_before = vm->bytes_allocated;
 
 #ifdef DEBUG_LOG_GC
-	printf("--- gc begin ---\n");
+	vm_print(vm, "--- gc begin ---\n");
 	const size_t before = vm->bytes_allocated;
 #endif
 
@@ -923,8 +923,8 @@ void collect_garbage(CruxVM *vm)
 	vm->gc_total_ns += vm->gc_last_total_ns;
 
 #ifdef DEBUG_LOG_GC
-	printf("--- gc end ---\n");
-	printf("    collected %zu bytes (from %zu to %zu) next at %zu\n", before - vm->bytes_allocated, before,
+	vm_print(vm, "--- gc end ---\n");
+	vm_print(vm, "    collected %zu bytes (from %zu to %zu) next at %zu\n", before - vm->bytes_allocated, before,
 		   vm->bytes_allocated, vm->next_gc);
 #endif
 }

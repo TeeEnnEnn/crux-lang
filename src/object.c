@@ -8,6 +8,7 @@
 #include "table.h"
 #include "utf8.h"
 #include "value.h"
+#include "vm.h"
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -37,7 +38,7 @@ CruxObject *allocate_pooled_object(CruxVM *vm, const size_t size, const ObjectTy
 	vm->objects = object;
 
 #ifdef DEBUG_LOG_GC
-	printf("%p allocate %zu for %d\n", (void *)object, size, type);
+	vm_print(vm, "%p allocate %zu for %d\n", (void *)object, size, type);
 #endif
 
 	return object;
@@ -249,11 +250,11 @@ int sprint_type_to(char *buffer, size_t size, const CruxValue value)
 	return written;
 }
 
-void print_type_to(FILE *stream, const CruxValue value)
+void print_type_to(CruxVM *vm, const CruxValue value)
 {
 	char buffer[256];
 	sprint_type_to(buffer, sizeof(buffer), value);
-	fprintf(stream, "%s", buffer);
+	vm_print(vm, "%s", buffer);
 }
 
 ObjectUpvalue *new_upvalue(CruxVM *vm, CruxValue *slot)
@@ -348,83 +349,83 @@ ObjectString *copy_string(CruxVM *vm, const char *chars, const uint32_t length)
 	return allocate_string(vm, heapChars, length, hash);
 }
 
-void print_error_type_to(FILE *stream, const ErrorType type)
+void print_error_type_to(CruxVM *vm, const ErrorType type)
 {
 	switch (type) {
 	case SYNTAX:
-		fprintf(stream, "syntax");
+		vm_print(vm, "syntax");
 		break;
 	case MATH:
-		fprintf(stream, "math");
+		vm_print(vm, "math");
 		break;
 	case BOUNDS:
-		fprintf(stream, "bounds");
+		vm_print(vm, "bounds");
 		break;
 	case RUNTIME:
-		fprintf(stream, "runtime");
+		vm_print(vm, "runtime");
 		break;
 	case TYPE:
-		fprintf(stream, "type");
+		vm_print(vm, "type");
 		break;
 	case LOOP_EXTENT:
-		fprintf(stream, "loop");
+		vm_print(vm, "loop");
 		break;
 	case LIMIT:
-		fprintf(stream, "limit");
+		vm_print(vm, "limit");
 		break;
 	case BRANCH_EXTENT:
-		fprintf(stream, "branch");
+		vm_print(vm, "branch");
 		break;
 	case CLOSURE_EXTENT:
-		fprintf(stream, "closure");
+		vm_print(vm, "closure");
 		break;
 	case LOCAL_EXTENT:
-		fprintf(stream, "local");
+		vm_print(vm, "local");
 		break;
 	case ARGUMENT_EXTENT:
-		fprintf(stream, "argument");
+		vm_print(vm, "argument");
 		break;
 	case NAME:
-		fprintf(stream, "name");
+		vm_print(vm, "name");
 		break;
 	case COLLECTION_EXTENT:
-		fprintf(stream, "collection");
+		vm_print(vm, "collection");
 		break;
 	case VARIABLE_EXTENT:
-		fprintf(stream, "variable");
+		vm_print(vm, "variable");
 		break;
 	case RETURN_EXTENT:
-		fprintf(stream, "return");
+		vm_print(vm, "return");
 		break;
 	case ARGUMENT_MISMATCH:
-		fprintf(stream, "argument mismatch");
+		vm_print(vm, "argument mismatch");
 		break;
 	case STACK_OVERFLOW:
-		fprintf(stream, "stack overflow");
+		vm_print(vm, "stack overflow");
 		break;
 	case COLLECTION_GET:
-		fprintf(stream, "collection get");
+		vm_print(vm, "collection get");
 		break;
 	case COLLECTION_SET:
-		fprintf(stream, "collection set");
+		vm_print(vm, "collection set");
 		break;
 	case MEMORY:
-		fprintf(stream, "memory");
+		vm_print(vm, "memory");
 		break;
 	case VALUE:
-		fprintf(stream, "value");
+		vm_print(vm, "value");
 		break;
 	case ASSERT:
-		fprintf(stream, "assert");
+		vm_print(vm, "assert");
 		break;
 	case IMPORT_EXTENT:
-		fprintf(stream, "import");
+		vm_print(vm, "import");
 		break;
 	case IO:
-		fprintf(stream, "io");
+		vm_print(vm, "io");
 		break;
 	case IMPORT:
-		fprintf(stream, "import");
+		vm_print(vm, "import");
 		break;
 	}
 }
@@ -436,200 +437,201 @@ void print_error_type_to(FILE *stream, const ErrorType type)
  * console, used for debugging and representation. If the function is
  * anonymous (name is NULL), it prints "<script>".
  *
+ * @param vm The CruxVM
  * @param function The ObjectFunction to print the name of.
  */
-static void print_function_to(FILE *stream, const ObjectFunction *function)
+static void print_function_to(CruxVM *vm, const ObjectFunction *function)
 {
 	if (function->name == NULL) {
-		fprintf(stream, "<script>");
+		vm_print(vm, "<script>");
 		return;
 	}
-	fprintf(stream, "<fn %s>", function->name->chars);
+	vm_print(vm, "<fn %s>", function->name->chars);
 }
 
-static void print_array_to(FILE *stream, const CruxValue *values, const uint32_t size)
+static void print_array_to(CruxVM *vm, const CruxValue *values, const uint32_t size)
 {
-	fprintf(stream, "[");
+	vm_print(vm, "[");
 	for (uint32_t i = 0; i < size; i++) {
-		print_value_to(stream, values[i], true);
+		print_value_to(vm, values[i], true);
 		if (i != size - 1) {
-			fprintf(stream, ", ");
+			vm_print(vm, ", ");
 		}
 	}
-	fprintf(stream, "]");
+	vm_print(vm, "]");
 }
 
-static void print_table_to(FILE *stream, const ObjectTableEntry *entries, const uint32_t capacity, const uint32_t size,
+static void print_table_to(CruxVM *vm, const ObjectTableEntry *entries, const uint32_t capacity, const uint32_t size,
 						   bool is_set)
 {
 	uint32_t printed = 0;
 	if (entries == NULL) {
 		if (is_set) {
-			fprintf(stream, "${}");
+			vm_print(vm, "${}");
 		} else {
-			fprintf(stream, "{}");
+			vm_print(vm, "{}");
 		}
 		return;
 	}
 	if (is_set) {
-		fprintf(stream, "${");
+		vm_print(vm, "${");
 	} else {
-		fprintf(stream, "{");
+		vm_print(vm, "{");
 	}
 	for (uint32_t i = 0; i < capacity; i++) {
 		if (entries[i].is_occupied) {
-			print_value_to(stream, entries[i].key, true);
-			fprintf(stream, ":");
-			print_value_to(stream, entries[i].value, true);
+			print_value_to(vm, entries[i].key, true);
+			vm_print(vm, ":");
+			print_value_to(vm, entries[i].value, true);
 			if (printed != size - 1) {
-				fprintf(stream, ", ");
+				vm_print(vm, ", ");
 			}
 			printed++;
 		}
 	}
-	fprintf(stream, "}");
+	vm_print(vm, "}");
 }
 
-static void print_struct_instance_to(FILE *stream, const ObjectStructInstance *instance)
+static void print_struct_instance_to(CruxVM *vm, const ObjectStructInstance *instance)
 {
-	fprintf(stream, "{");
+	vm_print(vm, "{");
 	int printed = 0;
 	const ObjectStruct *type = instance->struct_type;
 	if (instance->fields == NULL) {
-		fprintf(stream, "}");
+		vm_print(vm, "}");
 		return;
 	}
 	for (int i = 0; i < type->fields.capacity; i++) {
 		if (type->fields.entries[i].key != NULL) {
 			const uint16_t index = (uint16_t)AS_INT(type->fields.entries[i].value);
 			const ObjectString *fieldName = type->fields.entries[i].key;
-			fprintf(stream, "%s: ", fieldName->chars);
-			print_value_to(stream, instance->fields[index], true);
+			vm_print(vm, "%s: ", fieldName->chars);
+			print_value_to(vm, instance->fields[index], true);
 			if (printed != type->fields.count - 1) {
-				fprintf(stream, ", ");
+				vm_print(vm, ", ");
 			}
 			printed++;
 		}
 	}
-	fprintf(stream, "}");
+	vm_print(vm, "}");
 }
 
-static void print_result_to(FILE *stream, const ObjectResult *result)
+static void print_result_to(CruxVM *vm, const ObjectResult *result)
 {
 	if (result->is_ok) {
-		fprintf(stream, "Ok<");
-		print_type_to(stream, result->as.value);
-		fprintf(stream, ">");
+		vm_print(vm, "Ok<");
+		print_type_to(vm, result->as.value);
+		vm_print(vm, ">");
 	} else {
-		fprintf(stream, "Err<");
-		print_error_type_to(stream, result->as.error->type);
-		fprintf(stream, ">");
+		vm_print(vm, "Err<");
+		print_error_type_to(vm, result->as.error->type);
+		vm_print(vm, ">");
 	}
 }
 
-void print_object_to(FILE *stream, const CruxValue value, const bool in_collection)
+void print_object_to(CruxVM *vm, const CruxValue value, const bool in_collection)
 {
 	switch (OBJECT_TYPE(value)) {
 	case OBJECT_STRING: {
 		if (in_collection) {
-			fprintf(stream, "'%s'", AS_C_STRING(value));
+			vm_print(vm, "'%s'", AS_C_STRING(value));
 			break;
 		}
-		fprintf(stream, "%s", AS_C_STRING(value));
+		vm_print(vm, "%s", AS_C_STRING(value));
 		break;
 	}
 	case OBJECT_FUNCTION: {
-		print_function_to(stream, AS_CRUX_FUNCTION(value));
+		print_function_to(vm, AS_CRUX_FUNCTION(value));
 		break;
 	}
 	case OBJECT_NATIVE_CALLABLE: {
 		const ObjectNativeCallable *native = AS_CRUX_NATIVE_CALLABLE(value);
 		if (native->name != NULL) {
-			fprintf(stream, "<native callable %s>", native->name->chars);
+			vm_print(vm, "<native callable %s>", native->name->chars);
 		} else {
-			fprintf(stream, "<native callable>");
+			vm_print(vm, "<native callable>");
 		}
 		break;
 	}
 	case OBJECT_CLOSURE: {
-		print_function_to(stream, AS_CRUX_CLOSURE(value)->function);
+		print_function_to(vm, AS_CRUX_CLOSURE(value)->function);
 		break;
 	}
 	case OBJECT_UPVALUE: {
-		print_value_to(stream, value, false);
+		print_value_to(vm, value, false);
 		break;
 	}
 	case OBJECT_ARRAY: {
 		const ObjectArray *array = AS_CRUX_ARRAY(value);
-		print_array_to(stream, array->values, array->size);
+		print_array_to(vm, array->values, array->size);
 		break;
 	}
 	case OBJECT_TABLE: {
 		const ObjectTable *table = AS_CRUX_TABLE(value);
-		print_table_to(stream, table->entries, table->capacity, table->size, false);
+		print_table_to(vm, table->entries, table->capacity, table->size, false);
 		break;
 	}
 	case OBJECT_ERROR: {
-		fprintf(stream, "<error ");
-		print_error_type_to(stream, AS_CRUX_ERROR(value)->type);
-		fprintf(stream, ">");
+		vm_print(vm, "<error ");
+		print_error_type_to(vm, AS_CRUX_ERROR(value)->type);
+		vm_print(vm, ">");
 		break;
 	}
 	case OBJECT_RESULT: {
-		print_result_to(stream, AS_CRUX_RESULT(value));
+		print_result_to(vm, AS_CRUX_RESULT(value));
 		break;
 	}
 	case OBJECT_RANDOM: {
-		fprintf(stream, "<random>");
+		vm_print(vm, "<random>");
 		break;
 	}
 	case OBJECT_FILE: {
-		fprintf(stream, "<file>");
+		vm_print(vm, "<file>");
 		break;
 	}
 	case OBJECT_MODULE_RECORD: {
-		fprintf(stream, "<module record>");
+		vm_print(vm, "<module record>");
 		break;
 	}
 	case OBJECT_STRUCT: {
-		fprintf(stream, "<struct type %s>", AS_CRUX_STRUCT(value)->name->chars);
+		vm_print(vm, "<struct type %s>", AS_CRUX_STRUCT(value)->name->chars);
 		break;
 	}
 	case OBJECT_STRUCT_INSTANCE: {
-		print_struct_instance_to(stream, AS_CRUX_STRUCT_INSTANCE(value));
+		print_struct_instance_to(vm, AS_CRUX_STRUCT_INSTANCE(value));
 		break;
 	}
 	case OBJECT_VECTOR: {
 		const ObjectVector *vector = AS_CRUX_VECTOR(value);
-		fprintf(stream, "Vector(%d)[", vector->dimensions);
+		vm_print(vm, "Vector(%d)[", vector->dimensions);
 		const double *comp = VECTOR_COMPONENTS(vector);
 		for (uint32_t i = 0; i < vector->dimensions; i++) {
-			fprintf(stream, "%.17g", comp[i]);
+			vm_print(vm, "%.17g", comp[i]);
 			if (i != vector->dimensions - 1) {
-				fprintf(stream, ", ");
+				vm_print(vm, ", ");
 			}
 		}
-		fprintf(stream, "]");
+		vm_print(vm, "]");
 		break;
 	}
 	case OBJECT_MATRIX: {
 		const ObjectMatrix *mat = AS_CRUX_MATRIX(value);
-		fprintf(stream, "Matrix(%ux%u)\n", mat->row_dim, mat->col_dim);
+		vm_print(vm, "Matrix(%ux%u)\n", mat->row_dim, mat->col_dim);
 		for (uint16_t i = 0; i < mat->col_dim; i++) {
 			for (uint16_t j = 0; j < mat->row_dim; j++) {
 				if (j == 0) {
-					fprintf(stream, "| ");
+					vm_print(vm, "| ");
 				}
-				fprintf(stream, "%.17g", mat->data[i * mat->row_dim + j]);
+				vm_print(vm, "%.17g", mat->data[i * mat->row_dim + j]);
 				if (j != mat->row_dim - 1) {
-					fprintf(stream, ", ");
+					vm_print(vm, ", ");
 				}
 				if (j == mat->row_dim - 1) {
-					fprintf(stream, " |");
+					vm_print(vm, " |");
 				}
 			}
 			if (i != mat->col_dim - 1) {
-				fprintf(stream, "\n");
+				vm_print(vm, "\n");
 			}
 		}
 		break;
@@ -637,93 +639,92 @@ void print_object_to(FILE *stream, const CruxValue value, const bool in_collecti
 	case OBJECT_COMPLEX: {
 		const ObjectComplex *c = AS_CRUX_COMPLEX(value);
 		if (c->imag >= 0.0) {
-			fprintf(stream, "%.17g+%.17gi", c->real, c->imag);
+			vm_print(vm, "%.17g+%.17gi", c->real, c->imag);
 		} else {
-			fprintf(stream, "%.17g%.17gi", c->real, c->imag);
+			vm_print(vm, "%.17g%.17gi", c->real, c->imag);
 		}
 		break;
 	}
 	case OBJECT_SET: {
 		const ObjectSet *set = AS_CRUX_SET(value);
-		print_table_to(stream, set->entries->entries, set->entries->capacity, set->entries->size, true);
+		print_table_to(vm, set->entries->entries, set->entries->capacity, set->entries->size, true);
 		break;
 	}
 
 	case OBJECT_BUFFER: {
-		fprintf(stream, "<Buffer>");
+		vm_print(vm, "<Buffer>");
 		break;
 	}
 	case OBJECT_TUPLE: {
 		const ObjectTuple *tuple = AS_CRUX_TUPLE(value);
-		fprintf(stream, "$[");
+		vm_print(vm, "$[");
 		for (uint32_t i = 0; i < tuple->size; i++) {
 			if (i != 0) {
-				fprintf(stream, ", ");
+				vm_print(vm, ", ");
 			}
-			print_value_to(stream, tuple->elements[i], true);
+			print_value_to(vm, tuple->elements[i], true);
 		}
-		fprintf(stream, "]");
+		vm_print(vm, "]");
 		break;
 	}
 	case OBJECT_RANGE: {
 		const ObjectRange *range = AS_CRUX_RANGE(value);
-		fprintf(stream, "<Range(%d..%d..%d)>", range->start, range->step, range->end);
+		vm_print(vm, "<Range(%d..%d..%d)>", range->start, range->step, range->end);
 		break;
 	}
 	case OBJECT_ITERATOR: {
-		fprintf(stream, "<iterator>");
+		vm_print(vm, "<iterator>");
 		break;
 	}
 	case OBJECT_TYPE_RECORD: {
-		const ObjectTypeRecord *record = AS_CRUX_TYPE_RECORD(value);
-		fprintf(stream, "<TypeRecord>");
+		vm_print(vm, "<TypeRecord>");
 		break;
 	}
 	case OBJECT_TYPE_TABLE: {
-		fprintf(stream, "<TypeTable>");
+		vm_print(vm, "<TypeTable>");
 		break;
 	}
 	case OBJECT_OPTION: {
-		fprintf(stream, "<Option>");
+		vm_print(vm, "<Option>");
 		break;
 	}
 	case OBJECT_ENUM: {
-		fprintf(stream, "<Enum>");
+		vm_print(vm, "<Enum>");
 		break;
 	}
 	case OBJECT_COROUTINE: {
-		fprintf(stream, "<Coroutine>");
+		vm_print(vm, "<Coroutine>");
 		break;
 	}
 	case SENTINEL_OBJECT_COUNT:
-		fprintf(stream, "<SENTINEL_OBJECT_COUNT>");
+		vm_print(vm, "<SENTINEL_OBJECT_COUNT>");
 		break;
 	}
 }
 
-void print_value_to(FILE *stream, const CruxValue value, const bool inCollection)
+void print_value_to(CruxVM *vm, const CruxValue value, const bool inCollection)
 {
 	if (IS_BOOL(value)) {
-		fprintf(stream, AS_BOOL(value) ? "true" : "false");
+		vm_print(vm, AS_BOOL(value) ? "true" : "false");
 	} else if (IS_NIL(value)) {
-		fprintf(stream, "nil");
+		vm_print(vm, "nil");
 	} else if (IS_FLOAT(value)) {
-		fprintf(stream, "%.17g", AS_FLOAT(value));
+		vm_print(vm, "%.17g", AS_FLOAT(value));
 	} else if (IS_INT(value)) {
-		fprintf(stream, "%d", AS_INT(value));
+		vm_print(vm, "%d", AS_INT(value));
 	} else if (IS_CRUX_OBJECT(value)) {
-		print_object_to(stream, value, inCollection);
+		print_object_to(vm, value, inCollection);
 	}
 }
 
-void print_value(const CruxValue value, const bool inCollection)
+void print_value(CruxVM *vm, const CruxValue value, const bool inCollection)
 {
-	print_value_to(stdout, value, inCollection);
+	print_value_to(vm, value, inCollection);
 }
 
-void print_object(const CruxValue value, const bool in_collection)
+void print_object(CruxVM *vm, const CruxValue value, const bool in_collection)
 {
-	print_object_to(stdout, value, in_collection);
+	print_object_to(vm, value, in_collection);
 }
 
 ObjectString *take_string(CruxVM *vm, char *chars, const uint32_t length)

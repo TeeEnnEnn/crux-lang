@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "compiler/compiler_core.h"
+#include "crux.h"
 #include "garbage_collector.h"
 #include "object.h"
 #include "panic.h"
@@ -76,7 +77,7 @@ bool push_import_stack(CruxVM *vm, ObjectString *path)
 		stack->capacity = GROW_CAPACITY(oldCapacity);
 		stack->paths = GROW_ARRAY(vm, ObjectString *, stack->paths, oldCapacity, stack->capacity);
 		if (stack->paths == NULL) {
-			fprintf(stderr, "Fatal Error: Could not allocate "
+			vm_error(vm, Crux_ERROR_RUNTIME, 0, "Fatal Error: Could not allocate "
 							"memory for import stack.\n");
 			stack->capacity = oldCapacity;
 			return false;
@@ -115,11 +116,13 @@ bool is_in_import_stack(const CruxVM *vm, const ObjectString *path)
 	return false;
 }
 
-CruxVM *new_vm(const int argc, const char **argv)
+CruxVM *new_vm(CruxConfiguration *config)
 {
 	CruxVM *vm = calloc(1, sizeof(CruxVM));
 	if (vm == NULL) {
+	#ifndef CRUX_API
 		fprintf(stderr, "Fatal Error: Could not allocate memory for CruxVM\n");
+	#endif
 		return NULL;
 	}
 
@@ -128,7 +131,7 @@ CruxVM *new_vm(const int argc, const char **argv)
 		return NULL;
 	}
 
-	return init_vm(vm, argc, argv) ? vm : NULL;
+	return init_vm(vm, config) ? vm : NULL;
 }
 
 void reset_stack(ObjectModuleRecord *moduleRecord)
@@ -773,9 +776,13 @@ void freeNativeModules(NativeModules *nativeModules)
 	nativeModules->count = 0;
 }
 
-bool init_vm(CruxVM *vm, const int argc, const char **argv)
+bool init_vm(CruxVM *vm, CruxConfiguration *config)
 {
-	const bool is_repl = argc == 1 ? true : false;
+	if (config != NULL) {
+		vm->config = *config;
+	} else {
+		init_crux_configuration(&vm->config);
+	}
 
 	vm->object_count = 0;
 	vm->objects = NULL;
@@ -787,8 +794,9 @@ bool init_vm(CruxVM *vm, const int argc, const char **argv)
 
 	vm->gc_status = PAUSED;
 	vm->exit_code = 0;
-	vm->min_gc_heap_size = MIN_GC_HEAP_SIZE;
-	vm->min_gc_growth_delta = MIN_GC_GROWTH_DELTA;
+
+	vm->min_gc_heap_size = vm->config.initialHeapSize > 0 ? vm->config.initialHeapSize : MIN_GC_HEAP_SIZE;
+	vm->min_gc_growth_delta = MIN_GC_GROWTH_DELTA; // TODO: make this configurable?
 	vm->bytes_allocated = 0;
 	vm->next_gc = vm->min_gc_heap_size;
 	vm->gray_count = 0;
@@ -797,9 +805,13 @@ bool init_vm(CruxVM *vm, const int argc, const char **argv)
 	vm->struct_instance_stack.structs = NULL;
 	vm->main_compiler = NULL;
 
-	vm->heap_growth_factor = INIT_GC_HEAP_GROW_FACTOR;
+	vm->heap_growth_factor = 1.0 + (vm->config.heapGrowthPercent / 100.0);
+	if (vm->heap_growth_factor <= 1.0)
+		vm->heap_growth_factor = INIT_GC_HEAP_GROW_FACTOR;
 
-	vm->current_module_record = new_object_module_record(vm, NULL, is_repl, true);
+	// For now, we don't have is_repl in config, so we default to false or handle it via a separate flag if needed.
+	// Historically it was (argc == 1).
+	vm->current_module_record = new_object_module_record(vm, NULL, false, true);
 
 	reset_stack(vm->current_module_record);
 
@@ -828,7 +840,7 @@ bool init_vm(CruxVM *vm, const int argc, const char **argv)
 	initNativeModules(&vm->native_modules);
 	vm->native_modules.modules = (NativeModule *)malloc(sizeof(NativeModule) * NATIVE_MODULES_CAPACITY);
 	if (vm->native_modules.modules == NULL) {
-		fprintf(stderr, "Fatal Error: Could not allocate memory for "
+		vm_error(vm, Crux_ERROR_RUNTIME, 0, "Fatal Error: Could not allocate memory for "
 						"native modules.\nShutting Down!\n");
 		return false;
 	}
@@ -844,24 +856,26 @@ bool init_vm(CruxVM *vm, const int argc, const char **argv)
 	vm->struct_instance_stack.structs = (ObjectStructInstance **)malloc(sizeof(ObjectStructInstance *) *
 																		STRUCT_INSTANCE_DEPTH);
 	if (vm->struct_instance_stack.structs == NULL) {
-		fprintf(stderr, "Fatal Error: Could not allocate memory for "
+		vm_error(vm, Crux_ERROR_RUNTIME, 0, "Fatal Error: Could not allocate memory for "
 						"stack struct.\nShutting Down!\n");
 		return false;
 	}
 
-	vm->args.argc = argc;
-	vm->args.argv = argv;
+	// We still use internal args struct for now, but we can populate it from config in the future
+	// if we add argc/argv to CruxConfiguration.
+	vm->args.argc = 0;
+	vm->args.argv = NULL;
 
 	ObjectString *path;
-	if (argc > 1) {
-		path = copy_string(vm, argv[1], strlen(argv[1]));
-	} else {
+    if (vm->config.scriptPath != NULL) {
+        path = copy_string(vm, vm->config.scriptPath, strlen(vm->config.scriptPath));
+    } else {
 #ifdef _WIN32
-		path = copy_string(vm, ".\\", 2);
+        path = copy_string(vm, ".\\", 2);
 #else
-		path = copy_string(vm, "./", 2);
+        path = copy_string(vm, "./", 2);
 #endif
-	}
+    }
 
 	vm->current_module_record->path = path;
 	table_set(vm, &vm->module_cache, vm->current_module_record->path, OBJECT_VAL(vm->current_module_record));
@@ -1746,4 +1760,27 @@ bool bind_core_globals(CruxVM *vm, ObjectModuleRecord *module_record)
 		}
 	}
 	return true;
+}
+
+void vm_print(CruxVM* vm, const char* format, ...)
+{
+
+    char buffer[CRUX_VM_PRINT_BUFFER_SIZE];
+    va_list args;
+
+	va_start(args, format);
+	vsnprintf(buffer, CRUX_VM_PRINT_BUFFER_SIZE, format, args);
+	va_end(args);
+	vm->config.writeFn(vm, buffer);
+}
+
+void vm_error(CruxVM *vm, CruxErrorType error_type, int line_number, const char *format, ...)
+{
+    char buffer[CRUX_VM_PRINT_BUFFER_SIZE];
+    va_list args;
+
+	va_start(args, format);
+	vsnprintf(buffer, CRUX_VM_PRINT_BUFFER_SIZE, format, args);
+	va_end(args);
+	vm->config.errorFn(vm, error_type, vm->current_module_record->path->chars, line_number, buffer);
 }

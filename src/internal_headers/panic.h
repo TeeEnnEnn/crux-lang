@@ -24,7 +24,7 @@ void runtime_panic(ObjectModuleRecord *module_record,
  */
 char *type_error_message(CruxVM *vm, CruxValue value, const char *expected_type);
 
-void print_error_line(int line, const char *source, int startCol, int length);
+void print_error_line(CruxVM* vm, int line, const char *source, int startCol, int length);
 
 /**
  * Report a compile error pointing at the given token.

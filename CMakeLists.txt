@@ -57,11 +57,13 @@ file(GLOB SOURCES
     "src/type_system/*.c"
 )
 
-if (NOT WIN32)
-  list(APPEND SOURCES "deps/linenoise/linenoise.c")
-endif()
+list(REMOVE_ITEM SOURCES
+    "${CMAKE_SOURCE_DIR}/src/main.c"
+    "${CMAKE_SOURCE_DIR}/src/file_handler.c"
+)
 
-file(GLOB HEADERS
+# Internal Headers
+file(GLOB LIB_HEADERS
    "include/*.h"
    "src/internal_headers/compiler/*.h"
    "src/internal_headers/native/*.h"
@@ -69,43 +71,43 @@ file(GLOB HEADERS
    "deps/utf8/utf8.h"
 )
 
-if (NOT WIN32)
-  list(APPEND HEADERS "deps/linenoise/linenoise.h")
-endif()
+# Define the library
+add_library(crux_lib STATIC ${SOURCES} ${LIB_HEADERS})
+set_target_properties(crux_lib PROPERTIES OUTPUT_NAME crux)
 
-include_directories(include)
-include_directories(src/internal_headers)
+target_include_directories(crux_lib PUBLIC include)
+target_include_directories(crux_lib PRIVATE src/internal_headers deps/utf8 deps/json)
 
-if (NOT WIN32)
-  include_directories(deps/linenoise)
-endif()
-include_directories(deps/utf8)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-add_executable(crux ${SOURCES} ${HEADERS})
-
-target_compile_definitions(crux PRIVATE
+target_compile_definitions(crux_lib PRIVATE
         $<$<BOOL:${CRUX_STACK_SAFETY}>:STACK_SAFETY>
         $<$<BOOL:${CRUX_DEBUG_TRACE_EXECUTION}>:DEBUG_TRACE_EXECUTION>
         $<$<BOOL:${CRUX_DEBUG_PRINT_CODE}>:DEBUG_PRINT_CODE>
         $<$<BOOL:${CRUX_DEBUG_LOG_GC}>:DEBUG_LOG_GC>
         $<$<BOOL:${CRUX_DEBUG_STRESS_GC}>:DEBUG_STRESS_GC>
         $<$<BOOL:${CRUX_TAGGED_OBJECT}>:CRUX_TAGGED_OBJECT>
-        CRUX_VERSION="${CRUX_VERSION}"
 )
 
 if (UNIX)
-  target_link_libraries(crux PRIVATE m)
+  target_link_libraries(crux_lib PUBLIC m)
 endif ()
 
-if (CMAKE_BUILD_TYPE STREQUAL "ASAN")
-  target_link_options(crux PRIVATE -fsanitize=address -fsanitize=undefined)
-endif ()
+# Define the CLI executable
+set(CLI_SOURCES "src/main.c" "src/file_handler.c" "deps/json/cJSON.c")
+if (NOT WIN32)
+  list(APPEND CLI_SOURCES "deps/linenoise/linenoise.c")
+endif()
 
-if (CMAKE_BUILD_TYPE STREQUAL "Profile")
-  target_compile_options(crux PRIVATE -pg)
-  target_link_options(crux PRIVATE -pg)
-endif ()
+add_executable(crux ${CLI_SOURCES})
+target_link_libraries(crux PRIVATE crux_lib)
+target_include_directories(crux PRIVATE src/internal_headers deps/json deps/utf8)
+
+if (NOT WIN32)
+  target_include_directories(crux PRIVATE deps/linenoise)
+endif()
+
+target_compile_definitions(crux PRIVATE CRUX_VERSION="${CRUX_VERSION}")
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Print enabled compile flags
 message(STATUS "Crux-lang build configuration:")

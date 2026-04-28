@@ -137,6 +137,6 @@ void free_value_array(CruxVM *vm, ValueArray *array);
  * @param value The CruxValue to print
  * @param inCollection is the value in a collection?
  */
-void print_value(CruxValue value, bool inCollection);
+void print_value(CruxVM *vm, CruxValue value, bool inCollection);
 
 #endif // VALUE_H

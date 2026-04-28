@@ -36,13 +36,13 @@ static FILE *get_channel(const char *channel)
  * Writes a string representation of <value> to <stream>.
  * Returns false if the write fails.
  */
-static bool write_value_to_stream(FILE *stream, CruxValue value)
+static bool write_value_to_stream(CruxVM *vm, FILE *stream, CruxValue value)
 {
 	/* Delegate to the existing print_value infrastructure but capture
 	 * failures via ferror.  We clear the error flag first so we are
 	 * only testing this write. */
 	clearerr(stream);
-	print_value_to(stream, value, false);
+	print_value_to(vm, value, false);
 	return ferror(stream) == 0;
 }
 
@@ -112,8 +112,7 @@ static bool read_bounded_line(CruxVM *vm, FILE *stream, const size_t max_len, Ob
  */
 CruxValue io_print_function(CruxVM *vm, const CruxValue *args)
 {
-	(void)vm;
-	print_value_to(stdout, args[0], false);
+	print_value_to(vm, args[0], false);
 	return NIL_VAL;
 }
 
@@ -127,10 +126,8 @@ CruxValue io_print_function(CruxVM *vm, const CruxValue *args)
  */
 CruxValue io_println_function(CruxVM *vm, const CruxValue *args)
 {
-	(void)vm;
-
-	print_value_to(stdout, args[0], false);
-	fputc('\n', stdout);
+	print_value_to(vm, args[0], false);
+	vm_print(vm, "\n");
 	return NIL_VAL;
 }
 
@@ -153,7 +150,7 @@ CruxValue io_print_to_function(CruxVM *vm, const CruxValue *args)
 								  VALUE);
 	}
 
-	if (!write_value_to_stream(stream, args[1])) {
+	if (!write_value_to_stream(vm, stream, args[1])) {
 		return MAKE_GC_SAFE_ERROR(vm, "Error writing to stream.", IO);
 	}
 
@@ -179,7 +176,7 @@ CruxValue io_println_to_function(CruxVM *vm, const CruxValue *args)
 								  VALUE);
 	}
 
-	if (!write_value_to_stream(stream, args[1])) {
+	if (!write_value_to_stream(vm, stream, args[1])) {
 		return MAKE_GC_SAFE_ERROR(vm, "Error writing to stream.", IO);
 	}
 

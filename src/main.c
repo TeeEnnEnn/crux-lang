@@ -2,12 +2,30 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "common.h"
+#include "crux.h"
 #include "file_handler.h"
+#include "cJSON.h"
 #ifndef _WIN32
 #include "linenoise.h"
 #endif
-#include "vm.h"
+
+// ANSI colors for REPL
+#define CYAN "\x1b[36m"
+#define GREEN "\x1b[32m"
+#define RESET "\x1b[0m"
+
+static void default_write(CruxVM* vm, const char* text) {
+    (void)vm;
+    printf("%s", text);
+}
+
+static void default_error(struct CruxVM * vm, CruxErrorType type, const char * module_name, int line_number, const char * text) {
+    (void)vm;
+    (void)type;
+    (void)module_name;
+    (void)line_number;
+    fprintf(stderr, text);
+}
 
 static int repl(CruxVM *vm)
 {
@@ -28,8 +46,8 @@ static int repl(CruxVM *vm)
 		if (line[0] != '\0') {
 			linenoiseHistoryAdd(line);
 			linenoiseHistorySave(finalPath);
-			InterpretResult res = interpret(vm, line);
-			if (res == INTERPRET_EXIT) {
+			CruxInterpretResult res = crux_interpret(vm, "repl", line);
+			if (res == CRUX_INTERPRET_EXIT) {
 				linenoiseFree(line);
 				break;
 			}
@@ -47,53 +65,49 @@ static int repl(CruxVM *vm)
 			break;
 		}
 		printf(RESET);
-		interpret(vm, line);
+		CruxInterpretResult res = crux_interpret(vm, "repl", line);
+        if (res == CRUX_INTERPRET_EXIT) break;
 	}
 #endif
 
 	if (historyPath)
 		free(historyPath);
 
-	return vm->exit_code;
+	return crux_vm_get_exit_code(vm);
 }
 
-/**
- * Reads the content of the specified file, interprets it,
- * and exits with an appropriate status code if errors occur:
- * - Exit code 2: File reading error
- * - Exit code 65: Compilation error
- * - Exit code 70: Runtime error
- */
-static int runFile(CruxVM *vm, const char *path)
+static int run_file(CruxVM *vm, const char *path)
 {
 	const FileResult fileResult = read_file(path);
 	if (fileResult.error) {
 		fprintf(stderr, "Error reading file: %s\n", fileResult.error);
 		return 2;
 	}
-	const InterpretResult interpretResult = interpret(vm, fileResult.content);
+	const CruxInterpretResult interpretResult = crux_interpret(vm, path, fileResult.content);
 	free(fileResult.content);
 
-	if (interpretResult == INTERPRET_COMPILE_ERROR)
-		return COMPILER_EXIT_CODE;
-	if (interpretResult == INTERPRET_RUNTIME_ERROR)
-		return RUNTIME_EXIT_CODE;
-	if (interpretResult == INTERPRET_EXIT)
-		return vm->exit_code;
+	if (interpretResult == CRUX_INTERPRET_COMPILE_PANIC)
+		return 65;
+	if (interpretResult == CRUX_INTERPRET_RUNTIME_PANIC)
+		return 70;
+	if (interpretResult == CRUX_INTERPRET_EXIT)
+		return crux_vm_get_exit_code(vm);
 
 	return 0;
 }
 
-/**
- * Initializes the virtual machine and either:
- * - Starts a REPL session if no arguments are provided
- * - Executes a source file if one argument (file path) is provided
- * - Displays usage information otherwise
- *
- */
 int main(const int argc, const char *argv[])
 {
-	CruxVM *vm = new_vm(argc, argv);
+    CruxConfiguration config;
+    init_crux_configuration(&config);
+    config.writeFn = default_write;
+    config.errorFn = default_error;
+
+	if (argc == 2 && strcmp(argv[1], "-V") != 0 && strcmp(argv[1], "--version") != 0) {
+        config.scriptPath = argv[1];
+    }
+
+	CruxVM *vm = crux_vm_new(&config);
 	if (vm == NULL) {
 		return 1;
 	}
@@ -102,16 +116,11 @@ int main(const int argc, const char *argv[])
 	if (argc == 1) {
 		exit_code = repl(vm);
 	} else if (argc == 2) {
-		if (strcmp(argv[1], "-V") == 0) {
-#ifdef CRUX_VERSION
-			printf("Crux %s\n", CRUX_VERSION);
-			exit_code = 0;
-#else
-			printf("Crux Unknown Version\n");
-			exit_code = 0;
-#endif
+		if (strcmp(argv[1], "-V") == 0 || strcmp(argv[1], "--version") == 0) {
+            printf("Crux %s\n", Crux_VERSION_STRING);
+            exit_code = 0;
 		} else {
-			exit_code = runFile(vm, argv[1]);
+			exit_code = run_file(vm, argv[1]);
 		}
 	} else {
 #ifdef _WIN32
@@ -122,6 +131,6 @@ int main(const int argc, const char *argv[])
 		exit_code = 64;
 	}
 
-	free_vm(vm);
+	crux_vm_free(vm);
 	return exit_code;
 }

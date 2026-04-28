@@ -413,12 +413,12 @@ CruxValue format_function(CruxVM *vm, const CruxValue *args)
 
 	while (cursor_byte < str->byte_length) {
 		if (current_token_idx < token_count && cursor_byte == tokens[current_token_idx].byte_start) {
-			print_value(tokens[current_token_idx].value, false);
+			print_value(vm, tokens[current_token_idx].value, false);
 			cursor_byte = tokens[current_token_idx].byte_end + 1;
 			current_token_idx++;
 		} else {
 			size_t char_bytes = utf8codepointcalcsize(str->chars + cursor_byte);
-			printf("%.*s", (int)char_bytes, str->chars + cursor_byte);
+			vm_print(vm, "%.*s", (int)char_bytes, str->chars + cursor_byte);
 			cursor_byte += (uint32_t)char_bytes;
 		}
 	}

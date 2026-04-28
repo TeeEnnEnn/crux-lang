@@ -33,4 +33,6 @@
 #define INITIAL_TYPE_TABLE_SIZE (16)
 #define TABLE_MAX_LOAD (0.65)
 
+#define CRUX_VM_PRINT_BUFFER_SIZE (1024)
+
 #endif
