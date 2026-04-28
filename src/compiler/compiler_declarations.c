@@ -256,8 +256,10 @@ void public_declaration(Compiler *compiler)
 		struct_declaration(compiler, true);
 	} else if (match(compiler, CRUX_TOKEN_TYPE)) {
 		type_declaration(compiler, true);
+	} else if (match(compiler, CRUX_TOKEN_USE)) {
+		use_statement(compiler, true);
 	} else {
-		compiler_panic(compiler->parser, "Expected 'fn', 'let', 'struct', or 'type' after 'pub'.", SYNTAX);
+		compiler_panic(compiler->parser, "Expected 'fn', 'let', 'struct', 'type' or 'use' after 'pub'.", SYNTAX);
 	}
 }
 

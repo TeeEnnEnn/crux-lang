@@ -410,6 +410,7 @@ bool init_compiler(CruxVM *vm, Compiler *compiler, Compiler *enclosing, const Fu
 		compiler->parser = malloc(sizeof(Parser));
 		if (compiler->parser == NULL)
 			return false;
+		compiler->parser->vm = vm;
 		compiler->parser->source = NULL;
 		compiler->parser->scanner = malloc(sizeof(Scanner));
 		if (compiler->parser->scanner == NULL) {

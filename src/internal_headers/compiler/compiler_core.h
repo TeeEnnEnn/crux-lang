@@ -16,6 +16,7 @@
  * parsed.
  */
 typedef struct {
+	CruxVM *vm;
 	char *source;
 	Token current;
 	Token previous;

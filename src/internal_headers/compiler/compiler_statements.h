@@ -8,7 +8,7 @@ void block(Compiler *compiler);
 void while_statement(Compiler *compiler);
 void for_statement(Compiler *compiler);
 void return_statement(Compiler *compiler);
-void use_statement(Compiler *compiler);
+void use_statement(Compiler *compiler, bool is_public);
 void continue_statement(Compiler *compiler);
 void break_statement(Compiler *compiler);
 void panic_statement(Compiler *compiler);

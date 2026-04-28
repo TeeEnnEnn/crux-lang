@@ -297,7 +297,7 @@ void return_statement(Compiler *compiler)
 	compiler->last_give_type = new_type_rec(compiler->owner, NEVER_TYPE);
 }
 
-void use_statement(Compiler *compiler)
+void use_statement(Compiler *compiler, bool is_public)
 {
 	bool hasParen = false;
 	if (compiler->parser->current.type == CRUX_TOKEN_LEFT_PAREN) {
@@ -336,7 +336,6 @@ void use_statement(Compiler *compiler)
 	consume(compiler, CRUX_TOKEN_STRING, "Expected string literal for module name.");
 
 	const bool is_native = memcmp(compiler->parser->previous.start, "\"crux:", 6) == 0;
-	const bool is_stdlib = false; // TODO: Implement when package system is added
 	const bool is_file = !is_native;
 
 	if (is_native) {
@@ -383,6 +382,9 @@ void use_statement(Compiler *compiler)
 																	native_callable->return_type);
 
 			if (compiler->scope_depth > 0) {
+                if (is_public) {
+                    compiler_panic(compiler->parser, "Cannot use 'pub' on local imports.", SYNTAX);
+                }
 				add_local(compiler, alias_tok, resolved_type);
 				mark_initialized(compiler);
 				emit_words(compiler, OP_CONSTANT, const_index);
@@ -390,9 +392,12 @@ void use_statement(Compiler *compiler)
 				int global_index = compiler->global_count++;
 				table_set(compiler->owner, &compiler->globals, alias_name, INT_VAL(global_index));
 				type_table_set(compiler->type_table, alias_name, resolved_type);
+                if (is_public && compiler->owner->current_module_record != NULL) {
+                    type_table_set(compiler->owner->current_module_record->types, alias_name, resolved_type);
+                }
 
 				emit_words(compiler, OP_CONSTANT, const_index);
-				emit_words(compiler, OP_DEFINE_GLOBAL, global_index);
+				emit_words(compiler, is_public ? OP_DEFINE_PUB_GLOBAL : OP_DEFINE_GLOBAL, global_index);
 			}
 		}
 	}
@@ -432,7 +437,7 @@ void use_statement(Compiler *compiler)
 		// these opcodes execute the module
 		uint16_t module_const = make_constant(compiler, OBJECT_VAL(path_str));
 		emit_words(compiler, OP_USE_MODULE, module_const);
-		emit_words(compiler, OP_FINISH_USE, nameCount);
+		emit_words(compiler, is_public ? OP_FINISH_PUB_USE : OP_FINISH_USE, nameCount);
 
 		// resolve types and emit indexes
 		for (uint16_t i = 0; i < nameCount; i++) {
@@ -455,6 +460,9 @@ void use_statement(Compiler *compiler)
 			emit_word(compiler, original_name_const);
 
 			if (compiler->scope_depth > 0) {
+                if (is_public) {
+                    compiler_panic(compiler->parser, "Cannot use 'pub' on local imports.", SYNTAX);
+                }
 				add_local(compiler, alias_tok, resolved_type);
 				mark_initialized(compiler);
 
@@ -464,6 +472,9 @@ void use_statement(Compiler *compiler)
 				int global_index = compiler->global_count++;
 				table_set(compiler->owner, &compiler->globals, alias_name, INT_VAL(global_index));
 				type_table_set(compiler->type_table, alias_name, resolved_type);
+                if (is_public && compiler->owner->current_module_record != NULL) {
+                    type_table_set(compiler->owner->current_module_record->types, alias_name, resolved_type);
+                }
 
 				emit_word(compiler, global_index);
 			}
@@ -560,7 +571,7 @@ void statement(Compiler *compiler)
 	} else if (match(compiler, CRUX_TOKEN_RETURN)) {
 		return_statement(compiler);
 	} else if (match(compiler, CRUX_TOKEN_USE)) {
-		use_statement(compiler);
+		use_statement(compiler, false);
 	} else if (match(compiler, CRUX_TOKEN_GIVE)) {
 		give_statement(compiler);
 	} else if (match(compiler, CRUX_TOKEN_BREAK)) {
