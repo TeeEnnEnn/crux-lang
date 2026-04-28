@@ -3,7 +3,7 @@
 
 #include "object.h"
 #include "panic.h"
-#include "stdlib/matrix.h"
+#include "native/matrix.h"
 
 #include "garbage_collector.h"
 

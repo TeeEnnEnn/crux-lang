@@ -1,4 +1,4 @@
-#include "stdlib/buffer.h"
+#include "native/buffer.h"
 #include <stdint.h>
 #include <string.h>
 #include "common.h"

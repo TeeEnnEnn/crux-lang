@@ -50,7 +50,7 @@ endif()
 
 file(GLOB SOURCES
     "src/*.c"
-    "src/stdlib/*.c"
+    "src/native/*.c"
     "src/vm/*.c"
     "src/memory/*.c"
     "src/compiler/*.c"
@@ -63,8 +63,9 @@ endif()
 
 file(GLOB HEADERS
    "include/*.h"
-   "include/compiler/*.h"
-   "include/stdlib/*.h"
+   "src/internal_headers/compiler/*.h"
+   "src/internal_headers/native/*.h"
+   "src/internal_headers/*.h"
    "deps/utf8/utf8.h"
 )
 
@@ -73,6 +74,7 @@ if (NOT WIN32)
 endif()
 
 include_directories(include)
+include_directories(src/internal_headers)
 
 if (NOT WIN32)
   include_directories(deps/linenoise)

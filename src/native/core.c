@@ -1,11 +1,11 @@
-#include "stdlib/core.h"
+#include "native/core.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "object.h"
 #include "panic.h"
-#include "stdlib/range.h"
+#include "native/range.h"
 #include "utf8.h"
 #include "value.h"
 

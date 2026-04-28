@@ -2,7 +2,7 @@
 
 #include "object.h"
 #include "panic.h"
-#include "stdlib/complex.h"
+#include "native/complex.h"
 
 /**
  * Returns the real part of a complex number

@@ -1,4 +1,4 @@
-#include "stdlib/tuple.h"
+#include "native/tuple.h"
 #include <stdint.h>
 #include "object.h"
 #include "panic.h"

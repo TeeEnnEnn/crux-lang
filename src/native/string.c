@@ -5,7 +5,7 @@
 #include "garbage_collector.h"
 #include "object.h"
 #include "panic.h"
-#include "stdlib/string.h"
+#include "native/string.h"
 #include "utf8.h"
 
 // Returns the byte pointer to the nth code point

@@ -9,7 +9,7 @@
 #endif
 
 #include "panic.h"
-#include "stdlib/sys.h"
+#include "native/sys.h"
 #include "vm.h"
 
 /**

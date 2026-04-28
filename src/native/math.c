@@ -1,7 +1,13 @@
+#ifdef _WIN32
+#define _USE_MATH_DEFINES
 #include <math.h>
+#else
+#include <math.h>
+#endif
+
 
 #include "panic.h"
-#include "stdlib/math.h"
+#include "native/math.h"
 #include "value.h"
 
 /**

@@ -10,7 +10,7 @@
 #include "object.h"
 #include "panic.h"
 #include "slab_allocator.h"
-#include "stdlib/stdlib.h"
+#include "native/stdlib.h"
 #include "table.h"
 #include "type_system.h"
 #include "value.h"

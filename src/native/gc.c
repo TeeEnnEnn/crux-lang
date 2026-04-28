@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "stdlib/gc.h"
+#include "native/gc.h"
 #include "common.h"
 #include "garbage_collector.h"
 #include "panic.h"

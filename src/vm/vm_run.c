@@ -5,7 +5,7 @@
 #include "chunk.h"
 #include "file_handler.h"
 #include "garbage_collector.h"
-#include "stdlib/stdlib.h"
+#include "native/stdlib.h"
 #include "type_system.h"
 #include "utf8.h"
 #include "value.h"
@@ -16,10 +16,10 @@
 #include "debug.h"
 #include "object.h"
 #include "panic.h"
-#include "stdlib/complex.h"
-#include "stdlib/matrix.h"
-#include "stdlib/range.h"
-#include "stdlib/set.h"
+#include "native/complex.h"
+#include "native/matrix.h"
+#include "native/range.h"
+#include "native/set.h"
 
 #ifdef DEBUG_TRACE_EXECUTION
 #define DISPATCH() goto *dispatchTable[endIndex]

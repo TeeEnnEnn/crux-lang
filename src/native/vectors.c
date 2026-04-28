@@ -2,7 +2,7 @@
 
 #include "object.h"
 #include "panic.h"
-#include "stdlib/vectors.h"
+#include "native/vectors.h"
 
 #define EPSILON 1e-10
 

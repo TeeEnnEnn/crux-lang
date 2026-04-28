@@ -1,4 +1,4 @@
-#include "stdlib/result.h"
+#include "native/result.h"
 
 #include "object.h"
 

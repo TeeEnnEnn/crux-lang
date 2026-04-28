@@ -7,7 +7,7 @@
 
 #include "garbage_collector.h"
 #include "panic.h"
-#include "stdlib/time.h"
+#include "native/time.h"
 
 /**
  * Returns the current Unix timestamp in seconds

@@ -1,4 +1,4 @@
-#include "stdlib/tables.h"
+#include "native/tables.h"
 #include "object.h"
 #include "panic.h"
 

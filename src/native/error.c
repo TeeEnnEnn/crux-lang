@@ -1,4 +1,4 @@
-#include "stdlib/error.h"
+#include "native/error.h"
 
 #include "garbage_collector.h"
 #include "panic.h"

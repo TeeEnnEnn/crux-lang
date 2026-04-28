@@ -1,4 +1,4 @@
-#include "stdlib/random.h"
+#include "native/random.h"
 #include "panic.h"
 
 #define A 25214903917

@@ -5,7 +5,7 @@
 #include "garbage_collector.h"
 #include "object.h"
 #include "panic.h"
-#include "stdlib/array.h"
+#include "native/array.h"
 
 /**
  * Adds an element to the end of an array
