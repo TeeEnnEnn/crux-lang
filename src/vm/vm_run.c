@@ -5,7 +5,7 @@
 #include "chunk.h"
 #include "file_handler.h"
 #include "garbage_collector.h"
-#include "native/stdlib.h"
+#include "native/native_registration.h"
 #include "type_system.h"
 #include "utf8.h"
 #include "value.h"

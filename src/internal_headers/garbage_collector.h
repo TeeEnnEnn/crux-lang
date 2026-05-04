@@ -4,16 +4,28 @@
 #include "object.h"
 #include "slab_allocator.h"
 
-#define ALLOCATE(vm, type, count) (type *)reallocate(vm, NULL, 0, sizeof(type) * count)
+/**
+ * Allocates memory for an object of type `type` with `count` elements.
+ * On allocation failure, jumps to the vm panic jump buffer
+ */
+#define ALLOCATE(vm, type, count) (type *)Crux_reallocate(vm, NULL, 0, sizeof(type) * count)
 
-#define FREE(vm, type, pointer) reallocate(vm, pointer, sizeof(type), 0)
+/**
+ * Frees memory for an object of type `type` with `count` elements.
+ * On allocation failure, jumps to the vm panic jump buffer
+ */
+#define FREE(vm, type, pointer) Crux_reallocate(vm, pointer, sizeof(type), 0)
 
-#define GROW_CAPACITY(capacity) ((capacity) < 4 ? 4 : (capacity) * 2)
+#define GROW_CAPACITY(capacity) ((capacity) < 2 ? 2 : (capacity) * 2)
 
+/**
+ * Grows an array of type `type` with `count` elements.
+ * On allocation failure, jumps to the vm panic jump buffer
+ */
 #define GROW_ARRAY(vm, type, pointer, oldCount, newCount)                                                              \
-	(type *)reallocate(vm, pointer, sizeof(type) * (oldCount), sizeof(type) * (newCount))
+	(type *)Crux_reallocate(vm, pointer, sizeof(type) * (oldCount), sizeof(type) * (newCount))
 
-#define FREE_ARRAY(vm, type, pointer, oldCount) reallocate(vm, pointer, sizeof(type) * (oldCount), 0)
+#define FREE_ARRAY(vm, type, pointer, oldCount) Crux_reallocate(vm, pointer, sizeof(type) * (oldCount), 0)
 
 void *allocate_object_with_gc(CruxVM *vm, size_t size);
 
@@ -41,7 +53,7 @@ CruxObject *allocate_pooled_object(CruxVM *vm, size_t size, ObjectType type);
  * `newSize` is zero. Exits the program if allocation fails and `realloc`
  * returns `NULL` when `newSize` is not zero.
  */
-void *reallocate(CruxVM *vm, void *pointer, size_t oldSize, size_t newSize);
+void *Crux_reallocate(CruxVM *vm, void *pointer, size_t oldSize, size_t newSize);
 
 /**
  * @brief Marks a CruxValue as reachable during garbage collection.

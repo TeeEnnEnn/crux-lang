@@ -18,7 +18,7 @@
 #include "native/range.h"
 #include "native/result.h"
 #include "native/set.h"
-#include "native/stdlib.h"
+#include "native/native_registration.h"
 #include "native/string.h"
 #include "native/sys.h"
 #include "native/tables.h"

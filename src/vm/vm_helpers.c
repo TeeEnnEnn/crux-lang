@@ -11,7 +11,7 @@
 #include "object.h"
 #include "panic.h"
 #include "slab_allocator.h"
-#include "native/stdlib.h"
+#include "native/native_registration.h"
 #include "table.h"
 #include "type_system.h"
 #include "value.h"
@@ -1764,7 +1764,6 @@ bool bind_core_globals(CruxVM *vm, ObjectModuleRecord *module_record)
 
 void vm_print(CruxVM* vm, const char* format, ...)
 {
-
     char buffer[CRUX_VM_PRINT_BUFFER_SIZE];
     va_list args;
 

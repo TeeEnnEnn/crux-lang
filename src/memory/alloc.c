@@ -51,9 +51,14 @@ void free_memory(CruxVM *vm, void *ptr, const size_t size)
 void *allocate_object_with_gc(CruxVM *vm, const size_t size)
 {
 	vm->bytes_allocated += size;
+	#ifdef DEBUG_STRESS_GC
+	collect_garbage(vm);
+	#else
 	if (vm->bytes_allocated > vm->next_gc) {
 		collect_garbage(vm);
 	}
+	#endif
+
 	void *result = alloc_memory(vm, size);
 	if (result == NULL) {
 		collect_garbage(vm);
@@ -71,16 +76,17 @@ void *allocate_object_with_gc(CruxVM *vm, const size_t size)
 	return result;
 }
 
-void *reallocate(CruxVM *vm, void *pointer, const size_t oldSize, const size_t newSize)
+void *Crux_reallocate(CruxVM *vm, void *pointer, const size_t oldSize, const size_t newSize)
 {
 	vm->bytes_allocated += newSize - oldSize;
 	if (newSize > oldSize) {
 #ifdef DEBUG_STRESS_GC
 		collect_garbage(vm);
-#endif
+#else
 		if (vm->bytes_allocated > vm->next_gc) {
 			collect_garbage(vm);
 		}
+#endif
 	}
 
 	if (newSize == 0) {
@@ -93,9 +99,14 @@ void *reallocate(CruxVM *vm, void *pointer, const size_t oldSize, const size_t n
 		collect_garbage(vm);
 		result = realloc(pointer, newSize);
 		if (result == NULL) {
-			if (oldSize > 0)
-				free(pointer);
-			return NULL;
+			if (oldSize > 0) free(pointer);
+
+			if (vm->current_module_record) {
+				runtime_panic(vm->current_module_record, MEMORY, "Failed to reallocate %zu bytes.", newSize);
+			} else {
+				vm_error(vm, Crux_ERROR_RUNTIME, 0, "Fatal error - Out of Memory: Failed to reallocate %zu bytes.\n", newSize);
+				longjmp(vm->jump_buffer, INTERPRET_RUNTIME_ERROR);
+			}
 		}
 	}
 
