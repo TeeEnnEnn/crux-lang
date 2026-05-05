@@ -92,14 +92,20 @@ if (UNIX)
 endif ()
 
 # Define the CLI executable
-set(CLI_SOURCES "src/main.c" "src/file_handler.c" "deps/json/cJSON.c")
+set(CLI_SOURCES 
+    "cli/main.c" 
+    "cli/cli_commands.c" 
+    "cli/cli_utils.c"
+    "src/file_handler.c" 
+    "deps/json/cJSON.c"
+)
 if (NOT WIN32)
   list(APPEND CLI_SOURCES "deps/linenoise/linenoise.c")
 endif()
 
 add_executable(crux ${CLI_SOURCES})
 target_link_libraries(crux PRIVATE crux_lib)
-target_include_directories(crux PRIVATE src/internal_headers deps/json deps/utf8)
+target_include_directories(crux PRIVATE cli src/internal_headers deps/json deps/utf8)
 
 if (NOT WIN32)
   target_include_directories(crux PRIVATE deps/linenoise)
