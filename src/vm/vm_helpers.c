@@ -119,7 +119,15 @@ bool is_in_import_stack(const CruxVM *vm, const ObjectString *path)
 
 CruxVM *new_vm(CruxConfiguration *config)
 {
-	CruxVM *vm = calloc(1, sizeof(CruxVM));
+	CruxVM *vm = NULL;
+	if (config && config->reallocateFn) {
+		vm = config->reallocateFn(NULL, sizeof(CruxVM), config->userData);
+		if (vm)
+			memset(vm, 0, sizeof(CruxVM));
+	} else {
+		vm = calloc(1, sizeof(CruxVM));
+	}
+
 	if (vm == NULL) {
 #ifndef CRUX_API
 		fprintf(stderr, "Fatal Error: Could not allocate memory for CruxVM\n");

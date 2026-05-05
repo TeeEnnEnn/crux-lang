@@ -12,7 +12,7 @@
 
 // Recursive helper to install dependencies
 static void process_dependencies(const char* base_path) {
-    char manifest_path[1024];
+    char manifest_path[2048];
 #ifdef _WIN32
     snprintf(manifest_path, sizeof(manifest_path), "%s\\crux.json", base_path);
 #else
@@ -40,7 +40,7 @@ static void process_dependencies(const char* base_path) {
     }
 
     // Create local crux_modules for this package
-    char modules_dir[1024];
+    char modules_dir[2048];
 #ifdef _WIN32
     snprintf(modules_dir, sizeof(modules_dir), "%s\\crux_modules", base_path);
 #else
@@ -54,7 +54,7 @@ static void process_dependencies(const char* base_path) {
         const char* url = cJSON_GetStringValue(dep);
 
         if (name && url) {
-            char pkg_path[1024];
+            char pkg_path[2048];
 #ifdef _WIN32
             snprintf(pkg_path, sizeof(pkg_path), "%s\\%s", modules_dir, name);
 #else
@@ -63,7 +63,7 @@ static void process_dependencies(const char* base_path) {
 
             printf("Installing pkg:%s from %s...\n", name, url);
             
-            char command[2048];
+            char command[4096];
 #ifdef _WIN32
             snprintf(command, sizeof(command), "if not exist \"%s\" (git clone %s \"%s\") else (echo Package %s already exists.)", pkg_path, url, pkg_path, name);
 #else
@@ -91,9 +91,8 @@ int crux_cmd_repl(CruxVM *vm) {
         free(cruxDir);
     }
 
-    const char *finalPath = historyPath ? historyPath : ".crux_history";
-
 #ifndef _WIN32
+    const char *finalPath = historyPath ? historyPath : ".crux_history";
     linenoiseHistoryLoad(finalPath);
     char *line;
 
@@ -172,9 +171,8 @@ int crux_cmd_init(const char* name) {
              "  \"dependencies\": {}\n"
              "}\n", project_name);
 
-    const char* main_content = "println(\"Hello from %s!\");\n";
     char formatted_main[256];
-    snprintf(formatted_main, sizeof(formatted_main), main_content, project_name);
+    snprintf(formatted_main, sizeof(formatted_main), "println(\"Hello from %s!\");\n", project_name);
 
     const char* package_content = "// Entry point for re-exporting package symbols\n"
                                   "// pub use MyType from \"./internal_file.crux\";\n";
