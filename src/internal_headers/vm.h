@@ -76,6 +76,14 @@ typedef enum {
 	RUNNING,
 } GC_STATUS;
 
+typedef struct CruxHandle CruxHandle;
+
+struct CruxHandle {
+    CruxValue value;
+    struct CruxHandle* prev;
+    struct CruxHandle* next;
+};
+
 struct CruxVM {
 	CruxConfiguration config;
 	CruxObject *objects; // Head of global object linked list
@@ -154,6 +162,12 @@ struct CruxVM {
 	int import_count;
 	ObjectTypeTable *type_table;
 	Compiler *main_compiler;
+
+	CruxValue *api_stack;
+	int api_stack_capacity;
+	int api_stack_count;
+
+    struct CruxHandle *handles; // Head of the persistent handles list
 
 	int exit_code;
 	jmp_buf jump_buffer;

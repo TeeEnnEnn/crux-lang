@@ -279,7 +279,7 @@ void runtime_panic(ObjectModuleRecord *module_record, const ErrorType type, cons
     if (vm->config.errorFn) {
         char full_message[1280];
         snprintf(full_message, sizeof(full_message), "%s: %s", details.name, message);
-        vm->config.errorFn(vm, Crux_ERROR_RUNTIME, 
+        vm->config.errorFn(vm, CRUX_ERROR_RUNTIME,
             module_record->path ? module_record->path->chars : "<unknown>",
             -1, full_message);
     }
@@ -362,7 +362,7 @@ void runtime_panic(ObjectModuleRecord *module_record, const ErrorType type, cons
 
             // Report each trace line to errorFn too
             if (vm->config.errorFn) {
-                vm->config.errorFn(vm, Crux_ERROR_STACK_TRACE, 
+                vm->config.errorFn(vm, CRUX_ERROR_STACK_TRACE,
                     funcModulePath ? funcModulePath->chars : "<unknown>",
                     line, trace_msg);
             }

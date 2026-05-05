@@ -120,6 +120,7 @@ InterpretResult run(CruxVM *vm, const bool is_anonymous_frame)
 									&&OP_USE_MODULE,
 									&&OP_FINISH_USE,
 									&&OP_FINISH_PUB_USE,
+									&&OP_BIND_NATIVE,
 									&&OP_TYPEOF,
 									&&OP_STRUCT,
 									&&OP_STRUCT_INSTANCE_START,
@@ -216,6 +217,11 @@ OP_RETURN: {
 	close_upvalues(current_module_record, frame->slots);
 	current_module_record->frame_count--;
 	if (current_module_record->frame_count == 0) {
+		if (is_anonymous_frame) {
+			current_module_record->stack_top = frame->slots;
+			push(current_module_record, result);
+			return INTERPRET_OK;
+		}
 		pop(current_module_record);
 		return INTERPRET_OK;
 	}
@@ -1208,6 +1214,33 @@ OP_FINISH_PUB_USE: {
 	if (vm->import_count > 0)
 		vm->import_count--;
 
+	DISPATCH();
+}
+
+OP_BIND_NATIVE: {
+	ObjectString *name = READ_STRING();
+	uint16_t arity = READ_SHORT();
+
+	CruxForeignMethodFn foreign_fn = NULL;
+	if (vm->config.bindForeignMethodFn) {
+		foreign_fn = vm->config.bindForeignMethodFn(vm,
+													current_module_record->path ? current_module_record->path->chars
+																				: "",
+													"", // Class name (NULL/empty for top-level)
+													false, // isStatic
+													name->chars);
+	}
+
+	if (foreign_fn == NULL) {
+		runtime_panic(current_module_record, IMPORT, "Could not bind native function '%s'.", name->chars);
+		return INTERPRET_RUNTIME_ERROR;
+	}
+
+	// bind foreign function - should be checked at compile time so types can be null
+	ObjectNativeCallable *native = new_native_callable(vm, NULL, arity, name, NULL, NULL);
+	native->foreign_fn = foreign_fn;
+
+	push(current_module_record, OBJECT_VAL(native));
 	DISPATCH();
 }
 

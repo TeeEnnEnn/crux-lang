@@ -423,6 +423,7 @@ typedef CruxValue (*CruxCallable)(CruxVM *vm, const CruxValue *args);
 typedef struct {
 	CruxObject object;
 	CruxCallable function;
+    CruxForeignMethodFn foreign_fn;
 	ObjectString *name;
 	int arity;
 	ObjectTypeRecord **arg_types;

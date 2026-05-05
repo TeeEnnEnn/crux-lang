@@ -92,11 +92,11 @@ if (UNIX)
 endif ()
 
 # Define the CLI executable
-set(CLI_SOURCES 
-    "cli/main.c" 
-    "cli/cli_commands.c" 
+set(CLI_SOURCES
+    "cli/main.c"
+    "cli/cli_commands.c"
     "cli/cli_utils.c"
-    "src/file_handler.c" 
+    "src/file_handler.c"
     "deps/json/cJSON.c"
 )
 if (NOT WIN32)
@@ -112,6 +112,12 @@ if (NOT WIN32)
 endif()
 
 target_compile_definitions(crux PRIVATE CRUX_VERSION="${CRUX_VERSION}")
+
+# Define the Embedding Example
+add_executable(crux_embedding_example examples/embedding/main.c src/file_handler.c)
+target_link_libraries(crux_embedding_example PRIVATE crux_lib)
+target_include_directories(crux_embedding_example PRIVATE include)
+target_include_directories(crux_embedding_example PRIVATE src/internal_headers)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

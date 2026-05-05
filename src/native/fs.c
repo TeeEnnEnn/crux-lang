@@ -1,12 +1,14 @@
-#include "native/fs.h"
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+
 #include "file_handler.h"
 #include "garbage_collector.h"
+#include "native/fs.h"
 #include "object.h"
 #include "panic.h"
 #include "vm.h"
+
 #ifdef _WIN32
 #include <direct.h> /* _mkdir */
 #include <sys/stat.h>

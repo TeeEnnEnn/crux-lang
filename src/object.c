@@ -965,6 +965,7 @@ ObjectNativeCallable *new_native_callable(CruxVM *vm, const CruxCallable functio
 	ObjectNativeCallable *native = ALLOCATE_OBJECT(vm, ObjectNativeCallable, OBJECT_NATIVE_CALLABLE);
 	pop(vm->current_module_record);
 	native->function = function;
+    native->foreign_fn = NULL;
 	native->arity = arity;
 	native->name = name;
 	if (arg_types != NULL && arity > 0) {

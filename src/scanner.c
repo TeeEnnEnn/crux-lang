@@ -292,6 +292,9 @@ static CruxTokenType identifier_type(Scanner *scanner)
 			case 'e': {
 				return check_keyword(scanner, 2, 1, "w", CRUX_TOKEN_NEW);
 			}
+			case 'a': {
+				return check_keyword(scanner, 2, 4, "tive", CRUX_TOKEN_NATIVE);
+			}
 			default:;
 			}
 			break;

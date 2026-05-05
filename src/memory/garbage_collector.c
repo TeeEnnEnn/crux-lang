@@ -779,6 +779,17 @@ void mark_roots(CruxVM *vm)
 		mark_compiler_roots(vm, vm->main_compiler);
 	}
 
+	for (int i = 0; i < vm->api_stack_capacity; i++) {
+		mark_value(vm, vm->api_stack[i]);
+	}
+
+    // Mark persistent handles
+    struct CruxHandle* handle = vm->handles;
+    while (handle != NULL) {
+        mark_value(vm, handle->value);
+        handle = handle->next;
+    }
+
 	for (uint32_t i = 0; i < vm->match_handler_stack.count; i++) {
 		mark_value(vm, vm->match_handler_stack.handlers[i].match_bind);
 		mark_value(vm, vm->match_handler_stack.handlers[i].match_target);

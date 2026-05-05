@@ -77,7 +77,7 @@ bool push_import_stack(CruxVM *vm, ObjectString *path)
 		stack->capacity = GROW_CAPACITY(oldCapacity);
 		stack->paths = GROW_ARRAY(vm, ObjectString *, stack->paths, oldCapacity, stack->capacity);
 		if (stack->paths == NULL) {
-			vm_error(vm, Crux_ERROR_RUNTIME, 0,
+			vm_error(vm, CRUX_ERROR_RUNTIME, 0,
 					 "Fatal Error: Could not allocate "
 					 "memory for import stack.\n");
 			stack->capacity = oldCapacity;
@@ -208,22 +208,43 @@ bool call_value(CruxVM *vm, const CruxValue callee, const int arg_count)
 		check_native_arity(arg_count, native);
 
 		const CruxValue *args = current_module_record->stack_top - arg_count;
-		for (int i = 0; i < arg_count; i++) {
-			if (!runtime_types_compatible(native->arg_types[i]->base_type, args[i])) {
-				char expected_name[128];
-				char actual_name[128];
-				type_mask_name(native->arg_types[i]->base_type, expected_name, sizeof(expected_name));
-				const TypeMask actual_mask = get_type_mask(args[i]);
-				type_mask_name(actual_mask, actual_name, sizeof(actual_name));
-				runtime_panic(current_module_record, TYPE,
-							  "In %s() --- arg %d: expected "
-							  "%s, got %s",
-							  native->name->chars, i + 1, expected_name, actual_name);
-				return false;
+		if (native->arg_types != NULL) {
+			for (int i = 0; i < arg_count; i++) {
+				if (!runtime_types_compatible(native->arg_types[i]->base_type, args[i])) {
+					char expected_name[128];
+					char actual_name[128];
+					type_mask_name(native->arg_types[i]->base_type, expected_name, sizeof(expected_name));
+					const TypeMask actual_mask = get_type_mask(args[i]);
+					type_mask_name(actual_mask, actual_name, sizeof(actual_name));
+					runtime_panic(current_module_record, TYPE,
+								  "In %s() --- arg %d: expected "
+								  "%s, got %s",
+								  native->name->chars, i + 1, expected_name, actual_name);
+					return false;
+				}
 			}
 		}
 
-		const CruxValue result_value = native->function(vm, args);
+		CruxValue result_value;
+		if (native->foreign_fn != NULL) {
+			// Phase 5: Foreign Method Bridge
+			crux_ensure_slots(vm, arg_count + 1);
+
+			// Copy arguments to API slots (slot 1 to N)
+			for (int i = 0; i < arg_count; i++) {
+				vm->api_stack[i + 1] = args[i];
+			}
+			// Slot 0 is the receiver (for now NIL for functions)
+			vm->api_stack[0] = NIL_VAL;
+
+			// Call the host-provided C function
+			native->foreign_fn(vm);
+
+			// Result is expected in slot 0
+			result_value = vm->api_stack[0];
+		} else {
+			result_value = native->function(vm, args);
+		}
 
 		current_module_record->stack_top -= arg_count + 1;
 
@@ -840,7 +861,7 @@ bool init_vm(CruxVM *vm, CruxConfiguration *config)
 	initNativeModules(&vm->native_modules);
 	vm->native_modules.modules = (NativeModule *)malloc(sizeof(NativeModule) * NATIVE_MODULES_CAPACITY);
 	if (vm->native_modules.modules == NULL) {
-		vm_error(vm, Crux_ERROR_RUNTIME, 0,
+		vm_error(vm, CRUX_ERROR_RUNTIME, 0,
 				 "Fatal Error: Could not allocate memory for "
 				 "native modules.\nShutting Down!\n");
 		return false;
@@ -853,11 +874,16 @@ bool init_vm(CruxVM *vm, CruxConfiguration *config)
 	}
 	vm->import_count = 0;
 
+	vm->api_stack = NULL;
+	vm->api_stack_capacity = 0;
+	vm->api_stack_count = 0;
+	vm->handles = NULL;
+
 	initStructInstanceStack(&vm->struct_instance_stack);
 	vm->struct_instance_stack.structs = (ObjectStructInstance **)malloc(sizeof(ObjectStructInstance *) *
 																		STRUCT_INSTANCE_DEPTH);
 	if (vm->struct_instance_stack.structs == NULL) {
-		vm_error(vm, Crux_ERROR_RUNTIME, 0,
+		vm_error(vm, CRUX_ERROR_RUNTIME, 0,
 				 "Fatal Error: Could not allocate memory for "
 				 "stack struct.\nShutting Down!\n");
 		return false;
@@ -917,14 +943,21 @@ void free_vm(CruxVM *vm)
 	freeStructInstanceStack(&vm->struct_instance_stack);
 
 	free_module_record(vm, vm->current_module_record);
-
 	free_objects(vm, true);
 	destroy_slab_allocator(vm->slab_24);
 	destroy_slab_allocator(vm->slab_32);
 	destroy_slab_allocator(vm->slab_48);
 	destroy_slab_allocator(vm->slab_64);
 
-	free(vm);
+	if (vm->api_stack) {
+		Crux_reallocate(vm, vm->api_stack, sizeof(CruxValue) * vm->api_stack_capacity, 0);
+	}
+
+	if (vm->config.reallocateFn) {
+		vm->config.reallocateFn(vm, 0, vm->config.userData);
+	} else {
+		free(vm);
+	}
 }
 
 typedef bool (*IntBinaryOp)(ObjectModuleRecord *current_module_record, int32_t intA, int32_t intB);
@@ -1772,7 +1805,10 @@ void vm_print(CruxVM *vm, const char *format, ...)
 	va_start(args, format);
 	vsnprintf(buffer, CRUX_VM_PRINT_BUFFER_SIZE, format, args);
 	va_end(args);
-	vm->config.writeFn(vm, buffer);
+
+	if (vm != NULL && vm->config.writeFn != NULL) {
+		vm->config.writeFn(vm, buffer);
+	}
 }
 
 void vm_error(CruxVM *vm, CruxErrorType error_type, int line_number, const char *format, ...)
@@ -1783,5 +1819,15 @@ void vm_error(CruxVM *vm, CruxErrorType error_type, int line_number, const char 
 	va_start(args, format);
 	vsnprintf(buffer, CRUX_VM_PRINT_BUFFER_SIZE, format, args);
 	va_end(args);
-	vm->config.errorFn(vm, error_type, vm->current_module_record->path->chars, line_number, buffer);
+
+	const char *module = "<unknown>";
+	if (vm != NULL && vm->current_module_record != NULL && vm->current_module_record->path != NULL) {
+		module = vm->current_module_record->path->chars;
+	}
+
+	if (vm != NULL && vm->config.errorFn != NULL) {
+		vm->config.errorFn(vm, error_type, module, line_number, buffer);
+	} else {
+		fprintf(stderr, "%s", buffer);
+	}
 }

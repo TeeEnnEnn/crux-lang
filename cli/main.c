@@ -29,7 +29,7 @@ int main(const int argc, const char *argv[])
             return crux_cmd_install();
         }
         if (strcmp(argv[1], "-V") == 0 || strcmp(argv[1], "--version") == 0) {
-            printf("Crux %s\n", Crux_VERSION_STRING);
+            printf("Crux %s\n", CRUX_VERSION_STRING);
             return 0;
         }
     }

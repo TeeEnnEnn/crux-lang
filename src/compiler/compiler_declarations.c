@@ -258,8 +258,10 @@ void public_declaration(Compiler *compiler)
 		type_declaration(compiler, true);
 	} else if (match(compiler, CRUX_TOKEN_USE)) {
 		use_statement(compiler, true);
+	} else if (match(compiler, CRUX_TOKEN_NATIVE)) {
+		native_declaration(compiler, true);
 	} else {
-		compiler_panic(compiler->parser, "Expected 'fn', 'let', 'struct', 'type' or 'use' after 'pub'.", SYNTAX);
+		compiler_panic(compiler->parser, "Expected 'fn', 'let', 'struct', 'type', 'use' or 'native' after 'pub'.", SYNTAX);
 	}
 }
 
@@ -277,6 +279,8 @@ void declaration(Compiler *compiler)
 		public_declaration(compiler);
 	} else if (match(compiler, CRUX_TOKEN_IMPL)) {
 		impl_declaration(compiler);
+	} else if (match(compiler, CRUX_TOKEN_NATIVE)) {
+		native_declaration(compiler, false);
 	} else {
 		statement(compiler);
 	}

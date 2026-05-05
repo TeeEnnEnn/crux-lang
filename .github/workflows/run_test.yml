@@ -120,3 +120,12 @@ jobs:
         run: |
           cd tests
           python test_runner.py
+
+      - name: Run Embedding Example
+        run: |
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            ./build/crux_embedding_example.exe
+          else
+            ./build/crux_embedding_example
+          fi
+        shell: bash

@@ -98,6 +98,7 @@ typedef enum {
 	CRUX_TOKEN_IMPL, // impl
 	CRUX_TOKEN_TYPE, // type
 	CRUX_TOKEN_IN, // in
+	CRUX_TOKEN_NATIVE, // native
 
 	CRUX_TOKEN_NIL_TYPE, // Nil
 	CRUX_TOKEN_BOOL_TYPE, // Bool

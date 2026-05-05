@@ -3,8 +3,6 @@
 #include "type_system.h"
 #include "value.h"
 
-#include <stdio.h>
-
 #include "object.h"
 
 void disassemble_chunk(CruxVM *vm, const Chunk *chunk, const char *name)
@@ -346,6 +344,14 @@ int disassemble_instruction(CruxVM *vm, const Chunk *chunk, int offset)
 		vm_print(vm, "%-16s %4d name(s)\n", instruction == OP_FINISH_USE ? "OP_FINISH_USE" : "OP_FINISH_PUB_USE",
 				 nameCount);
 		return offset + 2 + 2 * nameCount;
+	}
+	case OP_BIND_NATIVE: {
+		const uint16_t name_const = (uint16_t)chunk->code[offset + 1];
+		const uint16_t arity = (uint16_t)chunk->code[offset + 2];
+		vm_print(vm, "%-16s %4d '", "OP_BIND_NATIVE", name_const);
+		print_value(vm, chunk->constants.values[name_const], false);
+		vm_print(vm, "' (arity %d)\n", arity);
+		return offset + 3;
 	}
 	case OP_STRUCT: {
 		return constant_instruction(vm, "OP_STRUCT", chunk, offset);

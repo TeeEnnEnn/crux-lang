@@ -169,6 +169,68 @@ void fn_declaration(Compiler *compiler, const bool is_public)
 	pop(compiler->owner->current_module_record); // name_str
 }
 
+void native_declaration(Compiler *compiler, const bool is_public)
+{
+	consume(compiler, CRUX_TOKEN_FN, "Expected 'fn' after 'native'.");
+	const uint16_t global = parse_variable(compiler, "Expected native function name.");
+	const Token name_tok = compiler->parser->previous;
+	ObjectString *name_str = copy_string(compiler->owner, name_tok.start, name_tok.length);
+	push(compiler->owner->current_module_record, OBJECT_VAL(name_str));
+
+	consume(compiler, CRUX_TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+
+	int param_capacity = 4;
+	int param_count = 0;
+	ObjectTypeRecord **param_types = ALLOCATE(compiler->owner, ObjectTypeRecord *, param_capacity);
+
+	if (!check(compiler, CRUX_TOKEN_RIGHT_PAREN)) {
+		do {
+			param_count++;
+			consume(compiler, CRUX_TOKEN_IDENTIFIER, "Expected parameter name.");
+
+			ObjectTypeRecord *param_type = T_ANY;
+			if (match(compiler, CRUX_TOKEN_COLON)) {
+				param_type = parse_type_record(compiler);
+			}
+
+			if (param_count >= param_capacity) {
+				const int old_cap = param_capacity;
+				param_capacity = GROW_CAPACITY(param_capacity);
+				param_types = GROW_ARRAY(compiler->owner, ObjectTypeRecord *, param_types, old_cap, param_capacity);
+			}
+			param_types[param_count - 1] = param_type;
+		} while (match(compiler, CRUX_TOKEN_COMMA));
+	}
+	consume(compiler, CRUX_TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
+
+	ObjectTypeRecord *return_type = T_ANY;
+	if (match(compiler, CRUX_TOKEN_ARROW)) {
+		return_type = parse_type_record(compiler);
+	}
+
+	consume(compiler, CRUX_TOKEN_SEMICOLON, "Expected ';' after native declaration.");
+
+	// Emit OP_BIND_NATIVE
+	uint16_t name_const = make_constant(compiler, OBJECT_VAL(name_str));
+	emit_words(compiler, OP_BIND_NATIVE, name_const);
+	emit_word(compiler, (uint16_t)param_count);
+
+	// Define the global variable (it will be populated by OP_BIND_NATIVE at runtime)
+	define_variable(compiler, global, is_public);
+
+	ObjectTypeRecord *fn_type = new_function_type_rec(compiler->owner, param_types, param_count, return_type);
+	if (compiler->scope_depth == 0) {
+		type_table_set(compiler->type_table, name_str, fn_type);
+		if (is_public && compiler->owner->current_module_record) {
+			type_table_set(compiler->owner->current_module_record->types, name_str, fn_type);
+		}
+	} else {
+		compiler->locals[compiler->local_count - 1].type = fn_type;
+	}
+
+	pop(compiler->owner->current_module_record); // name_str
+}
+
 void anonymous_function(Compiler *compiler, const bool can_assign)
 {
 	(void)can_assign;

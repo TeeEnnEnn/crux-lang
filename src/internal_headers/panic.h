@@ -3,6 +3,7 @@
 
 #include <stdarg.h>
 #include "scanner.h"
+#include "object.h"
 #include "compiler/compiler_core.h"
 
 typedef struct {

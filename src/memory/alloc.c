@@ -90,7 +90,7 @@ void *allocate_object_with_gc(CruxVM *vm, const size_t size)
 				runtime_panic(vm->current_module_record, MEMORY, "Failed to allocate %zu bytes.", size);
 			} else {
                 if (vm) {
-				    vm_error(vm, Crux_ERROR_RUNTIME, 0, "Fatal error - Out of Memory: Failed to allocate %zu bytes.\n", size);
+				    vm_error(vm, CRUX_ERROR_RUNTIME, 0, "Fatal error - Out of Memory: Failed to allocate %zu bytes.\n", size);
 				    longjmp(vm->jump_buffer, INTERPRET_RUNTIME_ERROR);
                 } else {
                     fprintf(stderr, "Fatal error - Out of Memory: Failed to allocate %zu bytes.\n", size);
@@ -126,7 +126,7 @@ void *Crux_reallocate(CruxVM *vm, void *pointer, const size_t oldSize, const siz
 				runtime_panic(vm->current_module_record, MEMORY, "Failed to reallocate %zu bytes.", newSize);
 			} else {
                 if (vm) {
-				    vm_error(vm, Crux_ERROR_RUNTIME, 0, "Fatal error - Out of Memory: Failed to reallocate %zu bytes.\n", newSize);
+				    vm_error(vm, CRUX_ERROR_RUNTIME, 0, "Fatal error - Out of Memory: Failed to reallocate %zu bytes.\n", newSize);
 				    longjmp(vm->jump_buffer, INTERPRET_RUNTIME_ERROR);
                 } else {
                      fprintf(stderr, "Fatal error - Out of Memory: Failed to reallocate %zu bytes.\n", newSize);
