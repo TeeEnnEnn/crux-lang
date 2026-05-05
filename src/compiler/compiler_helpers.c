@@ -51,12 +51,12 @@ bool match(const Compiler *compiler, const CruxTokenType type)
 bool match_type_name(const Compiler *compiler)
 {
 	CruxTokenType type_tokens[] = {
-		CRUX_TOKEN_NIL_TYPE,	CRUX_TOKEN_BOOL_TYPE,	  CRUX_TOKEN_INT_TYPE,	  CRUX_TOKEN_FLOAT_TYPE,
-		CRUX_TOKEN_STRING_TYPE, CRUX_TOKEN_ARRAY_TYPE,	  CRUX_TOKEN_TABLE_TYPE,  CRUX_TOKEN_ERROR_TYPE,
-		CRUX_TOKEN_RESULT_TYPE, CRUX_TOKEN_RANDOM_TYPE,	  CRUX_TOKEN_FILE_TYPE,	  CRUX_TOKEN_STRUCT_TYPE,
-		CRUX_TOKEN_VECTOR_TYPE, CRUX_TOKEN_COMPLEX_TYPE,  CRUX_TOKEN_MATRIX_TYPE, CRUX_TOKEN_SET_TYPE,
-		CRUX_TOKEN_TUPLE_TYPE,	CRUX_TOKEN_BUFFER_TYPE,	  CRUX_TOKEN_RANGE_TYPE,  CRUX_TOKEN_ANY_TYPE,
-		CRUX_TOKEN_NEVER_TYPE,	CRUX_TOKEN_ITERATOR_TYPE, CRUX_TOKEN_OPTION_TYPE,
+		CRUX_TOKEN_NIL_TYPE,	  CRUX_TOKEN_BOOL_TYPE,	   CRUX_TOKEN_INT_TYPE,	   CRUX_TOKEN_FLOAT_TYPE,
+		CRUX_TOKEN_STRING_TYPE,	  CRUX_TOKEN_ARRAY_TYPE,   CRUX_TOKEN_TABLE_TYPE,  CRUX_TOKEN_ERROR_TYPE,
+		CRUX_TOKEN_RESULT_TYPE,	  CRUX_TOKEN_RANDOM_TYPE,  CRUX_TOKEN_FILE_TYPE,   CRUX_TOKEN_STRUCT_TYPE,
+		CRUX_TOKEN_VECTOR_TYPE,	  CRUX_TOKEN_COMPLEX_TYPE, CRUX_TOKEN_MATRIX_TYPE, CRUX_TOKEN_TUPLE_TYPE,
+		CRUX_TOKEN_BUFFER_TYPE,	  CRUX_TOKEN_RANGE_TYPE,   CRUX_TOKEN_ANY_TYPE,	   CRUX_TOKEN_NEVER_TYPE,
+		CRUX_TOKEN_ITERATOR_TYPE, CRUX_TOKEN_OPTION_TYPE,
 	};
 	int len = (int)(sizeof(type_tokens) / sizeof(type_tokens[0]));
 	for (int i = 0; i < len; i++) {
@@ -114,9 +114,6 @@ TypeMask type_token_type_to_mask(CruxTokenType token_type)
 	case CRUX_TOKEN_MATRIX_TYPE: {
 		return MATRIX_TYPE;
 	}
-	case CRUX_TOKEN_SET_TYPE: {
-		return SET_TYPE;
-	}
 	case CRUX_TOKEN_TUPLE_TYPE: {
 		return TUPLE_TYPE;
 	}
@@ -155,7 +152,6 @@ bool is_identifier_like(const CruxTokenType type)
 	case CRUX_TOKEN_VECTOR_TYPE:
 	case CRUX_TOKEN_MATRIX_TYPE:
 	case CRUX_TOKEN_COMPLEX_TYPE:
-	case CRUX_TOKEN_SET_TYPE:
 	case CRUX_TOKEN_TUPLE_TYPE:
 	case CRUX_TOKEN_FILE_TYPE:
 		return true;
@@ -659,7 +655,6 @@ OpCode get_compound_opcode(const Compiler *compiler, const OpCode setOp, const i
 	return setOp;
 }
 
-
 bool parse_signed_int_literal(Compiler *compiler, int32_t *value, const char *message)
 {
 	bool is_negative = false;
@@ -687,7 +682,6 @@ bool parse_signed_int_literal(Compiler *compiler, int32_t *value, const char *me
 	return true;
 }
 
-
 Token peek_next_token(const Compiler *compiler)
 {
 	Scanner scanner = *compiler->parser->scanner;
@@ -695,7 +689,7 @@ Token peek_next_token(const Compiler *compiler)
 }
 
 bool resolve_assignment_target(Compiler *compiler, const Token name, uint16_t *set_op, int *arg,
-									  ObjectTypeRecord **target_type)
+							   ObjectTypeRecord **target_type)
 {
 	ObjectString *name_str = copy_string(compiler->owner, name.start, name.length);
 	push(compiler->owner->current_module_record, OBJECT_VAL(name_str));
@@ -757,14 +751,13 @@ bool resolve_assignment_target(Compiler *compiler, const Token name, uint16_t *s
 	return true;
 }
 
-
 bool is_primitive_numeric_type(const ObjectTypeRecord *type)
 {
 	return type && (type->base_type == INT_TYPE || type->base_type == FLOAT_TYPE);
 }
 
-int merge_vector_dimensions(Compiler *compiler, const ObjectTypeRecord *left_type,
-								   const ObjectTypeRecord *right_type, const char *operation)
+int merge_vector_dimensions(Compiler *compiler, const ObjectTypeRecord *left_type, const ObjectTypeRecord *right_type,
+							const char *operation)
 {
 	const int left_dim = left_type->as.vector_type.dimensions;
 	const int right_dim = right_type->as.vector_type.dimensions;
@@ -777,7 +770,7 @@ int merge_vector_dimensions(Compiler *compiler, const ObjectTypeRecord *left_typ
 }
 
 ObjectTypeRecord *merge_matrix_shape(Compiler *compiler, const ObjectTypeRecord *left_type,
-											const ObjectTypeRecord *right_type, const char *operation)
+									 const ObjectTypeRecord *right_type, const char *operation)
 {
 	const int left_rows = left_type->as.matrix_type.rows;
 	const int left_cols = left_type->as.matrix_type.cols;
@@ -796,7 +789,7 @@ ObjectTypeRecord *merge_matrix_shape(Compiler *compiler, const ObjectTypeRecord 
 }
 
 ObjectTypeRecord *matrix_multiply_result_type(Compiler *compiler, const ObjectTypeRecord *left_type,
-													 const ObjectTypeRecord *right_type)
+											  const ObjectTypeRecord *right_type)
 {
 	const int left_rows = left_type->as.matrix_type.rows;
 	const int left_cols = left_type->as.matrix_type.cols;

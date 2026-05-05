@@ -1,9 +1,11 @@
-#include "compiler/compiler_statements.h"
+#include <string.h>
+
+#include "compiler/compiler_declarations.h"
 #include "compiler/compiler_expressions.h"
 #include "compiler/compiler_helpers.h"
-#include "compiler/compiler_declarations.h"
-#include "panic.h"
+#include "compiler/compiler_statements.h"
 #include "file_handler.h"
+#include "panic.h"
 
 void expression_statement(Compiler *compiler)
 {
@@ -147,7 +149,6 @@ void c_style_for(Compiler *compiler)
 
 	pop_loop_context(compiler);
 }
-
 
 void for_statement(Compiler *compiler)
 {
@@ -382,9 +383,9 @@ void use_statement(Compiler *compiler, bool is_public)
 																	native_callable->return_type);
 
 			if (compiler->scope_depth > 0) {
-                if (is_public) {
-                    compiler_panic(compiler->parser, "Cannot use 'pub' on local imports.", SYNTAX);
-                }
+				if (is_public) {
+					compiler_panic(compiler->parser, "Cannot use 'pub' on local imports.", SYNTAX);
+				}
 				add_local(compiler, alias_tok, resolved_type);
 				mark_initialized(compiler);
 				emit_words(compiler, OP_CONSTANT, const_index);
@@ -392,9 +393,9 @@ void use_statement(Compiler *compiler, bool is_public)
 				int global_index = compiler->global_count++;
 				table_set(compiler->owner, &compiler->globals, alias_name, INT_VAL(global_index));
 				type_table_set(compiler->type_table, alias_name, resolved_type);
-                if (is_public && compiler->owner->current_module_record != NULL) {
-                    type_table_set(compiler->owner->current_module_record->types, alias_name, resolved_type);
-                }
+				if (is_public && compiler->owner->current_module_record != NULL) {
+					type_table_set(compiler->owner->current_module_record->types, alias_name, resolved_type);
+				}
 
 				emit_words(compiler, OP_CONSTANT, const_index);
 				emit_words(compiler, is_public ? OP_DEFINE_PUB_GLOBAL : OP_DEFINE_GLOBAL, global_index);
@@ -460,9 +461,9 @@ void use_statement(Compiler *compiler, bool is_public)
 			emit_word(compiler, original_name_const);
 
 			if (compiler->scope_depth > 0) {
-                if (is_public) {
-                    compiler_panic(compiler->parser, "Cannot use 'pub' on local imports.", SYNTAX);
-                }
+				if (is_public) {
+					compiler_panic(compiler->parser, "Cannot use 'pub' on local imports.", SYNTAX);
+				}
 				add_local(compiler, alias_tok, resolved_type);
 				mark_initialized(compiler);
 
@@ -472,9 +473,9 @@ void use_statement(Compiler *compiler, bool is_public)
 				int global_index = compiler->global_count++;
 				table_set(compiler->owner, &compiler->globals, alias_name, INT_VAL(global_index));
 				type_table_set(compiler->type_table, alias_name, resolved_type);
-                if (is_public && compiler->owner->current_module_record != NULL) {
-                    type_table_set(compiler->owner->current_module_record->types, alias_name, resolved_type);
-                }
+				if (is_public && compiler->owner->current_module_record != NULL) {
+					type_table_set(compiler->owner->current_module_record->types, alias_name, resolved_type);
+				}
 
 				emit_word(compiler, global_index);
 			}

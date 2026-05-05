@@ -6,8 +6,8 @@
 #endif
 
 #include "garbage_collector.h"
-#include "panic.h"
 #include "native/time.h"
+#include "panic.h"
 
 /**
  * Returns the current Unix timestamp in seconds
@@ -40,8 +40,7 @@ CruxValue time_milliseconds_function_(CruxVM *vm, const CruxValue *args)
 #else
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
-	const uint64_t ms = (uint64_t)ts.tv_sec * 1000 +
-			    (uint64_t)ts.tv_nsec / 1000000;
+	const uint64_t ms = (uint64_t)ts.tv_sec * 1000 + (uint64_t)ts.tv_nsec / 1000000;
 #endif
 	return FLOAT_VAL((double)ms);
 }
@@ -49,15 +48,13 @@ CruxValue time_milliseconds_function_(CruxVM *vm, const CruxValue *args)
 /**
  * Pauses execution for the specified number of seconds
  * arg0 -> seconds: Float
- * Returns Result<Nil>
+ * Returns Nil
  */
 CruxValue sleep_seconds_function(CruxVM *vm, const CruxValue *args)
 {
-	const double seconds = TO_DOUBLE(args[0]);
+	double seconds = TO_DOUBLE(args[0]);
 	if (seconds < 0) {
-		return MAKE_GC_SAFE_ERROR(vm,
-					  "Sleep duration cannot be negative.",
-					  VALUE);
+		seconds = 0;
 	}
 
 #ifdef _WIN32
@@ -65,21 +62,19 @@ CruxValue sleep_seconds_function(CruxVM *vm, const CruxValue *args)
 #else
 	sleep((unsigned int)seconds);
 #endif
-	return OBJECT_VAL(new_ok_result(vm, NIL_VAL));
+	return NIL_VAL;
 }
 
 /**
  * Pauses execution for the specified number of milliseconds
  * arg0 -> milliseconds: Float
- * Returns Result<Nil>
+ * Returns Nil
  */
 CruxValue sleep_milliseconds_function(CruxVM *vm, const CruxValue *args)
 {
-	const double milliseconds = TO_DOUBLE(args[0]);
+	double milliseconds = TO_DOUBLE(args[0]);
 	if (milliseconds < 0) {
-		return MAKE_GC_SAFE_ERROR(vm,
-					  "Sleep duration cannot be negative.",
-					  VALUE);
+		milliseconds = 0;
 	}
 
 #ifdef _WIN32
@@ -88,7 +83,7 @@ CruxValue sleep_milliseconds_function(CruxVM *vm, const CruxValue *args)
 	usleep((useconds_t)(milliseconds * 1000));
 #endif
 
-	return OBJECT_VAL(new_ok_result(vm, NIL_VAL));
+	return NIL_VAL;
 }
 
 static time_t get_current_time(void)

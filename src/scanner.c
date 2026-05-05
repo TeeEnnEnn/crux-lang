@@ -167,8 +167,6 @@ static CruxTokenType identifier_type(Scanner *scanner)
 			switch (scanner->start[1]) {
 			case 't':
 				return check_keyword(scanner, 2, 4, "ring", CRUX_TOKEN_STRING_TYPE);
-			case 'e':
-				return check_keyword(scanner, 2, 1, "t", CRUX_TOKEN_SET_TYPE);
 			case 'o':
 				return check_keyword(scanner, 2, 2, "me", CRUX_TOKEN_SOME);
 			}

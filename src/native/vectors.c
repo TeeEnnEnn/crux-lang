@@ -1,15 +1,14 @@
 #include <math.h>
 
+#include "native/vectors.h"
 #include "object.h"
 #include "panic.h"
-#include "native/vectors.h"
 
 #define EPSILON 1e-10
 
 #define IS_ZERO_SCALAR(scalar) ((scalar) < EPSILON && (scalar) > -EPSILON)
 
-static double compute_magnitude(const double *restrict components,
-				const uint32_t dimensions)
+static double compute_magnitude(const double *restrict components, const uint32_t dimensions)
 {
 	double sum = 0.0;
 	for (uint32_t i = 0; i < dimensions; i++) {
@@ -18,9 +17,7 @@ static double compute_magnitude(const double *restrict components,
 	return sqrt(sum);
 }
 
-static double compute_dot_product(const double *restrict comp1,
-				  const double *restrict comp2,
-				  const uint32_t dimensions)
+static double compute_dot_product(const double *restrict comp1, const double *restrict comp2, const uint32_t dimensions)
 {
 	double result = 0.0;
 	for (uint32_t i = 0; i < dimensions; i++) {
@@ -29,58 +26,47 @@ static double compute_dot_product(const double *restrict comp1,
 	return result;
 }
 
-static void compute_vector_add(double *restrict result,
-			       const double *restrict comp1,
-			       const double *restrict comp2,
-			       const uint32_t dimensions)
+static void compute_vector_add(double *restrict result, const double *restrict comp1, const double *restrict comp2,
+							   const uint32_t dimensions)
 {
 	for (uint32_t i = 0; i < dimensions; i++) {
 		result[i] = comp1[i] + comp2[i];
 	}
 }
 
-static void compute_vector_subtract(double *restrict result,
-				    const double *restrict comp1,
-				    const double *restrict comp2,
-				    const uint32_t dimensions)
+static void compute_vector_subtract(double *restrict result, const double *restrict comp1, const double *restrict comp2,
+									const uint32_t dimensions)
 {
 	for (uint32_t i = 0; i < dimensions; i++) {
 		result[i] = comp1[i] - comp2[i];
 	}
 }
 
-static void compute_scalar_multiply(double *restrict result,
-				    const double *restrict components,
-				    const double scalar,
-				    const uint32_t dimensions)
+static void compute_scalar_multiply(double *restrict result, const double *restrict components, const double scalar,
+									const uint32_t dimensions)
 {
 	for (uint32_t i = 0; i < dimensions; i++) {
 		result[i] = components[i] * scalar;
 	}
 }
 
-static void compute_scalar_divide(double *restrict result,
-				  const double *restrict components,
-				  const double scalar,
-				  const uint32_t dimensions)
+static void compute_scalar_divide(double *restrict result, const double *restrict components, const double scalar,
+								  const uint32_t dimensions)
 {
 	for (uint32_t i = 0; i < dimensions; i++) {
 		result[i] = components[i] / scalar;
 	}
 }
 
-static void compute_normalize(double *restrict result,
-			      const double *restrict components,
-			      const double magnitude, const uint32_t dimensions)
+static void compute_normalize(double *restrict result, const double *restrict components, const double magnitude,
+							  const uint32_t dimensions)
 {
 	for (uint32_t i = 0; i < dimensions; i++) {
 		result[i] = components[i] / magnitude;
 	}
 }
 
-static double compute_distance(const double *restrict comp1,
-			       const double *restrict comp2,
-			       const uint32_t dimensions)
+static double compute_distance(const double *restrict comp1, const double *restrict comp2, const uint32_t dimensions)
 {
 	double sum = 0.0;
 	for (uint32_t i = 0; i < dimensions; i++) {
@@ -90,19 +76,16 @@ static double compute_distance(const double *restrict comp1,
 	return sqrt(sum);
 }
 
-static void compute_lerp(double *restrict result, const double *restrict comp1,
-			 const double *restrict comp2, const double t,
-			 const uint32_t dimensions)
+static void compute_lerp(double *restrict result, const double *restrict comp1, const double *restrict comp2,
+						 const double t, const uint32_t dimensions)
 {
 	for (uint32_t i = 0; i < dimensions; i++) {
 		result[i] = comp1[i] + t * (comp2[i] - comp1[i]);
 	}
 }
 
-static void compute_reflect(double *restrict result,
-			    const double *restrict incident,
-			    const double *restrict normal,
-			    const double normal_mag, const uint32_t dimensions)
+static void compute_reflect(double *restrict result, const double *restrict incident, const double *restrict normal,
+							const double normal_mag, const uint32_t dimensions)
 {
 	double dot = 0.0;
 	for (uint32_t i = 0; i < dimensions; i++) {
@@ -114,9 +97,7 @@ static void compute_reflect(double *restrict result,
 	}
 }
 
-static bool compute_equals(const double *restrict comp1,
-			   const double *restrict comp2,
-			   const uint32_t dimensions)
+static bool compute_equals(const double *restrict comp1, const double *restrict comp2, const uint32_t dimensions)
 {
 	for (uint32_t i = 0; i < dimensions; i++) {
 		if (fabs(comp1[i] - comp2[i]) >= EPSILON) {
@@ -136,25 +117,13 @@ static double vector_magnitude(const ObjectVector *vec)
  * Creates a new vector with the specified dimension and components
  * arg0 -> dimension: Int
  * arg1 -> components: Array
- * Returns Result<Vector>
+ * Returns Vector
  */
 CruxValue new_vector_function(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[1]);
-
-	for (uint32_t i = 0; i < array->size; i++) {
-		if (!IS_NUMERIC(array->values[i])) {
-			return MAKE_GC_SAFE_ERROR(
-				vm,
-				"elements of <components> must be of type "
-				"'int' | 'float'",
-				TYPE);
-		}
-	}
-
 	const uint32_t dimensions = AS_INT(args[0]);
-	const uint32_t copy_count = (array->size < dimensions) ? array->size
-							       : dimensions;
+	const uint32_t copy_count = (array->size < dimensions) ? array->size : dimensions;
 
 	ObjectVector *vector = new_vector(vm, dimensions);
 	push(vm->current_module_record, OBJECT_VAL(vector));
@@ -170,9 +139,8 @@ CruxValue new_vector_function(CruxVM *vm, const CruxValue *args)
 		components[i] = 0.0;
 	}
 
-	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(vector));
 	pop(vm->current_module_record);
-	return OBJECT_VAL(res);
+	return OBJECT_VAL(vector);
 }
 
 /**
@@ -185,17 +153,13 @@ CruxValue vector_dot_method(CruxVM *vm, const CruxValue *args)
 	const ObjectVector *vec2 = AS_CRUX_VECTOR(args[1]);
 
 	if (vec1->dimensions != vec2->dimensions) {
-		return MAKE_GC_SAFE_ERROR(
-			vm,
-			"Vectors must have the same dimension for dot product.",
-			TYPE);
+		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension for dot product.", TYPE);
 	}
 
 	const double *comp1 = VECTOR_COMPONENTS(vec1);
 	const double *comp2 = VECTOR_COMPONENTS(vec2);
 
-	const double result = compute_dot_product(comp1, comp2,
-						  vec1->dimensions);
+	const double result = compute_dot_product(comp1, comp2, vec1->dimensions);
 
 	return OBJECT_VAL(new_ok_result(vm, FLOAT_VAL(result)));
 }
@@ -387,8 +351,7 @@ CruxValue vector_normalize_method(CruxVM *vm, const CruxValue *args)
 	const double magnitude = vector_magnitude(vec);
 
 	if (IS_ZERO_SCALAR(magnitude)) {
-		return MAKE_GC_SAFE_ERROR(vm, "Cannot normalize a zero vector.",
-					  MATH);
+		return MAKE_GC_SAFE_ERROR(vm, "Cannot normalize a zero vector.", MATH);
 	}
 
 	ObjectVector *result_vector = new_vector(vm, vec->dimensions);
@@ -414,16 +377,15 @@ CruxValue vector_distance_method(CruxVM *vm, const CruxValue *args)
 
 	if (vec1->dimensions != vec2->dimensions) {
 		return MAKE_GC_SAFE_ERROR(vm,
-					  "Vectors must have the same "
-					  "dimension for distance calculation.",
-					  TYPE);
+								  "Vectors must have the same "
+								  "dimension for distance calculation.",
+								  TYPE);
 	}
 
 	const double *comp1 = VECTOR_COMPONENTS(vec1);
 	const double *comp2 = VECTOR_COMPONENTS(vec2);
 
-	const double distance = compute_distance(comp1, comp2,
-						 vec1->dimensions);
+	const double distance = compute_distance(comp1, comp2, vec1->dimensions);
 
 	return OBJECT_VAL(new_ok_result(vm, FLOAT_VAL(distance)));
 }
@@ -451,8 +413,7 @@ CruxValue vector_angle_between_method(CruxVM *vm, const CruxValue *args)
 	const ObjectVector *vec2 = AS_CRUX_VECTOR(args[1]);
 
 	if (vec1->dimensions != vec2->dimensions) {
-		return MAKE_GC_SAFE_ERROR(
-			vm, "Vectors must have the same dimension.", TYPE);
+		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension.", TYPE);
 	}
 
 	const double *comp1 = VECTOR_COMPONENTS(vec1);
@@ -463,8 +424,7 @@ CruxValue vector_angle_between_method(CruxVM *vm, const CruxValue *args)
 	const double mag2 = compute_magnitude(comp2, vec2->dimensions);
 
 	if (fabs(mag1) < EPSILON || fabs(mag2) < EPSILON) {
-		return MAKE_GC_SAFE_ERROR(
-			vm, "Cannot calculate angle with zero vector.", MATH);
+		return MAKE_GC_SAFE_ERROR(vm, "Cannot calculate angle with zero vector.", MATH);
 	}
 
 	const double cosTheta = dot / (mag1 * mag2);
@@ -488,9 +448,7 @@ CruxValue vector_lerp_method(CruxVM *vm, const CruxValue *args)
 	const double t = TO_DOUBLE(args[2]);
 
 	if (vec1->dimensions != vec2->dimensions) {
-		return MAKE_GC_SAFE_ERROR(
-			vm, "Vectors must have the same dimension for lerp.",
-			TYPE);
+		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension for lerp.", TYPE);
 	}
 
 	ObjectVector *result_vector = new_vector(vm, vec1->dimensions);
@@ -519,17 +477,13 @@ CruxValue vector_reflect_method(CruxVM *vm, const CruxValue *args)
 	const ObjectVector *normal = AS_CRUX_VECTOR(args[1]);
 
 	if (incident->dimensions != normal->dimensions) {
-		return MAKE_GC_SAFE_ERROR(
-			vm,
-			"Vectors must have the same dimension for reflection.",
-			TYPE);
+		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension for reflection.", TYPE);
 	}
 
 	const double normal_mag = vector_magnitude(normal);
 
 	if (fabs(normal_mag) < EPSILON) {
-		return MAKE_GC_SAFE_ERROR(
-			vm, "Cannot reflect with zero normal vector.", MATH);
+		return MAKE_GC_SAFE_ERROR(vm, "Cannot reflect with zero normal vector.", MATH);
 	}
 
 	ObjectVector *result_vector = new_vector(vm, incident->dimensions);
@@ -539,8 +493,7 @@ CruxValue vector_reflect_method(CruxVM *vm, const CruxValue *args)
 	const double *norm_comp = VECTOR_COMPONENTS(normal);
 	double *result_comp = VECTOR_COMPONENTS(result_vector);
 
-	compute_reflect(result_comp, inc_comp, norm_comp, normal_mag,
-			incident->dimensions);
+	compute_reflect(result_comp, inc_comp, norm_comp, normal_mag, incident->dimensions);
 
 	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(result_vector));
 	pop(vm->current_module_record);
@@ -570,6 +523,8 @@ CruxValue vector_equals_method(CruxVM *vm, const CruxValue *args)
 
 	return BOOL_VAL(equal);
 }
+
+// TODO: Remove access functions and replace with comptime dot property access
 
 /**
  * Returns the x component (first dimension) of the vector

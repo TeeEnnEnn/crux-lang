@@ -66,8 +66,6 @@ TypeMask get_type_mask(CruxValue value)
 		case OBJECT_NATIVE_CALLABLE:
 		case OBJECT_FUNCTION:
 			return FUNCTION_TYPE;
-		case OBJECT_SET:
-			return SET_TYPE;
 		case OBJECT_TUPLE:
 			return TUPLE_TYPE;
 		case OBJECT_BUFFER:
@@ -99,15 +97,32 @@ void type_mask_name(const TypeMask mask, char *buf, const int buf_size)
 	static const struct {
 		TypeMask bit;
 		const char *name;
-	} entries[] = {{NIL_TYPE, "Nil"},		{BOOL_TYPE, "Bool"},		   {INT_TYPE, "Int"},
-				   {FLOAT_TYPE, "Float"},	{SHAPE_TYPE, "Shape"},		   {STRING_TYPE, "String"},
-				   {ARRAY_TYPE, "Array"},	{TABLE_TYPE, "Table"},		   {FUNCTION_TYPE, "Function"},
-				   {ERROR_TYPE, "Error"},	{RESULT_TYPE, "Result"},	   {FILE_TYPE, "File"},
-				   {VECTOR_TYPE, "Vector"}, {COMPLEX_TYPE, "Complex"},	   {MATRIX_TYPE, "Matrix"},
-				   {STRUCT_TYPE, "Struct"}, {MODULE_TYPE, "Module"},	   {SET_TYPE, "Set"},
-				   {TUPLE_TYPE, "Tuple"},	{BUFFER_TYPE, "Buffer"},	   {RANGE_TYPE, "Range"},
-				   {UNION_TYPE, "Union"},	{NEVER_TYPE, "Never"},		   {ITERATOR_TYPE, "Iterator"},
-				   {OPTION_TYPE, "Option"}, {COROUTINE_TYPE, "Coroutine"}, {ENUM_TYPE, "Enum"}};
+	} entries[] = {{NIL_TYPE, "Nil"},
+				   {BOOL_TYPE, "Bool"},
+				   {INT_TYPE, "Int"},
+				   {FLOAT_TYPE, "Float"},
+				   {SHAPE_TYPE, "Shape"},
+				   {STRING_TYPE, "String"},
+				   {ARRAY_TYPE, "Array"},
+				   {TABLE_TYPE, "Table"},
+				   {FUNCTION_TYPE, "Function"},
+				   {ERROR_TYPE, "Error"},
+				   {RESULT_TYPE, "Result"},
+				   {FILE_TYPE, "File"},
+				   {VECTOR_TYPE, "Vector"},
+				   {COMPLEX_TYPE, "Complex"},
+				   {MATRIX_TYPE, "Matrix"},
+				   {STRUCT_TYPE, "Struct"},
+				   {MODULE_TYPE, "Module"},
+				   {TUPLE_TYPE, "Tuple"},
+				   {BUFFER_TYPE, "Buffer"},
+				   {RANGE_TYPE, "Range"},
+				   {UNION_TYPE, "Union"},
+				   {NEVER_TYPE, "Never"},
+				   {ITERATOR_TYPE, "Iterator"},
+				   {OPTION_TYPE, "Option"},
+				   {COROUTINE_TYPE, "Coroutine"},
+				   {ENUM_TYPE, "Enum"}};
 
 	int offset = 0;
 	bool first = true;
@@ -272,14 +287,6 @@ ObjectTypeRecord *new_function_type_rec(CruxVM *vm, ObjectTypeRecord **arg_types
  * Creates a new set type record with the given element type.
  * Roots the element type
  */
-ObjectTypeRecord *new_set_type_rec(CruxVM *vm, ObjectTypeRecord *element_type)
-{
-	push(vm->current_module_record, OBJECT_VAL(element_type));
-	ObjectTypeRecord *rec = new_type_rec(vm, SET_TYPE);
-	pop(vm->current_module_record);
-	rec->as.set_type.element_type = element_type;
-	return rec;
-}
 
 /**
  * Creates a new shape type record with the given element types.
@@ -353,8 +360,7 @@ bool types_equal(ObjectTypeRecord *a, ObjectTypeRecord *b)
 		return types_equal(a->as.result_type.ok_type, b->as.result_type.ok_type);
 	case OPTION_TYPE:
 		return types_equal(a->as.option_type.some_type, b->as.option_type.some_type);
-	case SET_TYPE:
-		return types_equal(a->as.set_type.element_type, b->as.set_type.element_type);
+
 	case TUPLE_TYPE: {
 		if (a->as.tuple_type.element_count == -1 || b->as.tuple_type.element_count == -1)
 			return true;
@@ -517,8 +523,7 @@ bool types_compatible(ObjectTypeRecord *expected, ObjectTypeRecord *got)
 			}
 			return true;
 		}
-		case SET_TYPE:
-			return types_compatible(expected->as.set_type.element_type, got->as.set_type.element_type);
+
 		case VECTOR_TYPE:
 			return expected->as.vector_type.dimensions == -1 || got->as.vector_type.dimensions == -1 ||
 				   expected->as.vector_type.dimensions == got->as.vector_type.dimensions;
@@ -647,12 +652,7 @@ static void type_record_name_impl(const ObjectTypeRecord *rec, char *buf, const 
 		snprintf(buf, buf_size, "Option[%s]", inner);
 		break;
 	}
-	case SET_TYPE: {
-		char inner[256] = {0};
-		type_record_name_impl(rec->as.set_type.element_type, inner, sizeof(inner), next_seen, next_seen_count);
-		snprintf(buf, buf_size, "Set<%s>", inner);
-		break;
-	}
+
 	case STRUCT_TYPE: {
 		if (rec->as.struct_type.definition && rec->as.struct_type.definition->name) {
 			snprintf(buf, buf_size, "%s", rec->as.struct_type.definition->name->chars);
@@ -834,13 +834,6 @@ ObjectTypeRecord *type_from_string(CruxVM *vm, const ObjectTypeTable *type_table
 	}
 	if (strncmp(str, "Tuple", 5) == 0)
 		return new_tuple_type_rec(vm, NULL, -1);
-	if (strncmp(str, "Set", 3) == 0) {
-		ObjectTypeRecord *any_type = new_type_rec(vm, ANY_TYPE);
-		push(vm->current_module_record, OBJECT_VAL(any_type));
-		ObjectTypeRecord *res = new_set_type_rec(vm, any_type);
-		pop(vm->current_module_record);
-		return res;
-	}
 	if (strncmp(str, "Vector", 6) == 0)
 		return new_vector_type_rec(vm, -1);
 	if (strncmp(str, "Matrix", 6) == 0)
@@ -926,9 +919,9 @@ bool is_collection_type(const ObjectTypeRecord *type)
 {
 	if (!type)
 		return false;
-	if (type->base_type == ARRAY_TYPE || type->base_type == TABLE_TYPE || type->base_type == SET_TYPE ||
-		type->base_type == TUPLE_TYPE || type->base_type == STRING_TYPE || type->base_type == BUFFER_TYPE ||
-		type->base_type == RANGE_TYPE || type->base_type == VECTOR_TYPE || type->base_type == MATRIX_TYPE)
+	if (type->base_type == ARRAY_TYPE || type->base_type == TABLE_TYPE || type->base_type == TUPLE_TYPE ||
+		type->base_type == STRING_TYPE || type->base_type == BUFFER_TYPE || type->base_type == RANGE_TYPE ||
+		type->base_type == VECTOR_TYPE || type->base_type == MATRIX_TYPE)
 		return true;
 	if (type->base_type == UNION_TYPE) {
 		for (int i = 0; i < type->as.union_type.element_count; i++) {
@@ -1000,8 +993,6 @@ ObjectTypeRecord *get_iterable_element_type(const Compiler *compiler, const Obje
 		return iterable_type->as.iterator_type.element_type;
 	case ARRAY_TYPE:
 		return iterable_type->as.array_type.element_type;
-	case SET_TYPE:
-		return iterable_type->as.set_type.element_type;
 	case RANGE_TYPE:
 	case BUFFER_TYPE:
 		return T_INT;

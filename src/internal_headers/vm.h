@@ -105,7 +105,6 @@ struct CruxVM {
 	Table complex_type;
 	Table matrix_type;
 	Table range_type;
-	Table set_type;
 	Table tuple_type;
 	Table buffer_type;
 

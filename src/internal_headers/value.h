@@ -63,17 +63,19 @@ typedef uint32_t TypeMask;
 #define MATRIX_TYPE (1u << 14)
 #define FUNCTION_TYPE (1u << 15)
 #define MODULE_TYPE (1u << 16)
-#define SET_TYPE (1u << 17)
-#define TUPLE_TYPE (1u << 18)
-#define BUFFER_TYPE (1u << 19)
-#define RANGE_TYPE (1u << 20)
-#define SHAPE_TYPE (1u << 21)
-#define UNION_TYPE (1u << 22)
-#define ITERATOR_TYPE (1u << 23)
-#define OPTION_TYPE (1u << 24)
-#define COROUTINE_TYPE (1u << 25)
-#define ENUM_TYPE (1u << 26)
-
+#define TUPLE_TYPE (1u << 17)
+#define BUFFER_TYPE (1u << 18)
+#define RANGE_TYPE (1u << 19)
+#define SHAPE_TYPE (1u << 20)
+#define UNION_TYPE (1u << 21)
+#define ITERATOR_TYPE (1u << 22)
+#define OPTION_TYPE (1u << 23)
+#define COROUTINE_TYPE (1u << 24)
+#define ENUM_TYPE (1u << 25)
+// 26
+// 27
+// 28
+// 29
 #define NEVER_TYPE (1u << 30)
 #define ANY_TYPE (1u << 31)
 

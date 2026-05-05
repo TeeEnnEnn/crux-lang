@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "object.h"
 #include "panic.h"
+#include "value.h"
 
 /**
  * Creates a new tuple from an array.
@@ -69,31 +70,31 @@ CruxValue to_array_tuple_method(CruxVM *vm, const CruxValue *args)
 /**
  * Gets the first element of a tuple.
  * arg0 -> tuple
- * returns -> CruxValue
+ * returns -> Option<Any>
  */
 CruxValue first_tuple_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectTuple *tuple = AS_CRUX_TUPLE(args[0]);
 	if (tuple->size == 0) {
-		return MAKE_GC_SAFE_ERROR(vm, "Cannot get first element of empty tuple", BOUNDS);
+		return OBJECT_VAL(new_option(vm, NIL_VAL, false));
 	}
-	ObjectResult *result = new_ok_result(vm, tuple->elements[0]);
-	return OBJECT_VAL(result);
+	ObjectOption *some = new_option(vm, tuple->elements[0], true);
+	return OBJECT_VAL(some);
 }
 
 /**
  * Gets the last element of a tuple.
  * arg0 -> tuple
- * returns -> CruxValue
+ * returns -> Option<Any>
  */
 CruxValue last_tuple_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectTuple *tuple = AS_CRUX_TUPLE(args[0]);
 	if (tuple->size == 0) {
-		return MAKE_GC_SAFE_ERROR(vm, "Cannot get last element of empty tuple", BOUNDS);
+		return OBJECT_VAL(new_option(vm, NIL_VAL, false));
 	}
-	ObjectResult *result = new_ok_result(vm, tuple->elements[tuple->size - 1]);
-	return OBJECT_VAL(result);
+	ObjectOption *some = new_option(vm, tuple->elements[tuple->size - 1], true);
+	return OBJECT_VAL(some);
 }
 
 /**
@@ -140,7 +141,7 @@ CruxValue get_tuple_method(CruxVM *vm, const CruxValue *args)
  * arg0 -> tuple
  * arg1 -> start
  * arg2 -> end
- * returns -> Result<Array<CruxValue>>
+ * returns -> Result[Array[Any]]
  */
 CruxValue slice_tuple_method(CruxVM *vm, const CruxValue *args)
 {
@@ -165,7 +166,7 @@ CruxValue slice_tuple_method(CruxVM *vm, const CruxValue *args)
  * Gets the index of a value in a tuple.
  * arg0 -> tuple
  * arg1 -> value
- * returns -> Int
+ * returns -> Option<Int>
  */
 CruxValue index_tuple_method(CruxVM *vm, const CruxValue *args)
 {
@@ -173,9 +174,9 @@ CruxValue index_tuple_method(CruxVM *vm, const CruxValue *args)
 	CruxValue value = args[1];
 	for (uint32_t i = 0; i < tuple->size; i++) {
 		if (values_equal(tuple->elements[i], value)) {
-			ObjectResult *result = new_ok_result(vm, INT_VAL(i));
-			return OBJECT_VAL(result);
+			ObjectOption *some = new_option(vm, INT_VAL(i), true);
+			return OBJECT_VAL(some);
 		}
 	}
-	return MAKE_GC_SAFE_ERROR(vm, "CruxValue not found", VALUE);
+	return OBJECT_VAL(new_option(vm, NIL_VAL, false));
 }

@@ -8,10 +8,10 @@
 #include "compiler/compiler_core.h"
 #include "crux.h"
 #include "garbage_collector.h"
+#include "native/native_registration.h"
 #include "object.h"
 #include "panic.h"
 #include "slab_allocator.h"
-#include "native/native_registration.h"
 #include "table.h"
 #include "type_system.h"
 #include "value.h"
@@ -77,8 +77,9 @@ bool push_import_stack(CruxVM *vm, ObjectString *path)
 		stack->capacity = GROW_CAPACITY(oldCapacity);
 		stack->paths = GROW_ARRAY(vm, ObjectString *, stack->paths, oldCapacity, stack->capacity);
 		if (stack->paths == NULL) {
-			vm_error(vm, Crux_ERROR_RUNTIME, 0, "Fatal Error: Could not allocate "
-							"memory for import stack.\n");
+			vm_error(vm, Crux_ERROR_RUNTIME, 0,
+					 "Fatal Error: Could not allocate "
+					 "memory for import stack.\n");
 			stack->capacity = oldCapacity;
 			return false;
 		}
@@ -120,9 +121,9 @@ CruxVM *new_vm(CruxConfiguration *config)
 {
 	CruxVM *vm = calloc(1, sizeof(CruxVM));
 	if (vm == NULL) {
-	#ifndef CRUX_API
+#ifndef CRUX_API
 		fprintf(stderr, "Fatal Error: Could not allocate memory for CruxVM\n");
-	#endif
+#endif
 		return NULL;
 	}
 
@@ -229,7 +230,8 @@ bool call_value(CruxVM *vm, const CruxValue callee, const int arg_count)
 #undef panic_exit
 }
 
-bool handle_invoke(CruxVM *vm, const int arg_count, const CruxValue receiver, const CruxValue original, const CruxValue value)
+bool handle_invoke(CruxVM *vm, const int arg_count, const CruxValue receiver, const CruxValue original,
+				   const CruxValue value)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
 
@@ -256,7 +258,8 @@ bool handle_invoke(CruxVM *vm, const int arg_count, const CruxValue receiver, co
 		return false;                                                                                                  \
 	} while (0)
 
-typedef bool (*TypeInvokeHandler)(CruxVM *vm, const ObjectString *name, int arg_count, CruxValue original, CruxValue receiver);
+typedef bool (*TypeInvokeHandler)(CruxVM *vm, const ObjectString *name, int arg_count, CruxValue original,
+								  CruxValue receiver);
 
 static bool is_builtin_iterable_value(const CruxValue value)
 {
@@ -266,7 +269,6 @@ static bool is_builtin_iterable_value(const CruxValue value)
 
 	switch (OBJECT_TYPE(value)) {
 	case OBJECT_ARRAY:
-	case OBJECT_SET:
 	case OBJECT_TUPLE:
 	case OBJECT_RANGE:
 	case OBJECT_BUFFER:
@@ -290,7 +292,8 @@ static bool find_named_method_on_struct_instance(const CruxValue receiver, Objec
 	return table_get(&instance->struct_type->methods, name, method_out);
 }
 
-static bool invoke_zero_arg_struct_method(CruxVM *vm, const CruxValue receiver, const char *method_name, CruxValue *result_out)
+static bool invoke_zero_arg_struct_method(CruxVM *vm, const CruxValue receiver, const char *method_name,
+										  CruxValue *result_out)
 {
 	ObjectString *method_name_obj = copy_string(vm, method_name, (int)strlen(method_name));
 	CruxValue method_val;
@@ -418,7 +421,8 @@ static bool handle_string_invoke(CruxVM *vm, const ObjectString *name, const int
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_undefined_invoke(CruxVM *vm, const ObjectString *name, int arg_count, CruxValue original, CruxValue receiver)
+static bool handle_undefined_invoke(CruxVM *vm, const ObjectString *name, int arg_count, CruxValue original,
+									CruxValue receiver)
 {
 	(void)name;
 	(void)arg_count;
@@ -539,16 +543,6 @@ static bool handle_range_invoke(CruxVM *vm, const ObjectString *name, const int 
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_set_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
-							  const CruxValue receiver)
-{
-	CruxValue value;
-	if (table_get(&vm->set_type, name, &value)) {
-		return handle_invoke(vm, arg_count, receiver, original, value);
-	}
-	undefined_method_return(vm->current_module_record, name);
-}
-
 static bool handle_tuple_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
 								const CruxValue receiver)
 {
@@ -609,7 +603,6 @@ static const TypeInvokeHandler invoke_dispatch_table[] = {
 	[OBJECT_VECTOR] = handle_vector_invoke,
 	[OBJECT_RANGE] = handle_range_invoke,
 	[OBJECT_ITERATOR] = handle_undefined_invoke,
-	[OBJECT_SET] = handle_set_invoke,
 	[OBJECT_TUPLE] = handle_tuple_invoke,
 	[OBJECT_BUFFER] = handle_buffer_invoke,
 	[OBJECT_COMPLEX] = handle_complex_invoke,
@@ -628,7 +621,7 @@ bool invoke(CruxVM *vm, const ObjectString *name, int arg_count)
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
 	const CruxValue receiver = PEEK(current_module_record, arg_count);
 	const CruxValue original = PEEK(current_module_record,
-								arg_count + 1); // Store the original caller
+									arg_count + 1); // Store the original caller
 
 	if (!IS_CRUX_OBJECT(receiver)) {
 		runtime_panic(current_module_record, TYPE, "Only instances have methods");
@@ -827,7 +820,6 @@ bool init_vm(CruxVM *vm, CruxConfiguration *config)
 	init_table(&vm->complex_type);
 	init_table(&vm->matrix_type);
 	init_table(&vm->range_type);
-	init_table(&vm->set_type);
 	init_table(&vm->tuple_type);
 	init_table(&vm->buffer_type);
 	init_table(&vm->core_fns);
@@ -840,8 +832,9 @@ bool init_vm(CruxVM *vm, CruxConfiguration *config)
 	initNativeModules(&vm->native_modules);
 	vm->native_modules.modules = (NativeModule *)malloc(sizeof(NativeModule) * NATIVE_MODULES_CAPACITY);
 	if (vm->native_modules.modules == NULL) {
-		vm_error(vm, Crux_ERROR_RUNTIME, 0, "Fatal Error: Could not allocate memory for "
-						"native modules.\nShutting Down!\n");
+		vm_error(vm, Crux_ERROR_RUNTIME, 0,
+				 "Fatal Error: Could not allocate memory for "
+				 "native modules.\nShutting Down!\n");
 		return false;
 	}
 
@@ -856,8 +849,9 @@ bool init_vm(CruxVM *vm, CruxConfiguration *config)
 	vm->struct_instance_stack.structs = (ObjectStructInstance **)malloc(sizeof(ObjectStructInstance *) *
 																		STRUCT_INSTANCE_DEPTH);
 	if (vm->struct_instance_stack.structs == NULL) {
-		vm_error(vm, Crux_ERROR_RUNTIME, 0, "Fatal Error: Could not allocate memory for "
-						"stack struct.\nShutting Down!\n");
+		vm_error(vm, Crux_ERROR_RUNTIME, 0,
+				 "Fatal Error: Could not allocate memory for "
+				 "stack struct.\nShutting Down!\n");
 		return false;
 	}
 
@@ -867,15 +861,15 @@ bool init_vm(CruxVM *vm, CruxConfiguration *config)
 	vm->args.argv = NULL;
 
 	ObjectString *path;
-    if (vm->config.scriptPath != NULL) {
-        path = copy_string(vm, vm->config.scriptPath, strlen(vm->config.scriptPath));
-    } else {
+	if (vm->config.scriptPath != NULL) {
+		path = copy_string(vm, vm->config.scriptPath, strlen(vm->config.scriptPath));
+	} else {
 #ifdef _WIN32
-        path = copy_string(vm, ".\\", 2);
+		path = copy_string(vm, ".\\", 2);
 #else
-        path = copy_string(vm, "./", 2);
+		path = copy_string(vm, "./", 2);
 #endif
-    }
+	}
 
 	vm->current_module_record->path = path;
 	table_set(vm, &vm->module_cache, vm->current_module_record->path, OBJECT_VAL(vm->current_module_record));
@@ -899,7 +893,6 @@ void free_vm(CruxVM *vm)
 	free_table(vm, &vm->complex_type);
 	free_table(vm, &vm->matrix_type);
 	free_table(vm, &vm->range_type);
-	free_table(vm, &vm->set_type);
 	free_table(vm, &vm->tuple_type);
 	free_table(vm, &vm->buffer_type);
 	free_table(vm, &vm->core_fns);
@@ -1243,7 +1236,8 @@ static InterpretResult int_compound_slash(ObjectModuleRecord *current_module_rec
 }
 
 static InterpretResult int_compound_int_divide(ObjectModuleRecord *current_module_record, const char *target_name,
-											   char *operation, int32_t icurrent, int32_t ioperand, CruxValue *resultValue)
+											   char *operation, int32_t icurrent, int32_t ioperand,
+											   CruxValue *resultValue)
 {
 	if (ioperand == 0) {
 		runtime_panic(current_module_record, RUNTIME, "Division by zero in '%s %s'.", target_name, operation);
@@ -1762,10 +1756,10 @@ bool bind_core_globals(CruxVM *vm, ObjectModuleRecord *module_record)
 	return true;
 }
 
-void vm_print(CruxVM* vm, const char* format, ...)
+void vm_print(CruxVM *vm, const char *format, ...)
 {
-    char buffer[CRUX_VM_PRINT_BUFFER_SIZE];
-    va_list args;
+	char buffer[CRUX_VM_PRINT_BUFFER_SIZE];
+	va_list args;
 
 	va_start(args, format);
 	vsnprintf(buffer, CRUX_VM_PRINT_BUFFER_SIZE, format, args);
@@ -1775,8 +1769,8 @@ void vm_print(CruxVM* vm, const char* format, ...)
 
 void vm_error(CruxVM *vm, CruxErrorType error_type, int line_number, const char *format, ...)
 {
-    char buffer[CRUX_VM_PRINT_BUFFER_SIZE];
-    va_list args;
+	char buffer[CRUX_VM_PRINT_BUFFER_SIZE];
+	va_list args;
 
 	va_start(args, format);
 	vsnprintf(buffer, CRUX_VM_PRINT_BUFFER_SIZE, format, args);

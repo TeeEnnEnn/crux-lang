@@ -225,7 +225,6 @@ static const BlackenFunction blacken_dispatch[] = {
 	[OBJECT_COMPLEX] = blacken_complex,
 	[OBJECT_RANGE] = blacken_range,
 	[OBJECT_ITERATOR] = blacken_iterator,
-	[OBJECT_SET] = blacken_set,
 	[OBJECT_BUFFER] = blacken_buffer,
 	[OBJECT_TUPLE] = blacken_tuple,
 	[OBJECT_MATRIX] = blacken_matrix,
@@ -400,12 +399,6 @@ static void blacken_range(CruxVM *vm, CruxObject *object)
 	(void)object;
 }
 
-static void blacken_set(CruxVM *vm, CruxObject *object)
-{
-	ObjectSet *set = (ObjectSet *)object;
-	mark_object_table(vm, set->entries->entries, set->entries->capacity);
-}
-
 static void blacken_buffer(CruxVM *vm, CruxObject *object)
 {
 	(void)vm;
@@ -465,9 +458,6 @@ static void blacken_type_record(CruxVM *vm, CruxObject *object)
 			}
 		}
 		mark_type_record(vm, rec->as.function_type.return_type);
-		break;
-	case SET_TYPE:
-		mark_type_record(vm, rec->as.set_type.element_type);
 		break;
 	case TUPLE_TYPE: {
 		for (int i = 0; i < rec->as.tuple_type.element_count; i++) {
@@ -539,7 +529,6 @@ static const FreeFunction free_dispatch[] = {
 	[OBJECT_STRUCT_INSTANCE] = free_object_struct_instance,
 	[OBJECT_VECTOR] = free_object_vector,
 	[OBJECT_COMPLEX] = free_object_complex,
-	[OBJECT_SET] = free_object_set,
 	[OBJECT_RANGE] = free_object_range,
 	[OBJECT_ITERATOR] = free_object_iterator,
 	[OBJECT_BUFFER] = free_object_buffer,
@@ -661,13 +650,6 @@ static void free_object_vector(CruxVM *vm, CruxObject *object)
 static void free_object_complex(CruxVM *vm, CruxObject *object)
 {
 	FREE_OBJECT(vm, ObjectComplex, object);
-}
-
-static void free_object_set(CruxVM *vm, CruxObject *object)
-{
-	const ObjectSet *set = (ObjectSet *)object;
-	free_object_table_wrapper(vm, &set->entries->object);
-	FREE_OBJECT(vm, ObjectSet, object);
 }
 
 static void free_object_range(CruxVM *vm, CruxObject *object)
@@ -925,6 +907,6 @@ void collect_garbage(CruxVM *vm)
 #ifdef DEBUG_LOG_GC
 	vm_print(vm, "--- gc end ---\n");
 	vm_print(vm, "    collected %zu bytes (from %zu to %zu) next at %zu\n", before - vm->bytes_allocated, before,
-		   vm->bytes_allocated, vm->next_gc);
+			 vm->bytes_allocated, vm->next_gc);
 #endif
 }

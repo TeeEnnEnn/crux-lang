@@ -14,12 +14,12 @@
 #include <string.h>
 
 #include "debug.h"
-#include "object.h"
-#include "panic.h"
 #include "native/complex.h"
 #include "native/matrix.h"
 #include "native/range.h"
-#include "native/set.h"
+
+#include "object.h"
+#include "panic.h"
 
 #ifdef DEBUG_TRACE_EXECUTION
 #define DISPATCH() goto *dispatchTable[endIndex]
@@ -98,7 +98,6 @@ InterpretResult run(CruxVM *vm, const bool is_anonymous_frame)
 									&&OP_SET_GLOBAL_PLUS,
 									&&OP_SET_GLOBAL_MINUS,
 									&&OP_TABLE,
-									&&OP_SET,
 									&&OP_TUPLE,
 									&&OP_RANGE,
 									&&OP_ANON_FUNCTION,
@@ -894,24 +893,6 @@ OP_TABLE: {
 	DISPATCH();
 }
 
-OP_SET: {
-	uint16_t elementCount = READ_SHORT();
-	ObjectSet *set = new_set(vm, elementCount);
-	push(current_module_record, OBJECT_VAL(set));
-	for (int i = elementCount - 1; i >= 0; i--) {
-		(void)i;
-		CruxValue value = current_module_record->stack_top[-2];
-		current_module_record->stack_top[-2] = current_module_record->stack_top[-1];
-		current_module_record->stack_top--;
-		if (!set_add_value(vm, set, value)) {
-			pop(current_module_record); // set
-			runtime_panic(current_module_record, TYPE, "All set elements must be hashable.");
-			return INTERPRET_RUNTIME_ERROR;
-		}
-	}
-	DISPATCH();
-}
-
 OP_TUPLE: {
 	uint16_t elementCount = READ_SHORT();
 	ObjectTuple *tuple = new_tuple(vm, elementCount);
@@ -1188,7 +1169,7 @@ OP_USE_MODULE: {
 OP_FINISH_USE:
 OP_FINISH_PUB_USE: {
 	uint16_t nameCount = READ_SHORT();
-    bool is_public_reexport = (instruction == OP_FINISH_PUB_USE);
+	bool is_public_reexport = (instruction == OP_FINISH_PUB_USE);
 
 	CruxValue moduleValue = pop(current_module_record);
 	if (!IS_CRUX_MODULE_RECORD(moduleValue)) {
@@ -1218,9 +1199,9 @@ OP_FINISH_PUB_USE: {
 			push(current_module_record, value);
 		} else {
 			current_module_record->globals[global_index] = value;
-            if (is_public_reexport) {
-                table_set(vm, &current_module_record->publics, export_name, value);
-            }
+			if (is_public_reexport) {
+				table_set(vm, &current_module_record->publics, export_name, value);
+			}
 		}
 	}
 
@@ -1685,15 +1666,7 @@ OP_IN: {
 			push(current_module_record, found ? TRUE_VAL : FALSE_VAL);
 			break;
 		}
-		case OBJECT_SET: {
-			ObjectSet *set = AS_CRUX_SET(right);
-			if (object_table_contains_key(set->entries, left)) {
-				push(current_module_record, TRUE_VAL);
-			} else {
-				push(current_module_record, FALSE_VAL);
-			}
-			break;
-		}
+
 		case OBJECT_RANGE: {
 			ObjectRange *range = AS_CRUX_RANGE(right);
 			if (!IS_INT(left)) {
@@ -2241,7 +2214,7 @@ OP_INVOKE_STDLIB: {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
 	const CruxValue receiver = PEEK(current_module_record, arg_count);
 	const CruxValue original = PEEK(current_module_record,
-								arg_count + 1); // Store the original caller
+									arg_count + 1); // Store the original caller
 
 	if (!IS_CRUX_OBJECT(receiver)) {
 		runtime_panic(current_module_record, TYPE, "Only instances have methods");
@@ -2277,7 +2250,7 @@ OP_INVOKE_STDLIB_UNWRAP: {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
 	const CruxValue receiver = PEEK(current_module_record, arg_count);
 	const CruxValue original = PEEK(current_module_record,
-								arg_count + 1); // Store the original caller
+									arg_count + 1); // Store the original caller
 
 	if (!IS_CRUX_OBJECT(receiver)) {
 		runtime_panic(current_module_record, TYPE, "Only instances have methods");
@@ -2374,7 +2347,8 @@ end: {
 	}
 	vm_print(vm, "\n");
 
-	disassemble_instruction(vm, &frame->closure->function->chunk, (int)(frame->ip - frame->closure->function->chunk.code));
+	disassemble_instruction(vm, &frame->closure->function->chunk,
+							(int)(frame->ip - frame->closure->function->chunk.code));
 
 	instruction = READ_SHORT();
 	goto *dispatchTable[instruction];

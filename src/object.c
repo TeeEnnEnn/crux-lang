@@ -220,10 +220,7 @@ int sprint_type_to(char *buffer, size_t size, const CruxValue value)
 		APPEND("Buffer");
 		break;
 	}
-	case OBJECT_SET: {
-		APPEND("Set");
-		break;
-	}
+
 	case OBJECT_OPTION: {
 		const ObjectOption *option = AS_CRUX_OPTION(value);
 		if (option->is_some) {
@@ -645,11 +642,6 @@ void print_object_to(CruxVM *vm, const CruxValue value, const bool in_collection
 		}
 		break;
 	}
-	case OBJECT_SET: {
-		const ObjectSet *set = AS_CRUX_SET(value);
-		print_table_to(vm, set->entries->entries, set->entries->capacity, set->entries->size, true);
-		break;
-	}
 
 	case OBJECT_BUFFER: {
 		vm_print(vm, "<Buffer>");
@@ -915,10 +907,6 @@ ObjectString *to_string(CruxVM *vm, const CruxValue value)
 
 	case OBJECT_MATRIX: {
 		return copy_string(vm, "<Matrix>", 8);
-	}
-
-	case OBJECT_SET: {
-		return copy_string(vm, "<Set>", 5);
 	}
 
 	case OBJECT_BUFFER: {
@@ -1216,12 +1204,9 @@ bool ensure_capacity(CruxVM *vm, ObjectArray *array, const uint32_t capacity_nee
 	if (capacity_needed <= array->capacity) {
 		return true;
 	}
-	uint32_t newCapacity = array->capacity;
-	while (newCapacity < capacity_needed) {
-		if (newCapacity > INT_MAX / 2) {
-			return false;
-		}
-		newCapacity *= 2;
+	uint32_t newCapacity = GROW_CAPACITY(array->capacity);
+	if (newCapacity < capacity_needed) {
+		return false;
 	}
 	push(vm->current_module_record, OBJECT_VAL(array));
 	CruxValue *newArray = GROW_ARRAY(vm, CruxValue, array->values, array->capacity, newCapacity);
@@ -1457,15 +1442,6 @@ ObjectIterator *new_iterator(CruxVM *vm, CruxValue iterable)
 	return iterator;
 }
 
-ObjectSet *new_set(CruxVM *vm, uint32_t element_count)
-{
-	ObjectSet *set = ALLOCATE_OBJECT(vm, ObjectSet, OBJECT_SET);
-	push(vm->current_module_record, OBJECT_VAL(set));
-	set->entries = new_object_table(vm, element_count);
-	pop(vm->current_module_record);
-	return set;
-}
-
 ObjectBuffer *new_buffer(CruxVM *vm, uint32_t buffer_size)
 {
 	ObjectBuffer *buffer = ALLOCATE_OBJECT(vm, ObjectBuffer, OBJECT_BUFFER);
@@ -1524,14 +1500,6 @@ void mark_object_type_table(CruxVM *vm, ObjectTypeTable *table)
 /**
  * Adds a value to a set, validating hashability and deduplicating by key.
  */
-bool set_add_value(CruxVM *vm, ObjectSet *set, CruxValue value)
-{
-	if (!IS_CRUX_HASHABLE(value)) {
-		return false;
-	}
-	object_table_set(vm, set->entries, value, NIL_VAL);
-	return true;
-}
 
 bool validate_range_values(int32_t start, int32_t step, int32_t end, const char **error_message)
 {
@@ -1654,17 +1622,7 @@ bool iterate_next(ObjectModuleRecord *module_record, ObjectIterator *iterator, C
 		*result = FLOAT_VAL(matrix->data[iterator->index++]);
 		return true;
 	}
-	case OBJECT_SET: {
-		const ObjectSet *set = AS_CRUX_SET(iterable);
-		while (iterator->index < set->entries->capacity) {
-			const ObjectTableEntry *entry = &set->entries->entries[iterator->index++];
-			if (entry->is_occupied) {
-				*result = entry->key;
-				return true;
-			}
-		}
-		return false;
-	}
+
 	default:
 		runtime_panic(module_record, TYPE,
 					  "Cannot iterate over this value. Supported iterables are Array | Set | Tuple | String | Buffer | "

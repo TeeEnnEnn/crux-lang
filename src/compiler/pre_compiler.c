@@ -80,8 +80,8 @@ static void pre_skip_type(Compiler *compiler)
 				   t == CRUX_TOKEN_ARRAY_TYPE || t == CRUX_TOKEN_TABLE_TYPE || t == CRUX_TOKEN_VECTOR_TYPE ||
 				   t == CRUX_TOKEN_MATRIX_TYPE || t == CRUX_TOKEN_BUFFER_TYPE || t == CRUX_TOKEN_ERROR_TYPE ||
 				   t == CRUX_TOKEN_RESULT_TYPE || t == CRUX_TOKEN_RANGE_TYPE || t == CRUX_TOKEN_TUPLE_TYPE ||
-				   t == CRUX_TOKEN_COMPLEX_TYPE || t == CRUX_TOKEN_SET_TYPE || t == CRUX_TOKEN_RANDOM_TYPE ||
-				   t == CRUX_TOKEN_FILE_TYPE || t == CRUX_TOKEN_IDENTIFIER || t == CRUX_TOKEN_NEVER_TYPE) {
+				   t == CRUX_TOKEN_COMPLEX_TYPE || t == CRUX_TOKEN_RANDOM_TYPE || t == CRUX_TOKEN_FILE_TYPE ||
+				   t == CRUX_TOKEN_IDENTIFIER || t == CRUX_TOKEN_NEVER_TYPE) {
 			pre_advance(compiler); // consume the base type token
 			// Optional subscript: Array[Int], Table[K,V], etc.
 			if (compiler->parser->current.type == CRUX_TOKEN_LEFT_SQUARE) {

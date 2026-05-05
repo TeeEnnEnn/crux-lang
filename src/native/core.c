@@ -3,9 +3,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "native/range.h"
 #include "object.h"
 #include "panic.h"
-#include "native/range.h"
 #include "utf8.h"
 #include "value.h"
 
@@ -37,10 +37,6 @@ static CruxValue get_length(const CruxValue value)
 	if (IS_CRUX_TUPLE(value)) {
 		const ObjectTuple *tuple = AS_CRUX_TUPLE(value);
 		return INT_VAL(tuple->size);
-	}
-	if (IS_CRUX_SET(value)) {
-		const ObjectSet *set = AS_CRUX_SET(value);
-		return INT_VAL(set->entries->size);
 	}
 	return INT_VAL(-1);
 }

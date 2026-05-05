@@ -20,7 +20,6 @@
 #include "compiler/compiler_helpers.h"
 #include "compiler/pre_compiler.h"
 
-
 ObjectTypeRecord *parse_type_record(Compiler *compiler)
 {
 	ObjectTypeRecord *type_record = NULL;
@@ -305,19 +304,6 @@ ObjectTypeRecord *parse_type_record(Compiler *compiler)
 		for (int i = 0; i < param_count; i++) {
 			pop(compiler->owner->current_module_record); // param_types[i]
 		}
-
-	} else if (match(compiler, CRUX_TOKEN_SET_TYPE)) {
-		type_record = new_type_rec(compiler->owner, SET_TYPE);
-		push(compiler->owner->current_module_record, OBJECT_VAL(type_record));
-		if (match(compiler, CRUX_TOKEN_LEFT_SQUARE)) {
-			ObjectTypeRecord *element_type = parse_type_record(compiler);
-			pop(compiler->owner->current_module_record); // type_record
-			type_record->as.set_type.element_type = element_type;
-			consume(compiler, CRUX_TOKEN_RIGHT_SQUARE, "Expected ']' after set element type.");
-		} else {
-			pop(compiler->owner->current_module_record); // type_record
-			type_record->as.set_type.element_type = T_ANY;
-		}
 	} else if (match(compiler, CRUX_TOKEN_RANDOM_TYPE)) {
 		type_record = new_type_rec(compiler->owner, RANDOM_TYPE);
 	} else if (match(compiler, CRUX_TOKEN_FILE_TYPE)) {
@@ -562,7 +548,6 @@ ObjectFunction *end_compiler(Compiler *compiler)
 	}
 	return function;
 }
-
 
 /**
  * Compile a source string into a function object.

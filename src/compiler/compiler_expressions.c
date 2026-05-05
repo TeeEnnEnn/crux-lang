@@ -1,9 +1,9 @@
 #include "compiler/compiler_expressions.h"
-#include "compiler/compiler_helpers.h"
+#include <errno.h>
 #include "compiler/compiler_functions.h"
+#include "compiler/compiler_helpers.h"
 #include "compiler/compiler_match.h"
 #include "panic.h"
-#include <errno.h>
 
 void and_(Compiler *compiler, const bool can_assign)
 {
@@ -138,7 +138,6 @@ void or_(Compiler *compiler, const bool can_assign)
 	pop(compiler->owner->current_module_record); // left_type
 }
 
-
 void array_literal(Compiler *compiler, const bool can_assign)
 {
 	(void)can_assign;
@@ -189,66 +188,6 @@ void array_literal(Compiler *compiler, const bool can_assign)
 
 	ObjectTypeRecord *array_type = new_array_type_rec(compiler->owner, element_type);
 	push_type_record(compiler, array_type);
-
-	pop(compiler->owner->current_module_record); // element_type
-}
-
-void set_literal(Compiler *compiler, const bool can_assign)
-{
-	(void)can_assign;
-	uint16_t elementCount = 0;
-	ObjectTypeRecord *element_type = NULL;
-
-	push(compiler->owner->current_module_record, NIL_VAL);
-	const int type_root_stack_index = (int)(compiler->owner->current_module_record->stack_top -
-											compiler->owner->current_module_record->stack - 1);
-
-	if (!match(compiler, CRUX_TOKEN_RIGHT_BRACE)) {
-		do {
-			expression(compiler);
-			ObjectTypeRecord *value_type = pop_type_record(compiler);
-
-			if (value_type && !is_valid_table_key_type(value_type)) {
-				char got[128];
-				type_record_name(value_type, got, sizeof(got));
-				compiler_panicf(compiler->parser, TYPE, "Set elements must be hashable, got '%s'.", got);
-			}
-
-			if (!element_type) {
-				element_type = value_type;
-			} else if (element_type->base_type != ANY_TYPE && value_type && value_type->base_type != ANY_TYPE) {
-				if (!types_compatible(element_type, value_type)) {
-					if ((element_type->base_type == INT_TYPE && value_type->base_type == FLOAT_TYPE) ||
-						(element_type->base_type == FLOAT_TYPE && value_type->base_type == INT_TYPE)) {
-						element_type = T_FLOAT;
-					} else {
-						element_type = T_ANY;
-					}
-				}
-			}
-
-			compiler->owner->current_module_record->stack[type_root_stack_index] = element_type
-																					   ? OBJECT_VAL(element_type)
-																					   : NIL_VAL;
-
-			if (elementCount >= UINT16_MAX) {
-				compiler_panic(compiler->parser, "Too many elements in set literal.", COLLECTION_EXTENT);
-			}
-			elementCount++;
-		} while (match(compiler, CRUX_TOKEN_COMMA));
-		consume(compiler, CRUX_TOKEN_RIGHT_BRACE, "Expected '}' after set elements.");
-	}
-
-	if (!element_type) {
-		element_type = T_ANY;
-		compiler->owner->current_module_record->stack[type_root_stack_index] = OBJECT_VAL(element_type);
-	}
-
-	emit_word(compiler, OP_SET);
-	emit_word(compiler, elementCount);
-
-	ObjectTypeRecord *set_type = new_set_type_rec(compiler->owner, element_type);
-	push_type_record(compiler, set_type);
 
 	pop(compiler->owner->current_module_record); // element_type
 }
@@ -1647,9 +1586,6 @@ void dot(Compiler *compiler, const bool can_assign)
 			case TUPLE_TYPE:
 				type_table = &vm->tuple_type;
 				break;
-			case SET_TYPE:
-				type_table = &vm->set_type;
-				break;
 			case BUFFER_TYPE:
 				type_table = &vm->buffer_type;
 				break;
@@ -1882,7 +1818,6 @@ void struct_instance(Compiler *compiler, const bool can_assign)
 	push_type_record(compiler, struct_type ? struct_type : T_ANY);
 }
 
-
 void expression(Compiler *compiler)
 {
 	parse_precedence(compiler, PREC_ASSIGNMENT);
@@ -1992,7 +1927,6 @@ ParseRule rules[] = {
 	[CRUX_TOKEN_RIGHT_BRACE] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_LEFT_SQUARE] = {array_literal, collection_index, NULL, PREC_CALL},
 	[CRUX_TOKEN_RIGHT_SQUARE] = {NULL, NULL, NULL, PREC_NONE},
-	[CRUX_TOKEN_DOLLAR_LEFT_BRACE] = {set_literal, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_DOLLAR_LEFT_SQUARE] = {tuple_literal, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_COMMA] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_DOT] = {NULL, dot, NULL, PREC_CALL},
@@ -2072,7 +2006,6 @@ ParseRule rules[] = {
 	[CRUX_TOKEN_VECTOR_TYPE] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_COMPLEX_TYPE] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_MATRIX_TYPE] = {NULL, NULL, NULL, PREC_NONE},
-	[CRUX_TOKEN_SET_TYPE] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_TUPLE_TYPE] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_BUFFER_TYPE] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_RANGE_TYPE] = {NULL, NULL, NULL, PREC_NONE},

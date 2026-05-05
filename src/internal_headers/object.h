@@ -58,7 +58,6 @@
 #define IS_CRUX_COMPLEX(value) is_object_type(value, OBJECT_COMPLEX)
 #define IS_CRUX_MATRIX(value) is_object_type(value, OBJECT_MATRIX)
 #define IS_CRUX_BUFFER(value) is_object_type(value, OBJECT_BUFFER)
-#define IS_CRUX_SET(value) is_object_type(value, OBJECT_SET)
 #define IS_CRUX_TUPLE(value) is_object_type(value, OBJECT_TUPLE)
 #define IS_CRUX_RANGE(value) is_object_type(value, OBJECT_RANGE)
 #define IS_CRUX_ITERATOR(value) is_object_type(value, OBJECT_ITERATOR)
@@ -89,7 +88,6 @@
 #define AS_CRUX_COMPLEX(value) ((ObjectComplex *)AS_CRUX_OBJECT(value))
 #define AS_CRUX_MATRIX(value) ((ObjectMatrix *)AS_CRUX_OBJECT(value))
 #define AS_CRUX_BUFFER(value) ((ObjectBuffer *)AS_CRUX_OBJECT(value))
-#define AS_CRUX_SET(value) ((ObjectSet *)AS_CRUX_OBJECT(value))
 #define AS_CRUX_TUPLE(value) ((ObjectTuple *)AS_CRUX_OBJECT(value))
 #define AS_CRUX_RANGE(value) ((ObjectRange *)AS_CRUX_OBJECT(value))
 #define AS_CRUX_ITERATOR(value) ((ObjectIterator *)AS_CRUX_OBJECT(value))
@@ -123,7 +121,6 @@ typedef enum {
 	OBJECT_COMPLEX,
 	OBJECT_MATRIX,
 	OBJECT_BUFFER,
-	OBJECT_SET,
 	OBJECT_TUPLE,
 	OBJECT_RANGE,
 	OBJECT_ITERATOR,
@@ -533,11 +530,6 @@ struct ObjectRange {
 
 typedef struct {
 	CruxObject object;
-	ObjectTable *entries;
-} ObjectSet;
-
-typedef struct {
-	CruxObject object;
 	uint32_t read_pos;
 	uint32_t write_pos;
 	uint32_t capacity;
@@ -595,12 +587,11 @@ ObjectComplex *new_complex_number(CruxVM *vm, double real, double imaginary);
 ObjectMatrix *new_matrix(CruxVM *vm, uint16_t row_dim, uint16_t col_dim);
 ObjectRange *new_range(CruxVM *vm, uint64_t start, uint64_t end, uint64_t step);
 ObjectIterator *new_iterator(CruxVM *vm, CruxValue iterable);
-ObjectSet *new_set(CruxVM *vm, uint32_t element_count);
+
 ObjectBuffer *new_buffer(CruxVM *vm, uint32_t buffer_size);
 ObjectTuple *new_tuple(CruxVM *vm, uint32_t size);
 void mark_object_type_table(CruxVM *vm, ObjectTypeTable *table);
 ObjectTypeTable *new_type_table(CruxVM *vm, int capacity);
-bool set_add_value(CruxVM *vm, ObjectSet *set, CruxValue value);
 bool validate_range_values(int32_t start, int32_t step, int32_t end, const char **error_message);
 
 uint32_t range_len(const ObjectRange *range);

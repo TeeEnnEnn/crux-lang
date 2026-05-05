@@ -7,7 +7,6 @@
 void or_(Compiler *compiler, const bool can_assign);
 void and_(Compiler *compiler, const bool can_assign);
 void array_literal(Compiler* compiler, const bool can_assign);
-void set_literal(Compiler *compiler, const bool can_assign);
 void tuple_literal(Compiler *compiler, const bool can_assign);
 void table_literal(Compiler *compiler, const bool can_assign);
 void collection_index(Compiler *compiler, const bool can_assign);

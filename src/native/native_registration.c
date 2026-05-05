@@ -1,8 +1,6 @@
 #include <string.h>
 
 #include "garbage_collector.h"
-#include "object.h"
-#include "panic.h"
 #include "native/array.h"
 #include "native/buffer.h"
 #include "native/complex.h"
@@ -13,18 +11,19 @@
 #include "native/io.h"
 #include "native/math.h"
 #include "native/matrix.h"
+#include "native/native_registration.h"
 #include "native/option.h"
 #include "native/random.h"
 #include "native/range.h"
 #include "native/result.h"
-#include "native/set.h"
-#include "native/native_registration.h"
 #include "native/string.h"
 #include "native/sys.h"
 #include "native/tables.h"
 #include "native/time.h"
 #include "native/tuple.h"
 #include "native/vectors.h"
+#include "object.h"
+#include "panic.h"
 #include "type_system.h"
 #include "value.h"
 
@@ -142,8 +141,9 @@ static ObjectString **make_names(CruxVM *vm, ObjectString **src, int count)
 
 #define arr_num ARR(numeric)
 
-bool register_native_method(CruxVM *vm, Table *method_table, const char *method_name, const CruxCallable method_function,
-							const int arity, ObjectTypeRecord **arg_types, ObjectTypeRecord *return_type)
+bool register_native_method(CruxVM *vm, Table *method_table, const char *method_name,
+							const CruxCallable method_function, const int arity, ObjectTypeRecord **arg_types,
+							ObjectTypeRecord *return_type)
 {
 	ObjectString *name = copy_string(vm, method_name, (int)strlen(method_name));
 	if (!name) {
@@ -466,7 +466,7 @@ bool initialize_std_lib(CruxVM *vm)
 		init_type_method_table(vm, &vm->vector_type, methods, ARRAY_COUNT(methods));
 
 		const Callable fns[] = {
-			{"Vector", new_vector_function, 2, ARGS(t_int, arr_num), RES(vec_any)},
+			{"Vector", new_vector_function, 2, ARGS(t_int, arr_num), vec_any},
 		};
 		if (!init_module(vm, "vector", fns, ARRAY_COUNT(fns))) {
 			vm->gc_status = prev_status;
@@ -581,35 +581,6 @@ bool initialize_std_lib(CruxVM *vm)
 		}
 	}
 
-	// Set methods  +  module constructor
-	{
-		const Callable methods[] = {
-			{"add", add_set_method, 2, ARGS(set_any, hashable), res_nil},
-			{"remove", remove_set_method, 2, ARGS(set_any, hashable), res_nil},
-			{"discard", discard_set_method, 2, ARGS(set_any, hashable), res_nil},
-			{"union", union_set_method, 2, ARGS(set_any, set_any), RES(set_any)},
-			{"intersection", intersection_set_method, 2, ARGS(set_any, set_any), set_any},
-			{"difference", difference_set_method, 2, ARGS(set_any, set_any), set_any},
-			{"sym_difference", sym_difference_set_method, 2, ARGS(set_any, set_any), set_any},
-			{"is_subset", is_subset_set_method, 2, ARGS(set_any, set_any), t_bool},
-			{"is_superset", is_superset_set_method, 2, ARGS(set_any, set_any), t_bool},
-			{"is_disjoint", is_disjoint_set_method, 2, ARGS(set_any, set_any), t_bool},
-			{"contains", contains_set_method, 2, ARGS(set_any, hashable), t_bool},
-			{"is_empty", is_empty_set_method, 1, ARGS(set_any), t_bool},
-			{"to_array", to_array_set_method, 1, ARGS(set_any), arr_any},
-			{"clone", clone_set_method, 1, ARGS(set_any), set_any},
-		};
-		init_type_method_table(vm, &vm->set_type, methods, ARRAY_COUNT(methods));
-
-		const Callable fns[] = {
-			{"Set", new_set_function, 1, ARGS(arr_any), RES(SET_ANY)},
-		};
-		if (!init_module(vm, "set", fns, ARRAY_COUNT(fns))) {
-			vm->gc_status = prev_status;
-			return false;
-		}
-	}
-
 	// Buffer methods  +  module constructor
 	{
 		const Callable methods[] = {
@@ -708,8 +679,8 @@ bool initialize_std_lib(CruxVM *vm)
 	// Time module
 	{
 		const Callable fns[] = {
-			{"sleep_s", sleep_seconds_function, 1, ARGS(numeric), res_nil},
-			{"sleep_ms", sleep_milliseconds_function, 1, ARGS(numeric), res_nil},
+			{"sleep_s", sleep_seconds_function, 1, ARGS(numeric), t_nil},
+			{"sleep_ms", sleep_milliseconds_function, 1, ARGS(numeric), t_nil},
 			{"time_s", time_seconds_function_, 0, ARGS0, t_flt},
 			{"time_ms", time_milliseconds_function_, 0, ARGS0, t_flt},
 			{"year", year_function_, 0, ARGS0, t_int},
@@ -731,9 +702,8 @@ bool initialize_std_lib(CruxVM *vm)
 	{
 		const Callable fns[] = {
 			{"args", args_function, 0, ARGS0, RES(arr_str)},  {"get_env", get_env_function, 1, ARGS(t_str), res_str},
-			{"sleep", sleep_function, 1, ARGS(t_int), t_nil}, {"platform", platform_function, 0, ARGS0, t_str},
-			{"arch", arch_function, 0, ARGS0, t_str},		  {"pid", pid_function, 0, ARGS0, t_int},
-			{"exit", exit_function, 1, ARGS(t_int), t_never},
+			{"platform", platform_function, 0, ARGS0, t_str}, {"arch", arch_function, 0, ARGS0, t_str},
+			{"pid", pid_function, 0, ARGS0, t_int},			  {"exit", exit_function, 1, ARGS(t_int), t_never},
 		};
 		if (!init_module(vm, "sys", fns, ARRAY_COUNT(fns))) {
 			vm->gc_status = prev_status;

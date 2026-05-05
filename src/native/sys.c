@@ -8,8 +8,8 @@
 #include <unistd.h>
 #endif
 
-#include "panic.h"
 #include "native/sys.h"
+#include "panic.h"
 #include "vm.h"
 
 /**
@@ -142,21 +142,6 @@ CruxValue get_env_function(CruxVM *vm, const CruxValue *args)
 	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(valueString));
 	pop(vm->current_module_record);
 	return OBJECT_VAL(res);
-}
-
-/**
- * Pauses execution for the specified number of seconds
- * arg0 -> seconds: Int
- * Returns Nil
- */
-CruxValue sleep_function(CruxVM *vm, const CruxValue *args)
-{
-#ifdef _WIN32
-	Sleep(AS_INT(args[0]));
-#else
-	sleep(AS_INT(args[0]));
-#endif
-	return NIL_TYPE;
 }
 
 /**

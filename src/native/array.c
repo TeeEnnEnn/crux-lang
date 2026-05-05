@@ -28,21 +28,23 @@ CruxValue array_push_method(CruxVM *vm, const CruxValue *args)
 /**
  * Removes and returns the last element of an array
  * arg0 -> array: Array
- * Returns Result<Any>
+ * Returns Option<Any>
  */
 CruxValue array_pop_method(CruxVM *vm, const CruxValue *args)
 {
 	ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 
 	if (array->size == 0) {
-		return MAKE_GC_SAFE_ERROR(vm, "Cannot remove a value from an empty array.", BOUNDS);
+		ObjectOption *option = new_option(vm, NIL_VAL, false);
+		return OBJECT_VAL(option);
 	}
 
 	const CruxValue popped = array->values[array->size - 1];
 	array->values[array->size - 1] = NIL_VAL;
 	array->size--;
 
-	return OBJECT_VAL(new_ok_result(vm, popped));
+	ObjectOption *option = new_option(vm, popped, true);
+	return OBJECT_VAL(option);
 }
 
 /**
@@ -104,18 +106,18 @@ CruxValue array_remove_at_method(CruxVM *vm, const CruxValue *args)
 CruxValue array_concat_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
-	const ObjectArray *targetArray = AS_CRUX_ARRAY(args[1]);
+	const ObjectArray *target_array = AS_CRUX_ARRAY(args[1]);
 
-	const uint32_t combined_size = targetArray->size + array->size;
-	if (combined_size > MAX_ARRAY_SIZE) {
-		return MAKE_GC_SAFE_ERROR(vm, "Size of resultant array out of bounds.", BOUNDS);
+	const uint32_t combined_size = target_array->size + array->size;
+	if (combined_size < array->size || combined_size < target_array->size) {
+		return MAKE_GC_SAFE_ERROR(vm, "Size of resultant array is too large", BOUNDS);
 	}
 
 	ObjectArray *resultArray = new_array(vm, combined_size);
 	push(vm->current_module_record, OBJECT_VAL(resultArray));
 
 	for (uint32_t i = 0; i < combined_size; i++) {
-		resultArray->values[i] = i < array->size ? array->values[i] : targetArray->values[i - array->size];
+		resultArray->values[i] = i < array->size ? array->values[i] : target_array->values[i - array->size];
 	}
 
 	resultArray->size = combined_size;
@@ -147,19 +149,19 @@ CruxValue array_slice_method(CruxVM *vm, const CruxValue *args)
 	}
 
 	if (end_index < start_index) {
-		return MAKE_GC_SAFE_ERROR(vm, "indexes out of bounds.", BOUNDS);
+		return MAKE_GC_SAFE_ERROR(vm, "<start_index> is greater than <end_index>", BOUNDS);
 	}
 
-	const size_t sliceSize = end_index - start_index;
-	ObjectArray *slicedArray = new_array(vm, sliceSize);
-	push(vm->current_module_record, OBJECT_VAL(slicedArray));
+	const size_t slice = end_index - start_index;
+	ObjectArray *sliced = new_array(vm, slice);
+	push(vm->current_module_record, OBJECT_VAL(sliced));
 
-	for (size_t i = 0; i < sliceSize; i++) {
-		slicedArray->values[i] = array->values[start_index + i];
-		slicedArray->size += 1;
+	for (size_t i = 0; i < slice; i++) {
+		sliced->values[i] = array->values[start_index + i];
+		sliced->size += 1;
 	}
 
-	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(slicedArray));
+	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(sliced));
 	pop(vm->current_module_record);
 	return OBJECT_VAL(res);
 }
@@ -167,36 +169,27 @@ CruxValue array_slice_method(CruxVM *vm, const CruxValue *args)
 /**
  * Reverses an array in place
  * arg0 -> array: Array
- * Returns Result<Nil>
+ * Returns Nil
  */
 CruxValue array_reverse_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
 
-	CruxValue *values = ALLOCATE(vm, CruxValue, array->size);
-
-	if (values == NULL) {
-		return MAKE_GC_SAFE_ERROR(vm, "Failed to allocate memory when reversing array.", MEMORY);
+	CruxValue temp;
+	for (uint32_t i = 0; i < array->size / 2; i++) {
+		temp = array->values[i];
+		array->values[i] = array->values[array->size - 1 - i];
+		array->values[array->size - 1 - i] = temp;
 	}
 
-	for (uint32_t i = 0; i < array->size; i++) {
-		values[i] = array->values[i];
-	}
-
-	for (uint32_t i = 0; i < array->size; i++) {
-		array->values[i] = values[array->size - 1 - i];
-	}
-
-	FREE(vm, CruxValue, values);
-
-	return OBJECT_VAL(new_ok_result(vm, NIL_VAL));
+	return NIL_VAL;
 }
 
 /**
  * Returns the index of the first occurrence of a value, or an error if not
  * found arg0 -> array: Array
  * arg1 -> value: Any
- * Returns Result<Int>
+ * Returns Option<Int>
  */
 CruxValue array_index_of_method(CruxVM *vm, const CruxValue *args)
 {
@@ -205,10 +198,10 @@ CruxValue array_index_of_method(CruxVM *vm, const CruxValue *args)
 
 	for (uint32_t i = 0; i < array->size; i++) {
 		if (values_equal(target, array->values[i])) {
-			return OBJECT_VAL(new_ok_result(vm, INT_VAL(i)));
+			return OBJECT_VAL(new_option(vm, INT_VAL(i), true));
 		}
 	}
-	return MAKE_GC_SAFE_ERROR(vm, "CruxValue could not be found in the array.", VALUE);
+	return OBJECT_VAL(new_option(vm, NIL_VAL, false));
 }
 
 /**
@@ -260,14 +253,14 @@ CruxValue arrayEqualsMethod(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectArray *array = AS_CRUX_ARRAY(args[0]);
-	const ObjectArray *targetArray = AS_CRUX_ARRAY(args[1]);
+	const ObjectArray *target_array = AS_CRUX_ARRAY(args[1]);
 
-	if (array->size != targetArray->size) {
+	if (array->size != target_array->size) {
 		return BOOL_VAL(false);
 	}
 
 	for (uint32_t i = 0; i < array->size; i++) {
-		if (!values_equal(array->values[i], targetArray->values[i])) {
+		if (!values_equal(array->values[i], target_array->values[i])) {
 			return BOOL_VAL(false);
 		}
 	}
@@ -512,6 +505,7 @@ static void quick_sort(CruxValue *arr, const int low, const int high)
 	}
 }
 
+// TODO: Make sort only take Int, Float, or String arrays
 /**
  * Sorts an array in ascending order (works with Int, Float, or String arrays)
  * arg0 -> array: Array
