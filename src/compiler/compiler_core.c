@@ -538,7 +538,8 @@ ObjectFunction *end_compiler(Compiler *compiler)
 	ObjectFunction *function = compiler->function;
 #ifdef DEBUG_PRINT_CODE
 	if (!compiler->parser->had_error) {
-		disassemble_chunk(current_chunk(compiler), function->name != NULL ? function->name->chars : "<script>");
+		disassemble_chunk(compiler->owner, current_chunk(compiler),
+						  function->name != NULL ? function->name->chars : "<script>");
 	}
 #endif
 

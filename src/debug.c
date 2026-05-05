@@ -7,7 +7,7 @@
 
 #include "object.h"
 
-void disassemble_chunk(CruxVM* vm, const Chunk *chunk, const char *name)
+void disassemble_chunk(CruxVM *vm, const Chunk *chunk, const char *name)
 {
 	vm_print(vm, "======= %s =======\n", name);
 
@@ -27,7 +27,7 @@ void disassemble_chunk(CruxVM* vm, const Chunk *chunk, const char *name)
  * @param offset The current byte offset in the chunk
  * @return The offset of the next instruction (current offset + 1)
  */
-static int simple_instruction(CruxVM* vm, const char *name, const int offset)
+static int simple_instruction(CruxVM *vm, const char *name, const int offset)
 {
 	vm_print(vm, " %s\n", name);
 	return offset + 1;
@@ -44,7 +44,7 @@ static int simple_instruction(CruxVM* vm, const char *name, const int offset)
  * @param offset The current byte offset in the chunk
  * @return The offset of the next instruction (current offset + 2)
  */
-static int byte_instruction(CruxVM* vm, const char *name, const Chunk *chunk, const int offset)
+static int byte_instruction(CruxVM *vm, const char *name, const Chunk *chunk, const int offset)
 {
 	const uint16_t slot = chunk->code[offset + 1];
 	vm_print(vm, "%-16s %6d\n", name, slot);
@@ -63,7 +63,7 @@ static int byte_instruction(CruxVM* vm, const char *name, const Chunk *chunk, co
  * @param offset The current byte offset in the chunk
  * @return The offset of the next instruction (current offset + 3)
  */
-static int jump_instruction(CruxVM* vm, const char *name, const int sign, const Chunk *chunk, const int offset)
+static int jump_instruction(CruxVM *vm, const char *name, const int sign, const Chunk *chunk, const int offset)
 {
 	uint16_t jump = chunk->code[offset + 1];
 	vm_print(vm, "%-16s %4d -> %d\n", name, offset, offset + 2 + sign * jump);
@@ -81,16 +81,16 @@ static int jump_instruction(CruxVM* vm, const char *name, const int sign, const 
  * @param offset The current byte offset in the chunk
  * @return The offset of the next instruction (current offset + 2)
  */
-static int constant_instruction(CruxVM* vm, const char *name, const Chunk *chunk, const int offset)
+static int constant_instruction(CruxVM *vm, const char *name, const Chunk *chunk, const int offset)
 {
 	const uint16_t constant = chunk->code[offset + 1]; // Get the constant index
-	vm_print(vm ,"%-16s %4d '", name, constant); // Print the name of the opcode
+	vm_print(vm, "%-16s %4d '", name, constant); // Print the name of the opcode
 	print_value(vm, chunk->constants.values[constant], false); // print the constant's value
 	vm_print(vm, "'\n");
 	return offset + 2; // +2 because OP_CONSTANT is two bytes
 }
 
-static int inline_arg_instruction(CruxVM* vm,const char *name, const Chunk *chunk, const int offset)
+static int inline_arg_instruction(CruxVM *vm, const char *name, const Chunk *chunk, const int offset)
 {
 	const uint16_t arg = chunk->code[offset + 1];
 	vm_print(vm, "%-16s %4d\n", name, arg);
@@ -108,7 +108,7 @@ static int inline_arg_instruction(CruxVM* vm,const char *name, const Chunk *chun
  * @param offset The current byte offset in the chunk
  * @return The offset of the next instruction (current offset + 3)
  */
-static int invoke_instruction(CruxVM* vm, const char *name, const Chunk *chunk, const int offset)
+static int invoke_instruction(CruxVM *vm, const char *name, const Chunk *chunk, const int offset)
 {
 	const uint16_t constant = chunk->code[offset + 1];
 	const uint16_t arg_count = chunk->code[offset + 2];
@@ -118,10 +118,10 @@ static int invoke_instruction(CruxVM* vm, const char *name, const Chunk *chunk, 
 	return offset + 3;
 }
 
-int disassemble_instruction(CruxVM* vm, const Chunk *chunk, int offset)
+int disassemble_instruction(CruxVM *vm, const Chunk *chunk, int offset)
 {
 	vm_print(vm, "%04d",
-		   offset); // Prints the byte offset of the given instruction
+			 offset); // Prints the byte offset of the given instruction
 
 	if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1]) {
 		vm_print(vm, "   | ");
@@ -226,8 +226,6 @@ int disassemble_instruction(CruxVM* vm, const Chunk *chunk, int offset)
 		return inline_arg_instruction(vm, "OP_ARRAY", chunk, offset);
 	case OP_TABLE:
 		return inline_arg_instruction(vm, "OP_TABLE", chunk, offset);
-	case OP_SET:
-		return inline_arg_instruction(vm, "OP_SET", chunk, offset);
 	case OP_TUPLE:
 		return inline_arg_instruction(vm, "OP_TUPLE", chunk, offset);
 	case OP_RANGE:
