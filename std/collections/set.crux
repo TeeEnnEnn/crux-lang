@@ -1,0 +1,22 @@
+struct Set {
+	data: Table[Any]
+}
+
+impl Set {
+set.add(value)
+set.remove(value)    -> Bool     -- returns false if not present
+set.contains(value)  -> Bool
+set.size()           -> Int
+set.is_empty()       -> Bool
+set.clear()
+
+-- Set operations (return new Sets, don't mutate)
+set.union(other)        -> Set
+set.intersect(other)    -> Set
+set.difference(other)   -> Set   -- elements in self, not in other
+set.is_subset(other)    -> Bool
+set.is_disjoint(other)  -> Bool
+
+-- Escape hatch
+set.to_array()       -> Array    -- order not guaranteed
+}
