@@ -817,12 +817,27 @@ ObjectModuleRecord *compile_module_statically(Compiler *compiler, ObjectString *
 		return mod;
 	}
 
-	const FileResult result = read_file(path->chars);
-	if (result.error) {
-		compiler_panicf(compiler->parser, IMPORT, "Could not read file '%s': %s", path->chars, result.error);
-		return NULL;
+	char *source = NULL;
+	CruxLoadModuleResult custom_result = {0};
+	bool is_custom = false;
+
+	if (compiler->owner->config.loadModuleFn) {
+		custom_result = compiler->owner->config.loadModuleFn(compiler->owner, path->chars);
+		if (custom_result.source != NULL) {
+			source = (char*)custom_result.source;
+			is_custom = true;
+		}
 	}
-	char *source = result.content;
+
+	FileResult file_result = {0};
+	if (source == NULL) {
+		file_result = read_file(path->chars);
+		if (file_result.error) {
+			compiler_panicf(compiler->parser, IMPORT, "Could not read file '%s': %s", path->chars, file_result.error);
+			return NULL;
+		}
+		source = file_result.content;
+	}
 
 	ObjectModuleRecord *new_module = new_object_module_record(compiler->owner, path, false, false);
 	table_set(compiler->owner, &compiler->owner->module_cache, path, OBJECT_VAL(new_module));
@@ -832,7 +847,14 @@ ObjectModuleRecord *compile_module_statically(Compiler *compiler, ObjectString *
 
 	Compiler imported_compiler = {0};
 	ObjectFunction *module_func = compile(compiler->owner, &imported_compiler, compiler, source);
-	free(result.content);
+	
+	if (is_custom) {
+		if (custom_result.onComplete) {
+			custom_result.onComplete(compiler->owner, path->chars, custom_result);
+		}
+	} else {
+		free(file_result.content);
+	}
 	source = NULL;
 
 	if (module_func != NULL) {

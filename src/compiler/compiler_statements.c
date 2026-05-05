@@ -413,7 +413,16 @@ void use_statement(Compiler *compiler, bool is_public)
 									? compiler->owner->current_module_record->path->chars
 									: ".";
 
-		char *resolved_chars = resolve_path(base_path, raw_path_str->chars);
+		char *resolved_chars = NULL;
+		if (compiler->owner->config.resolveModuleFn) {
+			const char* resolved = compiler->owner->config.resolveModuleFn(compiler->owner, base_path, raw_path_str->chars);
+			if (resolved) resolved_chars = strdup(resolved);
+		}
+
+		if (resolved_chars == NULL) {
+			resolved_chars = resolve_path(base_path, raw_path_str->chars);
+		}
+
 		if (resolved_chars == NULL) {
 			compiler_panicf(compiler->parser, IMPORT, "Failed to resolve import path: '%s'", raw_path_str->chars);
 			pop(compiler->owner->current_module_record);
