@@ -76,10 +76,6 @@ TypeMask get_type_mask(CruxValue value)
 			return ITERATOR_TYPE;
 		case OBJECT_OPTION:
 			return OPTION_TYPE;
-		case OBJECT_COROUTINE:
-			return COROUTINE_TYPE;
-		case OBJECT_ENUM:
-			return ENUM_TYPE;
 		default:
 			return ANY_TYPE;
 		}
@@ -95,34 +91,16 @@ void type_mask_name(const TypeMask mask, char *buf, const int buf_size)
 	}
 
 	static const struct {
-		TypeMask bit;
+		TypeMask mask;
 		const char *name;
-	} entries[] = {{NIL_TYPE, "Nil"},
-				   {BOOL_TYPE, "Bool"},
-				   {INT_TYPE, "Int"},
-				   {FLOAT_TYPE, "Float"},
-				   {SHAPE_TYPE, "Shape"},
-				   {STRING_TYPE, "String"},
-				   {ARRAY_TYPE, "Array"},
-				   {TABLE_TYPE, "Table"},
-				   {FUNCTION_TYPE, "Function"},
-				   {ERROR_TYPE, "Error"},
-				   {RESULT_TYPE, "Result"},
-				   {FILE_TYPE, "File"},
-				   {VECTOR_TYPE, "Vector"},
-				   {COMPLEX_TYPE, "Complex"},
-				   {MATRIX_TYPE, "Matrix"},
-				   {STRUCT_TYPE, "Struct"},
-				   {MODULE_TYPE, "Module"},
-				   {TUPLE_TYPE, "Tuple"},
-				   {BUFFER_TYPE, "Buffer"},
-				   {RANGE_TYPE, "Range"},
-				   {UNION_TYPE, "Union"},
-				   {NEVER_TYPE, "Never"},
-				   {ITERATOR_TYPE, "Iterator"},
-				   {OPTION_TYPE, "Option"},
-				   {COROUTINE_TYPE, "Coroutine"},
-				   {ENUM_TYPE, "Enum"}};
+	} entries[] = {
+		{NIL_TYPE, "Nil"},			 {BOOL_TYPE, "Bool"},		{INT_TYPE, "Int"},			 {FLOAT_TYPE, "Float"},
+		{SHAPE_TYPE, "Shape"},		 {STRING_TYPE, "String"},	{ARRAY_TYPE, "Array"},		 {TABLE_TYPE, "Table"},
+		{FUNCTION_TYPE, "Function"}, {ERROR_TYPE, "Error"},		{RESULT_TYPE, "Result"},	 {FILE_TYPE, "File"},
+		{VECTOR_TYPE, "Vector"},	 {COMPLEX_TYPE, "Complex"}, {MATRIX_TYPE, "Matrix"},	 {STRUCT_TYPE, "Struct"},
+		{MODULE_TYPE, "Module"},	 {TUPLE_TYPE, "Tuple"},		{BUFFER_TYPE, "Buffer"},	 {RANGE_TYPE, "Range"},
+		{UNION_TYPE, "Union"},		 {NEVER_TYPE, "Never"},		{ITERATOR_TYPE, "Iterator"}, {OPTION_TYPE, "Option"},
+	};
 
 	int offset = 0;
 	bool first = true;

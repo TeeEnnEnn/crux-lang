@@ -66,10 +66,10 @@ list(REMOVE_ITEM SOURCES
 # Internal Headers
 file(GLOB LIB_HEADERS
    "include/*.h"
-   "src/internal_headers/compiler/*.h"
-   "src/internal_headers/native/*.h"
-   "src/internal_headers/object/*.h"
-   "src/internal_headers/*.h"
+   "src/_headers/compiler/*.h"
+   "src/_headers/native/*.h"
+   "src/_headers/object/*.h"
+   "src/_headers/*.h"
    "deps/utf8/utf8.h"
 )
 
@@ -78,7 +78,7 @@ add_library(crux_lib STATIC ${SOURCES} ${LIB_HEADERS})
 set_target_properties(crux_lib PROPERTIES OUTPUT_NAME crux)
 
 target_include_directories(crux_lib PUBLIC include)
-target_include_directories(crux_lib PRIVATE src/internal_headers deps/utf8 deps/json)
+target_include_directories(crux_lib PRIVATE src/_headers deps/utf8 deps/json)
 
 target_compile_definitions(crux_lib PRIVATE
         $<$<BOOL:${CRUX_STACK_SAFETY}>:STACK_SAFETY>
@@ -107,7 +107,7 @@ endif()
 
 add_executable(crux ${CLI_SOURCES})
 target_link_libraries(crux PRIVATE crux_lib)
-target_include_directories(crux PRIVATE src/cli src/internal_headers deps/json deps/utf8)
+target_include_directories(crux PRIVATE src/cli src/_headers deps/json deps/utf8)
 
 if (NOT WIN32)
   target_include_directories(crux PRIVATE deps/linenoise)
@@ -119,7 +119,7 @@ target_compile_definitions(crux PRIVATE CRUX_VERSION="${CRUX_VERSION}")
 add_executable(crux_embedding_example examples/embedding/main.c src/file_handler.c)
 target_link_libraries(crux_embedding_example PRIVATE crux_lib)
 target_include_directories(crux_embedding_example PRIVATE include)
-target_include_directories(crux_embedding_example PRIVATE src/internal_headers)
+target_include_directories(crux_embedding_example PRIVATE src/_headers)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

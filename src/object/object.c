@@ -232,14 +232,6 @@ int sprint_type_to(char *buffer, size_t size, const CruxValue value)
 		}
 		break;
 	}
-	case OBJECT_ENUM: {
-		APPEND("Enum");
-		break;
-	}
-	case OBJECT_COROUTINE: {
-		APPEND("Coroutine");
-		break;
-	}
 	default:
 		APPEND("Unknown");
 	}
@@ -680,14 +672,6 @@ void print_object_to(CruxVM *vm, const CruxValue value, const bool in_collection
 		vm_print(vm, "<Option>");
 		break;
 	}
-	case OBJECT_ENUM: {
-		vm_print(vm, "<Enum>");
-		break;
-	}
-	case OBJECT_COROUTINE: {
-		vm_print(vm, "<Coroutine>");
-		break;
-	}
 	case SENTINEL_OBJECT_COUNT:
 		vm_print(vm, "<SENTINEL_OBJECT_COUNT>");
 		break;
@@ -924,13 +908,6 @@ ObjectString *to_string(CruxVM *vm, const CruxValue value)
 	case OBJECT_OPTION: {
 		return copy_string(vm, "<Option>", 8);
 	}
-	case OBJECT_ENUM: {
-		return copy_string(vm, "<Enum>", 6);
-	}
-	case OBJECT_COROUTINE: {
-		return copy_string(vm, "<Coroutine>", 11);
-	}
-
 	default:
 		return copy_string(vm, "<Crux Object>", 13);
 	}

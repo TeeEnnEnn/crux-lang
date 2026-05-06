@@ -70,12 +70,6 @@ typedef uint32_t TypeMask;
 #define UNION_TYPE (1u << 21)
 #define ITERATOR_TYPE (1u << 22)
 #define OPTION_TYPE (1u << 23)
-#define COROUTINE_TYPE (1u << 24)
-#define ENUM_TYPE (1u << 25)
-// 26
-// 27
-// 28
-// 29
 #define NEVER_TYPE (1u << 30)
 #define ANY_TYPE (1u << 31)
 

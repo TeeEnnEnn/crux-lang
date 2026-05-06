@@ -64,7 +64,6 @@
 #define IS_CRUX_TYPE_RECORD(value) is_object_type(value, OBJECT_TYPE_RECORD)
 #define IS_CRUX_TYPE_TABLE(value) is_object_type(value, OBJECT_TYPE_TABLE)
 #define IS_CRUX_OPTION(value) is_object_type(value, OBJECT_OPTION)
-#define IS_CRUX_ENUM(value) is_object_type(value, OBJECT_ENUM)
 #define IS_CRUX_COROUTINE(value) is_object_type(value, OBJECT_COROUTINE)
 
 
@@ -103,7 +102,7 @@
 	(IS_INT(value) || IS_FLOAT(value) || IS_CRUX_STRING(value) || IS_NIL(value) || IS_BOOL(value))
 
 typedef enum {
-	OBJECT_STRING,
+	OBJECT_STRING = 0,
 	OBJECT_FUNCTION,
 	OBJECT_NATIVE_CALLABLE,
 	OBJECT_CLOSURE,
@@ -127,8 +126,6 @@ typedef enum {
 	OBJECT_TYPE_RECORD,
 	OBJECT_TYPE_TABLE,
 	OBJECT_OPTION,
-	OBJECT_ENUM,
-	OBJECT_COROUTINE,
 	SENTINEL_OBJECT_COUNT
 } ObjectType;
 
