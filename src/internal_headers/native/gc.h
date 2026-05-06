@@ -1,7 +1,7 @@
 #ifndef CRUX_GC_H
 #define CRUX_GC_H
 
-#include "object.h"
+#include "object/object.h"
 
 CruxValue gc_off_function(CruxVM *vm, const CruxValue *args);
 CruxValue gc_on_function(CruxVM *vm, const CruxValue *args);

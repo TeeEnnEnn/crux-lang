@@ -22,7 +22,7 @@
 #include "native/time.h"
 #include "native/tuple.h"
 #include "native/vectors.h"
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 #include "type_system.h"
 #include "value.h"
@@ -69,7 +69,6 @@ static ObjectString **make_names(CruxVM *vm, ObjectString **src, int count)
 #define name_bool copy_string(SA, "Bool", sizeof("Bool"))
 #define name_vec copy_string(SA, "Vector[]", sizeof("Vector[]"))
 #define name_mat copy_string(SA, "Matrix[,]", sizeof("Matrix[,]"))
-#define name_set copy_string(SA, "Set[]", sizeof("Set[]"))
 #define name_tbl copy_string(SA, "Table[,]", sizeof("Table[,]"))
 #define name_rang copy_string(SA, "Range", sizeof("Range"))
 #define name_buf copy_string(SA, "Buffer", sizeof("Buffer"))
@@ -77,10 +76,9 @@ static ObjectString **make_names(CruxVM *vm, ObjectString **src, int count)
 #define name_tup copy_string(SA, "Tuple[]", sizeof("Tuple[]"))
 #define name_arr copy_string(SA, "Array[Any]", sizeof("Array[Any]"))
 #define name_iterable                                                                                                  \
-	copy_string(                                                                                                       \
-		SA, "Iterator[] | Array[Any] | Vector[] | Matrix[,] | Set[] | Table[,] | Tuple[] | Range | Buffer | String",   \
-		sizeof(                                                                                                        \
-			"Iterator[] | Array[Any] | Vector[] | Matrix[,] | Set[] | Table[,] | Tuple[] | Range | Buffer | String"))
+	copy_string(SA, "Iterator[] | Array[Any] | Vector[] | Matrix[,] | Table[,] | Tuple[] | Range | Buffer | String",   \
+				sizeof(                                                                                                \
+					"Iterator[] | Array[Any] | Vector[] | Matrix[,] | Table[,] | Tuple[] | Range | Buffer | String"))
 
 #define REC(t) new_type_rec(SA, (t))
 #define ARR(elem) new_array_type_rec(SA, (elem))
@@ -120,6 +118,7 @@ static ObjectString **make_names(CruxVM *vm, ObjectString **src, int count)
 #define tbl_any TABLE_OF(t_any, t_any)
 #define iter_any ITER(t_any)
 #define opt_any OPT(t_any)
+#define opt_int OPT(t_int)
 
 #define hashable                                                                                                       \
 	UNI(ARGS(t_nil, t_int, t_flt, t_bool, t_str), NAMES(name_nil, name_int, name_float, name_bool, name_string), 5)
@@ -315,13 +314,13 @@ bool initialize_std_lib(CruxVM *vm)
 	{
 		const Callable methods[] = {
 			{"push", array_push_method, 2, ARGS(arr_any, t_any), res_nil},
-			{"pop", array_pop_method, 1, ARGS(arr_any), res_any},
+			{"pop", array_pop_method, 1, ARGS(arr_any), opt_any},
 			{"insert", array_insert_method, 3, ARGS(arr_any, t_int, t_any), res_nil},
 			{"remove", array_remove_at_method, 2, ARGS(arr_any, t_int), res_any},
 			{"concat", array_concat_method, 2, ARGS(arr_any, arr_any), RES(arr_any)},
 			{"slice", array_slice_method, 3, ARGS(arr_any, t_int, t_int), RES(arr_any)},
 			{"reverse", array_reverse_method, 1, ARGS(arr_any), res_nil},
-			{"index", array_index_of_method, 2, ARGS(arr_any, t_any), res_int},
+			{"index", array_index_of_method, 2, ARGS(arr_any, t_any), opt_int},
 			{"map", array_map_method, 2, ARGS(arr_any, FUNC(ARGS(t_any), 1, t_any)), RES(arr_any)},
 			{"filter", array_filter_method, 2, ARGS(arr_any, FUNC(ARGS(t_any), 1, t_any)), RES(arr_any)},
 			{"reduce", array_reduce_method, 3, ARGS(arr_any, FUNC(ARGS(t_any, t_any), 2, t_any), t_any), res_any},
@@ -559,11 +558,11 @@ bool initialize_std_lib(CruxVM *vm)
 		const Callable methods[] = {
 			{"get", get_tuple_method, 2, ARGS(TUP_ANY, t_int), res_any},
 			{"slice", slice_tuple_method, 3, ARGS(TUP_ANY, t_int, t_int), RES(arr_any)},
-			{"index", index_tuple_method, 2, ARGS(TUP_ANY, t_any), res_int},
+			{"index", index_tuple_method, 2, ARGS(TUP_ANY, t_any), opt_int},
 			{"is_empty", is_empty_tuple_method, 1, ARGS(TUP_ANY), t_bool},
 			{"to_array", to_array_tuple_method, 1, ARGS(TUP_ANY), arr_any},
-			{"first", first_tuple_method, 1, ARGS(TUP_ANY), res_any},
-			{"last", last_tuple_method, 1, ARGS(TUP_ANY), res_any},
+			{"first", first_tuple_method, 1, ARGS(TUP_ANY), opt_any},
+			{"last", last_tuple_method, 1, ARGS(TUP_ANY), opt_any},
 			{"contains", contains_tuple_method, 2, ARGS(TUP_ANY, t_any), t_bool},
 			{"equals", equals_tuple_method, 2, ARGS(TUP_ANY, TUP_ANY), t_bool},
 		};

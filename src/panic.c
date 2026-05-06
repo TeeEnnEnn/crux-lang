@@ -104,7 +104,7 @@ static ErrorDetails getErrorDetails(const ErrorType type)
 	}
 }
 
-void print_error_line(CruxVM* vm, const int line, const char *source, int startCol, const int length)
+void print_error_line(CruxVM *vm, const int line, const char *source, int startCol, const int length)
 {
 	const char *lineStart = source;
 	for (int currentLine = 1; currentLine < line && *lineStart; currentLine++) {
@@ -167,9 +167,9 @@ static void error_at_vfmt(Parser *parser, const Token *token, ErrorType error_ty
 	// Still print the pretty block to writeFn if available
 	vm_print(parser->vm, "%s%s%s\n", RED, repeat('=', 60), RESET);
 	vm_print(parser->vm, "%s%s: %s", RED, details.name, MAGENTA);
-	
-    char message[1024];
-    vsnprintf(message, sizeof(message), format, args);
+
+	char message[1024];
+	vsnprintf(message, sizeof(message), format, args);
 	vm_print(parser->vm, "%s", message);
 	vm_print(parser->vm, " at line %d%s\n", token->line, RESET);
 
@@ -267,22 +267,21 @@ void compiler_panicf_at_current(Parser *parser, ErrorType error_type, const char
 void runtime_panic(ObjectModuleRecord *module_record, const ErrorType type, const char *format, ...)
 {
 	const ErrorDetails details = getErrorDetails(type);
-    CruxVM *vm = module_record->owner;
+	CruxVM *vm = module_record->owner;
 
 	va_list args;
 	va_start(args, format);
 
-    char message[1024];
-    vsnprintf(message, sizeof(message), format, args);
-    va_end(args);
+	char message[1024];
+	vsnprintf(message, sizeof(message), format, args);
+	va_end(args);
 
-    if (vm->config.errorFn) {
-        char full_message[1280];
-        snprintf(full_message, sizeof(full_message), "%s: %s", details.name, message);
-        vm->config.errorFn(vm, CRUX_ERROR_RUNTIME,
-            module_record->path ? module_record->path->chars : "<unknown>",
-            -1, full_message);
-    }
+	if (vm->config.errorFn) {
+		char full_message[1280];
+		snprintf(full_message, sizeof(full_message), "%s: %s\n", details.name, message);
+		vm->config.errorFn(vm, CRUX_ERROR_RUNTIME, module_record->path ? module_record->path->chars : "<unknown>", -1,
+						   full_message);
+	}
 
 	vm_print(vm, "%s%s%s\n", RED, repeat('=', 60), RESET);
 	vm_print(vm, "\n%s%s: %s", RED, details.name, MAGENTA);
@@ -301,8 +300,8 @@ void runtime_panic(ObjectModuleRecord *module_record, const ErrorType type, cons
 	while (traceModule != NULL) {
 		if (!traceModule->is_main) {
 			vm_print(vm, "\n  %s--- imported from module \"%s\" ---%s", MAGENTA,
-					traceModule->enclosing_module->path ? traceModule->enclosing_module->path->chars : "<unknown>",
-					RESET);
+					 traceModule->enclosing_module->path ? traceModule->enclosing_module->path->chars : "<unknown>",
+					 RESET);
 		}
 
 		for (int i = (int)traceModule->frame_count - 1; i >= 0; i--) {
@@ -336,36 +335,36 @@ void runtime_panic(ObjectModuleRecord *module_record, const ErrorType type, cons
 				funcModulePath = traceModule->path;
 			}
 
-            char trace_msg[512];
+			char trace_msg[512];
 			if (function->name == NULL || function->name->byte_length == 0) {
 				if (funcModulePath != NULL) {
 					if (traceModule->is_repl) {
 						vm_print(vm, "script from \"repl\"");
-                        snprintf(trace_msg, sizeof(trace_msg), "script from \"repl\"");
+						snprintf(trace_msg, sizeof(trace_msg), "script from \"repl\"");
 					} else {
 						vm_print(vm, "script from \"%s\"", funcModulePath->chars);
-                        snprintf(trace_msg, sizeof(trace_msg), "script from \"%s\"", funcModulePath->chars);
+						snprintf(trace_msg, sizeof(trace_msg), "script from \"%s\"", funcModulePath->chars);
 					}
 				} else {
 					vm_print(vm, "<script>");
-                    snprintf(trace_msg, sizeof(trace_msg), "<script>");
+					snprintf(trace_msg, sizeof(trace_msg), "<script>");
 				}
 			} else {
 				if (funcModulePath != NULL) {
 					vm_print(vm, "%s() from \"%s\"", function->name->chars, funcModulePath->chars);
-                    snprintf(trace_msg, sizeof(trace_msg), "%s() from \"%s\"", function->name->chars, funcModulePath->chars);
+					snprintf(trace_msg, sizeof(trace_msg), "%s() from \"%s\"", function->name->chars,
+							 funcModulePath->chars);
 				} else {
 					vm_print(vm, "%s()", function->name->chars);
-                    snprintf(trace_msg, sizeof(trace_msg), "%s()", function->name->chars);
+					snprintf(trace_msg, sizeof(trace_msg), "%s()", function->name->chars);
 				}
 			}
 
-            // Report each trace line to errorFn too
-            if (vm->config.errorFn) {
-                vm->config.errorFn(vm, CRUX_ERROR_STACK_TRACE,
-                    funcModulePath ? funcModulePath->chars : "<unknown>",
-                    line, trace_msg);
-            }
+			// Report each trace line to errorFn too
+			if (vm->config.errorFn) {
+				vm->config.errorFn(vm, CRUX_ERROR_STACK_TRACE, funcModulePath ? funcModulePath->chars : "<unknown>",
+								   line, trace_msg);
+			}
 		}
 		traceModule = traceModule->enclosing_module;
 	}

@@ -2,7 +2,7 @@
 #include <string.h>
 #include "alloc.h"
 #include "garbage_collector.h"
-#include "object.h"
+#include "object/object.h"
 #include "vm.h"
 
 CRUX_API int crux_get_version_number()

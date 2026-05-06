@@ -5,7 +5,7 @@
 #include "compiler/compiler_core.h"
 #include "file_handler.h"
 #include "garbage_collector.h"
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 #include "scanner.h"
 #include "value.h"
@@ -824,7 +824,7 @@ ObjectModuleRecord *compile_module_statically(Compiler *compiler, ObjectString *
 	if (compiler->owner->config.loadModuleFn) {
 		custom_result = compiler->owner->config.loadModuleFn(compiler->owner, path->chars);
 		if (custom_result.source != NULL) {
-			source = (char*)custom_result.source;
+			source = (char *)custom_result.source;
 			is_custom = true;
 		}
 	}
@@ -847,7 +847,7 @@ ObjectModuleRecord *compile_module_statically(Compiler *compiler, ObjectString *
 
 	Compiler imported_compiler = {0};
 	ObjectFunction *module_func = compile(compiler->owner, &imported_compiler, compiler, source);
-	
+
 	if (is_custom) {
 		if (custom_result.onComplete) {
 			custom_result.onComplete(compiler->owner, path->chars, custom_result);

@@ -1,7 +1,7 @@
 #ifndef STD_H
 #define STD_H
 
-#include "object.h"
+#include "object/object.h"
 #include "table.h"
 
 typedef struct {

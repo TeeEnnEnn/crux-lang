@@ -1,9 +1,9 @@
 #include <math.h>
 #include <string.h>
 
-#include "object.h"
-#include "panic.h"
 #include "native/matrix.h"
+#include "object/object.h"
+#include "panic.h"
 
 #include "garbage_collector.h"
 

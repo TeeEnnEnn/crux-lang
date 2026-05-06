@@ -5,7 +5,6 @@
 #include "chunk.h"
 #include "file_handler.h"
 #include "garbage_collector.h"
-#include "native/native_registration.h"
 #include "type_system.h"
 #include "utf8.h"
 #include "value.h"
@@ -18,7 +17,7 @@
 #include "native/matrix.h"
 #include "native/range.h"
 
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 
 #ifdef DEBUG_TRACE_EXECUTION

@@ -1,7 +1,7 @@
 #ifndef TABLES_H
 #define TABLES_H
 
-#include "object.h"
+#include "object/object.h"
 
 CruxValue table_values_method(CruxVM *vm, const CruxValue *args);
 CruxValue table_keys_method(CruxVM *vm, const CruxValue *args);

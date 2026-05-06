@@ -1,6 +1,6 @@
 #include "native/option.h"
 
-#include "object.h"
+#include "object/object.h"
 
 /**
  * args: [Option]

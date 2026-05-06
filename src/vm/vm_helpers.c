@@ -9,7 +9,7 @@
 #include "crux.h"
 #include "garbage_collector.h"
 #include "native/native_registration.h"
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 #include "slab_allocator.h"
 #include "table.h"

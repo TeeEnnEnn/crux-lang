@@ -1,16 +1,13 @@
-
-use Tuple from "crux:tuple";
-
 println("=== Testing basic tuple creation ===");
-let t = Tuple([1, 2, 3]);
+let t = $[1, 2, 3];
 assert(typeof t == "Tuple", "Failed to create basic tuple");
 
 println("=== Testing tuple with mixed types ===");
-let t_mixed = Tuple([1, "hello", true]);
+let t_mixed = $[1, "hello", true];
 assert(typeof t_mixed == "Tuple", "Failed to create tuple with mixed types");
 
 println("=== Testing is_empty() method ===");
-let empty = Tuple([]);
+let empty = $[];
 assert(empty.is_empty() == true, "Newly created empty tuple should be empty");
 assert(t.is_empty() == false, "Tuple with elements should not be empty");
 
@@ -30,15 +27,15 @@ assert(typeof out_of_bounds == "Error", "get(5) should return Error");
 
 println("=== Testing first() method ===");
 assert(t.first().unwrap() == 1, "first() should return 1");
-let first_empty_result = Tuple([]).first();
+let first_empty_result = $[].first();
 let first_empty = first_empty_result.unwrap();
-assert(typeof first_empty == "Error", "first() on empty tuple should return Error");
+assert(typeof first_empty == "Nil", "first() on empty tuple should return None");
 
 println("=== Testing last() method ===");
 assert(t.last().unwrap() == 3, "last() should return 3");
-let last_empty_result = Tuple([]).last();
+let last_empty_result = $[].last();
 let last_empty = last_empty_result.unwrap();
-assert(typeof last_empty == "Error", "last() on empty tuple should return Error");
+assert(typeof last_empty == "Nil", "last() on empty tuple should return None");
 
 println("=== Testing contains() method ===");
 assert(t.contains(1) == true, "Tuple should contain 1");
@@ -58,7 +55,7 @@ assert(t.index(2).unwrap() == 1, "index(2) should return 1");
 assert(t.index(3).unwrap() == 2, "index(3) should return 2");
 let not_found_result = t.index(100);
 let not_found = not_found_result.unwrap();
-assert(typeof not_found == "Error", "index(100) should return Error");
+assert(typeof not_found == "Nil", "index(100) should return None");
 
 println("=== Testing to_array() method ===");
 let arr = t.to_array();
@@ -86,22 +83,22 @@ assert(slice_neg[0] == 2, "slice(1, 3)[0] should be 2");
 assert(slice_neg[1] == 3, "slice(1, 3)[1] should be 3");
 
 println("=== Testing equals() method ===");
-let t2 = Tuple([1, 2, 3]);
-let t3 = Tuple([1, 2, 4]);
-let t4 = Tuple([1, 2]);
+let t2 = $[1, 2, 3];
+let t3 = $[1, 2, 4];
+let t4 = $[1, 2];
 assert(t.equals(t2) == true, "Equal tuples should return true");
 assert(t.equals(t3) == false, "Different tuples should return false");
 assert(t.equals(t4) == false, "Different length tuples should return false");
 
 println("=== Testing empty tuple operations ===");
-let empty_t = Tuple([]);
+let empty_t = $[];
 assert(empty_t.is_empty() == true, "Empty tuple should be empty");
 assert(len(empty_t) == 0, "Empty tuple should have length 0");
 let empty_arr = empty_t.to_array();
 assert(len(empty_arr) == 0, "to_array() on empty tuple should return empty array");
 
 println("=== Testing single element tuple ===");
-let single = Tuple([42]);
+let single = $[42];
 assert(len(single) == 1, "Single element tuple should have length 1");
 assert(single.is_empty() == false, "Single element tuple should not be empty");
 assert(single.contains(42) == true, "Single element tuple should contain 42");
@@ -110,14 +107,14 @@ assert(single.last().unwrap() == 42, "last() should return 42");
 assert(single.get(0).unwrap() == 42, "get(0) should return 42");
 
 println("=== Testing tuple with strings ===");
-let str_t = Tuple(["a", "b", "c"]);
+let str_t = $["a", "b", "c"];
 assert(str_t.contains("a") == true, "Tuple should contain 'a'");
 assert(str_t.contains("b") == true, "Tuple should contain 'b'");
 assert(str_t.contains("d") == false, "Tuple should not contain 'd'");
 assert(str_t.index("b").unwrap() == 1, "index('b') should return 1");
 
 println("=== Testing tuple with nested arrays ===");
-let nested = Tuple([[1, 2], [3, 4]]);
+let nested = $[[1, 2], [3, 4]];
 assert(len(nested) == 2, "Tuple should have 2 elements");
 assert(typeof nested.get(0).unwrap() == "Array[Int]", "get(0) should return Array");
 

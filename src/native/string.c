@@ -3,9 +3,9 @@
 #include <string.h>
 
 #include "garbage_collector.h"
-#include "object.h"
-#include "panic.h"
 #include "native/string.h"
+#include "object/object.h"
+#include "panic.h"
 #include "utf8.h"
 
 // Returns the byte pointer to the nth code point

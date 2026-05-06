@@ -1,7 +1,7 @@
 #ifndef TIME_H
 #define TIME_H
 
-#include "object.h"
+#include "object/object.h"
 #include "value.h"
 
 // Current time functions

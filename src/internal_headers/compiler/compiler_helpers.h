@@ -1,7 +1,7 @@
 #ifndef COMPILER_HELPERS_H
 #define COMPILER_HELPERS_H
 
-#include "object.h"
+#include "object/object.h"
 #include "vm.h"
 #include "scanner.h"
 

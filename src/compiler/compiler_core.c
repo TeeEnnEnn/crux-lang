@@ -8,7 +8,7 @@
 #include "compiler/compiler_core.h"
 #include "debug.h"
 #include "garbage_collector.h"
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 #include "scanner.h"
 #include "table.h"

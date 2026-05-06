@@ -1,7 +1,7 @@
 #ifndef CRUX_LANG_TYPE_SYSTEM_H
 #define CRUX_LANG_TYPE_SYSTEM_H
 
-#include "object.h"
+#include "object/object.h"
 #include "value.h"
 #include "vm.h"
 

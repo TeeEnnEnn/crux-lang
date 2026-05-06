@@ -1,6 +1,6 @@
 #include "native/result.h"
 
-#include "object.h"
+#include "object/object.h"
 
 /**
  * args: [Result]

@@ -75,7 +75,7 @@ println("_day_of_year() test passed");
 // Test sleep_ms (very short sleep)
 println("--- Testing sleep_ms ---");
 let start = time_ms();
-sleep_ms(10)?;
+sleep_ms(10);
 let elapsed = time_ms() - start;
 assert(elapsed >= 10, "sleep_ms should sleep at least the specified time");
 println("sleep_ms() test passed");

@@ -5,7 +5,7 @@
 #include "file_handler.h"
 #include "garbage_collector.h"
 #include "native/fs.h"
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 #include "vm.h"
 

@@ -1,5 +1,5 @@
 #include "native/tables.h"
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 
 /**

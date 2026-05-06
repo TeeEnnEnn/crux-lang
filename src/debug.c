@@ -3,7 +3,7 @@
 #include "type_system.h"
 #include "value.h"
 
-#include "object.h"
+#include "object/object.h"
 
 void disassemble_chunk(CruxVM *vm, const Chunk *chunk, const char *name)
 {

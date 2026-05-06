@@ -1,8 +1,8 @@
 #include <math.h>
 
-#include "object.h"
-#include "panic.h"
 #include "native/complex.h"
+#include "object/object.h"
+#include "panic.h"
 
 /**
  * Returns the real part of a complex number
@@ -67,8 +67,8 @@ CruxValue complex_divide_value(CruxVM *vm, const ObjectComplex *lhs, const Objec
 	const double c = rhs->real;
 	const double d = rhs->imag;
 	const double denom = c * c + d * d;
-	return OBJECT_VAL(new_complex_number(vm, (lhs->real * c + lhs->imag * d) / denom,
-										 (lhs->imag * c - lhs->real * d) / denom));
+	return OBJECT_VAL(
+		new_complex_number(vm, (lhs->real * c + lhs->imag * d) / denom, (lhs->imag * c - lhs->real * d) / denom));
 }
 
 CruxValue complex_scalar_multiply_value(CruxVM *vm, const ObjectComplex *value, const double scalar)
@@ -181,7 +181,6 @@ CruxValue square_magnitude_complex_number_method(CruxVM *vm, const CruxValue *ar
 CruxValue conjugate_complex_number_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectComplex *complex_number = AS_CRUX_COMPLEX(args[0]);
-	ObjectComplex *conjugate = new_complex_number(vm, complex_number->real,
-						      -complex_number->imag);
+	ObjectComplex *conjugate = new_complex_number(vm, complex_number->real, -complex_number->imag);
 	return OBJECT_VAL(conjugate);
 }

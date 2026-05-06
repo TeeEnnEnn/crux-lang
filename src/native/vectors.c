@@ -1,117 +1,12 @@
 #include <math.h>
 
 #include "native/vectors.h"
-#include "object.h"
+
+#include "object/object.h"
+#include "object/vector_helpers.h"
 #include "panic.h"
 
-#define EPSILON 1e-10
-
 #define IS_ZERO_SCALAR(scalar) ((scalar) < EPSILON && (scalar) > -EPSILON)
-
-static double compute_magnitude(const double *restrict components, const uint32_t dimensions)
-{
-	double sum = 0.0;
-	for (uint32_t i = 0; i < dimensions; i++) {
-		sum += components[i] * components[i];
-	}
-	return sqrt(sum);
-}
-
-static double compute_dot_product(const double *restrict comp1, const double *restrict comp2, const uint32_t dimensions)
-{
-	double result = 0.0;
-	for (uint32_t i = 0; i < dimensions; i++) {
-		result += comp1[i] * comp2[i];
-	}
-	return result;
-}
-
-static void compute_vector_add(double *restrict result, const double *restrict comp1, const double *restrict comp2,
-							   const uint32_t dimensions)
-{
-	for (uint32_t i = 0; i < dimensions; i++) {
-		result[i] = comp1[i] + comp2[i];
-	}
-}
-
-static void compute_vector_subtract(double *restrict result, const double *restrict comp1, const double *restrict comp2,
-									const uint32_t dimensions)
-{
-	for (uint32_t i = 0; i < dimensions; i++) {
-		result[i] = comp1[i] - comp2[i];
-	}
-}
-
-static void compute_scalar_multiply(double *restrict result, const double *restrict components, const double scalar,
-									const uint32_t dimensions)
-{
-	for (uint32_t i = 0; i < dimensions; i++) {
-		result[i] = components[i] * scalar;
-	}
-}
-
-static void compute_scalar_divide(double *restrict result, const double *restrict components, const double scalar,
-								  const uint32_t dimensions)
-{
-	for (uint32_t i = 0; i < dimensions; i++) {
-		result[i] = components[i] / scalar;
-	}
-}
-
-static void compute_normalize(double *restrict result, const double *restrict components, const double magnitude,
-							  const uint32_t dimensions)
-{
-	for (uint32_t i = 0; i < dimensions; i++) {
-		result[i] = components[i] / magnitude;
-	}
-}
-
-static double compute_distance(const double *restrict comp1, const double *restrict comp2, const uint32_t dimensions)
-{
-	double sum = 0.0;
-	for (uint32_t i = 0; i < dimensions; i++) {
-		const double diff = comp1[i] - comp2[i];
-		sum += diff * diff;
-	}
-	return sqrt(sum);
-}
-
-static void compute_lerp(double *restrict result, const double *restrict comp1, const double *restrict comp2,
-						 const double t, const uint32_t dimensions)
-{
-	for (uint32_t i = 0; i < dimensions; i++) {
-		result[i] = comp1[i] + t * (comp2[i] - comp1[i]);
-	}
-}
-
-static void compute_reflect(double *restrict result, const double *restrict incident, const double *restrict normal,
-							const double normal_mag, const uint32_t dimensions)
-{
-	double dot = 0.0;
-	for (uint32_t i = 0; i < dimensions; i++) {
-		dot += incident[i] * (normal[i] / normal_mag);
-	}
-
-	for (uint32_t i = 0; i < dimensions; i++) {
-		result[i] = incident[i] - 2.0 * dot * (normal[i] / normal_mag);
-	}
-}
-
-static bool compute_equals(const double *restrict comp1, const double *restrict comp2, const uint32_t dimensions)
-{
-	for (uint32_t i = 0; i < dimensions; i++) {
-		if (fabs(comp1[i] - comp2[i]) >= EPSILON) {
-			return false;
-		}
-	}
-	return true;
-}
-
-static double vector_magnitude(const ObjectVector *vec)
-{
-	const double *components = VECTOR_COMPONENTS(vec);
-	return compute_magnitude(components, vec->dimensions);
-}
 
 /**
  * Creates a new vector with the specified dimension and components
@@ -162,76 +57,6 @@ CruxValue vector_dot_method(CruxVM *vm, const CruxValue *args)
 	const double result = compute_dot_product(comp1, comp2, vec1->dimensions);
 
 	return OBJECT_VAL(new_ok_result(vm, FLOAT_VAL(result)));
-}
-
-CruxValue vector_add_value(CruxVM *vm, const ObjectVector *vec1, const ObjectVector *vec2)
-{
-	if (vec1->dimensions != vec2->dimensions) {
-		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension for addition.", TYPE);
-	}
-
-	ObjectVector *result_vector = new_vector(vm, vec1->dimensions);
-	push(vm->current_module_record, OBJECT_VAL(result_vector));
-
-	const double *comp1 = VECTOR_COMPONENTS(vec1);
-	const double *comp2 = VECTOR_COMPONENTS(vec2);
-	double *result_comp = VECTOR_COMPONENTS(result_vector);
-	compute_vector_add(result_comp, comp1, comp2, vec1->dimensions);
-
-	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(result_vector));
-	pop(vm->current_module_record);
-	return OBJECT_VAL(res);
-}
-
-CruxValue vector_subtract_value(CruxVM *vm, const ObjectVector *vec1, const ObjectVector *vec2)
-{
-	if (vec1->dimensions != vec2->dimensions) {
-		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension for subtraction.", TYPE);
-	}
-
-	ObjectVector *result_vector = new_vector(vm, vec1->dimensions);
-	push(vm->current_module_record, OBJECT_VAL(result_vector));
-
-	const double *comp1 = VECTOR_COMPONENTS(vec1);
-	const double *comp2 = VECTOR_COMPONENTS(vec2);
-	double *result_comp = VECTOR_COMPONENTS(result_vector);
-	compute_vector_subtract(result_comp, comp1, comp2, vec1->dimensions);
-
-	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(result_vector));
-	pop(vm->current_module_record);
-	return OBJECT_VAL(res);
-}
-
-CruxValue vector_scalar_multiply_value(CruxVM *vm, const ObjectVector *vec, const double scalar)
-{
-	ObjectVector *result_vector = new_vector(vm, vec->dimensions);
-	push(vm->current_module_record, OBJECT_VAL(result_vector));
-
-	const double *comp = VECTOR_COMPONENTS(vec);
-	double *result_comp = VECTOR_COMPONENTS(result_vector);
-	compute_scalar_multiply(result_comp, comp, scalar, vec->dimensions);
-
-	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(result_vector));
-	pop(vm->current_module_record);
-	return OBJECT_VAL(res);
-}
-
-CruxValue vector_scalar_divide_value(CruxVM *vm, const ObjectVector *vec, const double scalar)
-{
-	if (IS_ZERO_SCALAR(scalar)) {
-		return MAKE_GC_SAFE_ERROR(vm, "Cannot divide by zero.", MATH);
-	}
-
-	ObjectVector *result_vector = new_vector(vm, vec->dimensions);
-	push(vm->current_module_record, OBJECT_VAL(result_vector));
-
-	const double *comp = VECTOR_COMPONENTS(vec);
-	double *result_comp = VECTOR_COMPONENTS(result_vector);
-	compute_scalar_divide(result_comp, comp, scalar, vec->dimensions);
-
-	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(result_vector));
-	pop(vm->current_module_record);
-	return OBJECT_VAL(res);
 }
 
 CruxValue vector_component_divide_value(CruxVM *vm, const ObjectVector *vec1, const ObjectVector *vec2)
@@ -289,7 +114,24 @@ CruxValue vector_cross_value(CruxVM *vm, const ObjectVector *vec1, const ObjectV
  */
 CruxValue vector_add_method(CruxVM *vm, const CruxValue *args)
 {
-	return vector_add_value(vm, AS_CRUX_VECTOR(args[0]), AS_CRUX_VECTOR(args[1]));
+	ObjectVector *vec1 = AS_CRUX_VECTOR(args[0]);
+	ObjectVector *vec2 = AS_CRUX_VECTOR(args[1]);
+
+	if (vec1->dimensions != vec2->dimensions) {
+		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension for addition.", TYPE);
+	}
+
+	ObjectVector *result_vector = new_vector(vm, vec1->dimensions);
+	push(vm->current_module_record, OBJECT_VAL(result_vector));
+
+	const double *comp1 = VECTOR_COMPONENTS(vec1);
+	const double *comp2 = VECTOR_COMPONENTS(vec2);
+	double *result_comp = VECTOR_COMPONENTS(result_vector);
+	compute_vector_add(result_comp, comp1, comp2, vec1->dimensions);
+
+	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(result_vector));
+	pop(vm->current_module_record);
+	return OBJECT_VAL(res);
 }
 
 /**
@@ -300,7 +142,24 @@ CruxValue vector_add_method(CruxVM *vm, const CruxValue *args)
  */
 CruxValue vector_subtract_method(CruxVM *vm, const CruxValue *args)
 {
-	return vector_subtract_value(vm, AS_CRUX_VECTOR(args[0]), AS_CRUX_VECTOR(args[1]));
+	ObjectVector *vec1 = AS_CRUX_VECTOR(args[0]);
+	ObjectVector *vec2 = AS_CRUX_VECTOR(args[1]);
+
+	if (vec1->dimensions != vec2->dimensions) {
+		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension for subtraction.", TYPE);
+	}
+
+	ObjectVector *result_vector = new_vector(vm, vec1->dimensions);
+	push(vm->current_module_record, OBJECT_VAL(result_vector));
+
+	const double *comp1 = VECTOR_COMPONENTS(vec1);
+	const double *comp2 = VECTOR_COMPONENTS(vec2);
+	double *result_comp = VECTOR_COMPONENTS(result_vector);
+	compute_vector_subtract(result_comp, comp1, comp2, vec1->dimensions);
+
+	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(result_vector));
+	pop(vm->current_module_record);
+	return OBJECT_VAL(res);
 }
 
 /**
@@ -311,7 +170,19 @@ CruxValue vector_subtract_method(CruxVM *vm, const CruxValue *args)
  */
 CruxValue vector_multiply_method(CruxVM *vm, const CruxValue *args)
 {
-	return vector_scalar_multiply_value(vm, AS_CRUX_VECTOR(args[0]), TO_DOUBLE(args[1]));
+	ObjectVector *vec = AS_CRUX_VECTOR(args[0]);
+	double scalar = TO_DOUBLE(args[1]);
+
+	ObjectVector *result_vector = new_vector(vm, vec->dimensions);
+	push(vm->current_module_record, OBJECT_VAL(result_vector));
+
+	const double *comp = VECTOR_COMPONENTS(vec);
+	double *result_comp = VECTOR_COMPONENTS(result_vector);
+	compute_scalar_multiply(result_comp, comp, scalar, vec->dimensions);
+
+	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(result_vector));
+	pop(vm->current_module_record);
+	return OBJECT_VAL(res);
 }
 
 /**
@@ -322,7 +193,23 @@ CruxValue vector_multiply_method(CruxVM *vm, const CruxValue *args)
  */
 CruxValue vector_divide_method(CruxVM *vm, const CruxValue *args)
 {
-	return vector_scalar_divide_value(vm, AS_CRUX_VECTOR(args[0]), TO_DOUBLE(args[1]));
+	ObjectVector *vec = AS_CRUX_VECTOR(args[0]);
+	double scalar = TO_DOUBLE(args[1]);
+
+	if (IS_ZERO_SCALAR(scalar)) {
+		return MAKE_GC_SAFE_ERROR(vm, "Cannot divide by zero.", MATH);
+	}
+
+	ObjectVector *result_vector = new_vector(vm, vec->dimensions);
+	push(vm->current_module_record, OBJECT_VAL(result_vector));
+
+	const double *comp = VECTOR_COMPONENTS(vec);
+	double *result_comp = VECTOR_COMPONENTS(result_vector);
+	compute_scalar_divide(result_comp, comp, scalar, vec->dimensions);
+
+	ObjectResult *res = new_ok_result(vm, OBJECT_VAL(result_vector));
+	pop(vm->current_module_record);
+	return OBJECT_VAL(res);
 }
 
 /**
@@ -334,7 +221,7 @@ CruxValue vector_magnitude_method(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
 	const ObjectVector *vec = AS_CRUX_VECTOR(args[0]);
-	const double magnitude = vector_magnitude(vec);
+	const double magnitude = compute_magnitude(VECTOR_COMPONENTS(vec), vec->dimensions);
 
 	return FLOAT_VAL(magnitude);
 }
@@ -348,7 +235,7 @@ CruxValue vector_normalize_method(CruxVM *vm, const CruxValue *args)
 {
 	const ObjectVector *vec = AS_CRUX_VECTOR(args[0]);
 
-	const double magnitude = vector_magnitude(vec);
+	const double magnitude = compute_magnitude(VECTOR_COMPONENTS(vec), vec->dimensions);
 
 	if (IS_ZERO_SCALAR(magnitude)) {
 		return MAKE_GC_SAFE_ERROR(vm, "Cannot normalize a zero vector.", MATH);
@@ -480,7 +367,7 @@ CruxValue vector_reflect_method(CruxVM *vm, const CruxValue *args)
 		return MAKE_GC_SAFE_ERROR(vm, "Vectors must have the same dimension for reflection.", TYPE);
 	}
 
-	const double normal_mag = vector_magnitude(normal);
+	const double normal_mag = compute_magnitude(VECTOR_COMPONENTS(normal), normal->dimensions);
 
 	if (fabs(normal_mag) < EPSILON) {
 		return MAKE_GC_SAFE_ERROR(vm, "Cannot reflect with zero normal vector.", MATH);

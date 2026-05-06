@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "garbage_collector.h"
-#include "object.h"
+#include "object/object.h"
 #include "scanner.h"
 #include "type_system.h"
 #include "common.h"

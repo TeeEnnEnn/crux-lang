@@ -3,9 +3,9 @@
 #include <string.h>
 
 #include "garbage_collector.h"
-#include "object.h"
-#include "panic.h"
 #include "native/array.h"
+#include "object/object.h"
+#include "panic.h"
 
 /**
  * Adds an element to the end of an array

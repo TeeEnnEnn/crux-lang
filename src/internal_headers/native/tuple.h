@@ -1,4 +1,4 @@
-#include "object.h"
+#include "object/object.h"
 #include "value.h"
 
 CruxValue new_tuple_function(CruxVM *vm, const CruxValue *args);

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "garbage_collector.h"
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 #include "vm.h"
 #ifdef _WIN32

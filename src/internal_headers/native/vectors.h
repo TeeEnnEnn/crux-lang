@@ -1,19 +1,12 @@
 #ifndef VECTORS_H
 #define VECTORS_H
 
-#include "object.h"
+#include "object/object.h"
 #include "value.h"
 
 CruxValue new_vector_function(CruxVM *vm, const CruxValue *args);
 
 CruxValue vector_dot_method(CruxVM *vm, const CruxValue *args);
-
-CruxValue vector_add_value(CruxVM *vm, const ObjectVector *vec1, const ObjectVector *vec2);
-CruxValue vector_subtract_value(CruxVM *vm, const ObjectVector *vec1, const ObjectVector *vec2);
-CruxValue vector_scalar_multiply_value(CruxVM *vm, const ObjectVector *vec, double scalar);
-CruxValue vector_scalar_divide_value(CruxVM *vm, const ObjectVector *vec, double scalar);
-CruxValue vector_component_divide_value(CruxVM *vm, const ObjectVector *vec1, const ObjectVector *vec2);
-CruxValue vector_cross_value(CruxVM *vm, const ObjectVector *vec1, const ObjectVector *vec2);
 
 CruxValue vector_add_method(CruxVM *vm, const CruxValue *args);
 

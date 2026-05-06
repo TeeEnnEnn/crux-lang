@@ -6,7 +6,7 @@
 #include "common.h"
 #include "compiler/compiler_core.h"
 #include "garbage_collector.h"
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 #include "slab_allocator.h"
 #include "table.h"
@@ -783,12 +783,12 @@ void mark_roots(CruxVM *vm)
 		mark_value(vm, vm->api_stack[i]);
 	}
 
-    // Mark persistent handles
-    struct CruxHandle* handle = vm->handles;
-    while (handle != NULL) {
-        mark_value(vm, handle->value);
-        handle = handle->next;
-    }
+	// Mark persistent handles
+	struct CruxHandle *handle = vm->handles;
+	while (handle != NULL) {
+		mark_value(vm, handle->value);
+		handle = handle->next;
+	}
 
 	for (uint32_t i = 0; i < vm->match_handler_stack.count; i++) {
 		mark_value(vm, vm->match_handler_stack.handlers[i].match_bind);

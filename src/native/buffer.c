@@ -3,7 +3,7 @@
 #include <string.h>
 #include "common.h"
 #include "garbage_collector.h"
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 #include "value.h"
 

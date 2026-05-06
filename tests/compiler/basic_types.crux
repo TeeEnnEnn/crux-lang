@@ -6,7 +6,6 @@ use Matrix from "crux:matrix";
 use Complex from "crux:complex";
 use Range from "crux:range";
 use Tuple from "crux:tuple";
-use Set from "crux:set";
 
 println("--- 1. PRIMITIVES & LITERALS ---");
 let a: String = "test";
@@ -25,7 +24,6 @@ let empty_arr: Array[Any] = []; // Empty array inference fallback to Any
 let tbl: Table[String, Int] = {"one": 1, "two": 2};
 let empty_tbl: Table[Any, Any] = {};
 
-let set_val: Set[Int] = Set([1, 2, 3])?;
 let tup_val: Tuple[Int] = Tuple([10, 20, 30]);
 let another_tuple: Tuple[String, Float, Int] = Tuple(["one", 2.21, 4]);
 let rng_val: Range = Range(0, 10, 1)?;
@@ -98,8 +96,8 @@ let r_val: Int = rand.int(0, 10)?;
 let comp: Complex = Complex(1.0, 2.0);
 
 println("--- 9. WILDCARD MATRICES & VECTORS ---");
-let v_exact: Vector[3] = Vector(3, [1.0, 2.0, 3.0])?;
-let v_wild: Vector[] = Vector(5, [1.0, 2.0, 3.0, 4.0, 5.0])?; // Vector[] accepts any dimension
+let v_exact: Vector[3] = Vector(3, [1.0, 2.0, 3.0]);
+let v_wild: Vector[] = Vector(5, [1.0, 2.0, 3.0, 4.0, 5.0]); // Vector[] accepts any dimension
 let m_wild: Matrix[,] = Matrix(4, 4)?;
 
 // v_exact = Vector(4, [1.0, 2.0, 3.0, 4.0])?; // Compile Error: Vector[4] != Vector[3]

@@ -1,7 +1,7 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
-#include "object.h"
+#include "object/object.h"
 #include "vm.h"
 
 CruxValue random_seed_method(CruxVM *vm, const CruxValue *args);

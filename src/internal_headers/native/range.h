@@ -1,4 +1,4 @@
-#include "object.h"
+#include "object/object.h"
 #include "value.h"
 
 bool validate_range_values(int32_t start, int32_t step, int32_t end, const char **error_message);

@@ -1,7 +1,7 @@
 #ifndef STRING_H
 #define STRING_H
 
-#include "object.h"
+#include "object/object.h"
 
 CruxValue string_byte_length_method(CruxVM *vm, const CruxValue *args);
 CruxValue string_first_method(CruxVM *vm, const CruxValue *args);

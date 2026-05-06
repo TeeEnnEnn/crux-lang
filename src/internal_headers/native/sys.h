@@ -1,7 +1,7 @@
 #ifndef SYS_H
 #define SYS_H
 
-#include "object.h"
+#include "object/object.h"
 
 CruxValue args_function(CruxVM *vm, const CruxValue *args);
 CruxValue platform_function(CruxVM *vm, const CruxValue *args);

@@ -1,6 +1,6 @@
 #include "native/tuple.h"
 #include <stdint.h>
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 #include "value.h"
 

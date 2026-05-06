@@ -1,7 +1,7 @@
 #ifndef CRUX_LANG_MATRIX_H
 #define CRUX_LANG_MATRIX_H
 
-#include "object.h"
+#include "object/object.h"
 #include "vm.h"
 
 /* ── Construction ──────────────────────────────────────────────────────────── */

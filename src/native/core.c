@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 #include "native/range.h"
-#include "object.h"
+#include "object/object.h"
 #include "panic.h"
 #include "utf8.h"
 #include "value.h"
