@@ -105,7 +105,7 @@ void type_mask_name(const TypeMask mask, char *buf, const int buf_size)
 	int offset = 0;
 	bool first = true;
 	for (int i = 0; i < (int)(sizeof(entries) / sizeof(entries[0])); i++) {
-		if (mask & entries[i].bit) {
+		if (mask & entries[i].mask) {
 			if (!first)
 				offset += snprintf(buf + offset, buf_size - offset, " | ");
 			offset += snprintf(buf + offset, buf_size - offset, "%s", entries[i].name);
