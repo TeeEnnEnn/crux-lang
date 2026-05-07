@@ -58,25 +58,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc g++
           echo "CC=gcc" >> $GITHUB_ENV
-          echo "CXX=g++" >> $GITHUB_ENV
-
-      - name: Setup GCC (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install gcc
-          echo "CC=gcc" >> $GITHUB_ENV
-          echo "CXX=g++" >> $GITHUB_ENV
-
-      - name: Install MinGW (Windows)
-        if: matrix.os == 'windows-latest'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: mingw64
-          update: true
-          install: >-
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-cmake
-            make
 
       - name: Setup GCC environment (Windows)
         if: matrix.os == 'windows-latest'
@@ -117,6 +98,28 @@ jobs:
           path: crux-${{ matrix.platform }}-${{ matrix.arch }}*
           retention-days: 1
 
+      - name: Create Stdlib Archives
+        if: matrix.os == 'ubuntu-latest' && matrix.arch == 'amd64'
+        run: |
+          mkdir -p dist/stdlib
+          cp -r src/stdlib/* dist/stdlib/
+          if [ -d "std" ]; then
+            cp -r std/* dist/stdlib/
+          fi
+          tar -czf crux-stdlib.tar.gz -C dist stdlib
+          zip -r crux-stdlib.zip -j src/stdlib/*
+          if [ -d "std" ]; then
+            zip -r crux-stdlib.zip std/*
+          fi
+          
+      - name: Upload Stdlib Archives
+        if: matrix.os == 'ubuntu-latest' && matrix.arch == 'amd64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: crux-stdlib
+          path: crux-stdlib.*
+          retention-days: 1
+
   create-release:
     needs: build
     runs-on: ubuntu-latest
@@ -127,6 +130,13 @@ jobs:
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+
+      - name: Prepare Assets
+        run: |
+          cp scripts/install/install.sh .
+          cp scripts/install/install.ps1 .
+          # The artifacts are in subdirectories named after the artifact name
+          find . -maxdepth 2 -name "crux-*" -type f -exec cp {} . \;
 
       - name: Generate Release Notes
         id: release_notes
@@ -186,20 +196,24 @@ jobs:
             CHANGELOG="${CHANGELOG}### Other Changes\n${OTHER}\n"
           fi
 
+          # Add installation instructions
+          CHANGELOG="${CHANGELOG}## Installation\n\n"
+          CHANGELOG="${CHANGELOG}### Unix (Linux/macOS)\n"
+          CHANGELOG="${CHANGELOG}\`\`\`bash\ncurl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/scripts/install/install.sh | bash\n\`\`\`\n\n"
+          CHANGELOG="${CHANGELOG}### Windows\n"
+          CHANGELOG="${CHANGELOG}\`\`\`powershell\niwr https://raw.githubusercontent.com/${{ github.repository }}/main/scripts/install/install.ps1 | iex\n\`\`\`\n\n"
+
           # Add download information
-          CHANGELOG="${CHANGELOG}## Downloads\n\n"
+          CHANGELOG="${CHANGELOG}## Manual Downloads\n\n"
           CHANGELOG="${CHANGELOG}Choose the appropriate binary for your system:\n\n"
           CHANGELOG="${CHANGELOG}- **Linux (x64)**: \`crux-linux-amd64\`\n"
           CHANGELOG="${CHANGELOG}- **Windows (x64)**: \`crux-windows-amd64.exe\`\n"
           CHANGELOG="${CHANGELOG}- **macOS (Intel)**: \`crux-macos-amd64\`\n"
           CHANGELOG="${CHANGELOG}- **macOS (Apple Silicon)**: \`crux-macos-arm64\`\n\n"
-          CHANGELOG="${CHANGELOG}Make the binary executable on Unix systems: \`chmod +x crux-*\`"
 
           # Save to file and output
           echo -e "$CHANGELOG" > release_notes.md
-          echo "Generated release notes:"
-          cat release_notes.md
-
+          
           # Set output for GitHub Actions (escape newlines)
           {
             echo 'RELEASE_NOTES<<EOF'
@@ -210,9 +224,11 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ inputs.version }}
-          name: Release v${{ inputs.version }}
+          tag_name: v${{ github.event.inputs.version }}
+          name: Release v${{ github.event.inputs.version }}
           body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
           files: |
-            crux-*/*
+            crux-*
+            install.sh
+            install.ps1
           token: ${{ secrets.GITHUB_TOKEN }}

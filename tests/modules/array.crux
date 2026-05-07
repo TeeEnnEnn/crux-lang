@@ -13,7 +13,7 @@ println("push() test passed");
 // Test pop
 println("--- Testing pop ---");
 let arr2 = [1, 2, 3];
-let popped = arr2.pop()?;
+let popped = arr2.pop().unwrap();
 assert(popped == 3, "pop should return last element");
 assert(len(arr2) == 2, "pop should remove element");
 println("pop() test passed");
@@ -66,8 +66,8 @@ println("reverse() test passed");
 // Test index
 println("--- Testing index ---");
 let arr9 = [1, 2, 3, 2, 1];
-assert(arr9.index(2)? == 1, "index should find first occurrence");
-assert(arr9.index(3)? == 2, "index should find middle element");
+assert(arr9.index(2).unwrap() == 1, "index should find first occurrence");
+assert(arr9.index(3).unwrap() == 2, "index should find middle element");
 // index returns error when not found
 println("index() test passed");
 

@@ -1,0 +1,138 @@
+#ifndef VALUE_H
+#define VALUE_H
+
+#include "crux.h"
+
+#include <stdint.h>
+#include <stdbool.h>
+
+typedef struct ObjectString ObjectString;
+typedef struct CruxObject CruxObject;
+typedef struct ObjectTypeRecord ObjectTypeRecord;
+
+#define QNAN CRUX_QNAN
+#define SIGN_BIT CRUX_SIGN_BIT
+#define TAG_NIL CRUX_TAG_NIL // 01.
+#define TAG_FALSE CRUX_TAG_FALSE // 10.
+#define TAG_TRUE CRUX_TAG_TRUE // 11.
+#define TAG_INT32_BIT CRUX_TAG_INT32_BIT
+
+#define IS_INT(value) (((value) & (QNAN | SIGN_BIT | TAG_INT32_BIT)) == (QNAN | TAG_INT32_BIT))
+#define IS_FLOAT(value) (((value) & QNAN) != QNAN)
+#define IS_NIL(value) ((value) == NIL_VAL)
+#define IS_BOOL(value) (((value) | 1) == TRUE_VAL)
+#define IS_CRUX_OBJECT(value) (((value) & (QNAN | SIGN_BIT)) == (QNAN | SIGN_BIT))
+
+#define IS_NUMERIC(value) (IS_INT(value) || IS_FLOAT(value))
+
+#define AS_INT(value) ((int32_t)((value) & 0xFFFFFFFF))
+#define AS_FLOAT(value) crux_as_float(value)
+#define AS_BOOL(value) ((value) == TRUE_VAL)
+#define AS_CRUX_OBJECT(value) ((CruxObject *)(uintptr_t)((value) & ~(SIGN_BIT | QNAN)))
+
+#define OBJECT_VAL(obj) (CruxValue)(SIGN_BIT | QNAN | (uint64_t)(uintptr_t)(obj))
+#define BOOL_VAL(b) ((b) ? TRUE_VAL : FALSE_VAL)
+#define FALSE_VAL ((CruxValue)(uint64_t)(QNAN | TAG_FALSE))
+#define TRUE_VAL ((CruxValue)(uint64_t)(QNAN | TAG_TRUE))
+#define NIL_VAL ((CruxValue)(uint64_t)(QNAN | TAG_NIL))
+#define FLOAT_VAL(num) crux_float_val((num))
+#define INT_VAL(integer) ((CruxValue)(QNAN | TAG_INT32_BIT | ((uint64_t)(integer) & 0xFFFFFFFF)))
+
+typedef struct {
+	CruxValue *values;
+	int capacity;
+	int count;
+} ValueArray;
+
+typedef uint32_t TypeMask;
+
+#define NIL_TYPE (1u << 0)
+#define BOOL_TYPE (1u << 1)
+#define INT_TYPE (1u << 2)
+#define FLOAT_TYPE (1u << 3)
+#define STRING_TYPE (1u << 4)
+#define ARRAY_TYPE (1u << 5)
+#define TABLE_TYPE (1u << 6)
+#define ERROR_TYPE (1u << 7)
+#define RESULT_TYPE (1u << 8)
+#define RANDOM_TYPE (1u << 9)
+#define FILE_TYPE (1u << 10)
+#define STRUCT_TYPE (1u << 11)
+#define VECTOR_TYPE (1u << 12)
+#define COMPLEX_TYPE (1u << 13)
+#define MATRIX_TYPE (1u << 14)
+#define FUNCTION_TYPE (1u << 15)
+#define MODULE_TYPE (1u << 16)
+#define TUPLE_TYPE (1u << 17)
+#define BUFFER_TYPE (1u << 18)
+#define RANGE_TYPE (1u << 19)
+#define SHAPE_TYPE (1u << 20)
+#define UNION_TYPE (1u << 21)
+#define ITERATOR_TYPE (1u << 22)
+#define OPTION_TYPE (1u << 23)
+#define NEVER_TYPE (1u << 30)
+#define ANY_TYPE (1u << 31)
+
+#define NUMERIC_TYPE (INT_TYPE | FLOAT_TYPE)
+#define HASHABLE_TYPE (STRING_TYPE | INT_TYPE | FLOAT_TYPE | NIL_TYPE | BOOL_TYPE)
+
+/**
+ * @brief Compares two values for equality
+ *
+ * For number values, compares their numeric values.
+ * For other types, performs direct comparison.
+ *
+ * @param a First value to compare
+ * @param b Second value to compare
+ * @return true if the values are equal, false otherwise
+ */
+bool values_equal(CruxValue a, CruxValue b);
+
+/**
+ * @brief Initializes a new value array
+ *
+ * Sets up an empty ValueArray with null values pointer and
+ * zero capacity and count.
+ *
+ * @param array Pointer to the ValueArray to initialize
+ */
+void init_value_array(ValueArray *array);
+
+/**
+ * @brief Adds a value to a value array, growing the array if needed
+ *
+ * Appends the given value to the end of the array. If the array is at capacity,
+ * it will be resized to accommodate the new value.
+ *
+ * @param vm Pointer to the virtual machine (used for memory management)
+ * @param array Pointer to the ValueArray to modify
+ * @param value The CruxValue to append to the array
+ */
+void write_value_array(CruxVM *vm, ValueArray *array, CruxValue value);
+
+/**
+ * @brief Frees memory allocated for a value array
+ *
+ * Deallocates the memory used by the array's values and resets the array
+ * to an initialized state.
+ *
+ * @param vm Pointer to the virtual machine (used for memory management)
+ * @param array Pointer to the ValueArray to free
+ */
+void free_value_array(CruxVM *vm, ValueArray *array);
+
+/**
+ * @brief Prints a human-readable representation of a value
+ *
+ * Outputs the value to stdout in a format appropriate for its type:
+ * - Booleans print as "true" or "false"
+ * - Nil prints as "nil"
+ * - Numbers print in their natural format
+ * - Objects are printed using the printObject function
+ *
+ * @param value The CruxValue to print
+ * @param inCollection is the value in a collection?
+ */
+void print_value(CruxVM *vm, CruxValue value, bool inCollection);
+
+#endif // VALUE_H

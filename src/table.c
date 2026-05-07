@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "garbage_collector.h"
-#include "object.h"
+#include "object/object.h"
 #include "table.h"
 #include "value.h"
 
@@ -16,7 +16,7 @@ void init_table(Table *table)
 	table->entries = NULL;
 }
 
-void free_table(VM *vm, Table *table)
+void free_table(CruxVM *vm, Table *table)
 {
 	FREE_ARRAY(vm, Entry, table->entries, table->capacity);
 	init_table(table);
@@ -52,7 +52,7 @@ static Entry *find_entry(Entry *entries, const int capacity, const ObjectString 
 }
 
 // Can cause GC. Table must be GC protected
-static void adjust_capacity(VM *vm, Table *table, const int capacity)
+static void adjust_capacity(CruxVM *vm, Table *table, const int capacity)
 {
 	Entry *entries = ALLOCATE(vm, Entry, capacity);
 	for (int i = 0; i < capacity; i++) {
@@ -75,8 +75,8 @@ static void adjust_capacity(VM *vm, Table *table, const int capacity)
 	table->capacity = capacity;
 }
 
-// Can cause GC. Key, Value and Table must be GC protected
-bool table_set(VM *vm, Table *table, ObjectString *key, const Value value)
+// Can cause GC. Key, CruxValue and Table must be GC protected
+bool table_set(CruxVM *vm, Table *table, ObjectString *key, const CruxValue value)
 {
 	if (table->count + 1 > table->capacity * TABLE_MAX_LOAD) {
 		const int capacity = GROW_CAPACITY(table->capacity);
@@ -110,7 +110,7 @@ bool table_delete(const Table *table, const ObjectString *key)
 	return true;
 }
 
-bool table_get(const Table *table, const ObjectString *key, Value *value)
+bool table_get(const Table *table, const ObjectString *key, CruxValue *value)
 {
 	if (table->count == 0)
 		return false;
@@ -122,7 +122,7 @@ bool table_get(const Table *table, const ObjectString *key, Value *value)
 	return true;
 }
 
-void table_add_all(VM *vm, const Table *from, Table *to)
+void table_add_all(CruxVM *vm, const Table *from, Table *to)
 {
 	for (int i = 0; i < from->capacity; i++) {
 		const Entry *entry = &from->entries[i];
@@ -153,7 +153,7 @@ ObjectString *table_find_string(const Table *table, const char *chars, const uin
 	}
 }
 
-void mark_table(VM *vm, const Table *table)
+void mark_table(CruxVM *vm, const Table *table)
 {
 	for (int i = 0; i < table->capacity; i++) {
 		const Entry *entry = &table->entries[i];
@@ -164,7 +164,7 @@ void mark_table(VM *vm, const Table *table)
 	}
 }
 
-void table_remove_white(const VM *vm, const Table *table)
+void table_remove_white(const CruxVM *vm, const Table *table)
 {
 	for (int i = 0; i < table->capacity; i++) {
 		const Entry *entry = &table->entries[i];

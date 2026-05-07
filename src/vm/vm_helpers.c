@@ -5,25 +5,26 @@
 #include <string.h>
 
 #include "common.h"
-#include "compiler.h"
+#include "compiler/compiler_core.h"
+#include "crux.h"
 #include "garbage_collector.h"
-#include "object.h"
+#include "native/native_registration.h"
+#include "object/object.h"
 #include "panic.h"
 #include "slab_allocator.h"
-#include "stdlib/stdlib.h"
 #include "table.h"
 #include "type_system.h"
 #include "value.h"
 #include "vm.h"
 
-void init_import_stack(VM *vm)
+void init_import_stack(CruxVM *vm)
 {
 	vm->import_stack.paths = NULL;
 	vm->import_stack.count = 0;
 	vm->import_stack.capacity = 0;
 }
 
-bool pushStructStack(VM *vm, ObjectStructInstance *struct_instance)
+bool pushStructStack(CruxVM *vm, ObjectStructInstance *struct_instance)
 {
 	if (vm->struct_instance_stack.count == vm->struct_instance_stack.capacity - 1) {
 		return false;
@@ -33,7 +34,7 @@ bool pushStructStack(VM *vm, ObjectStructInstance *struct_instance)
 	return true;
 }
 
-ObjectStructInstance *pop_struct_stack(VM *vm)
+ObjectStructInstance *pop_struct_stack(CruxVM *vm)
 {
 	if (vm->struct_instance_stack.count == 0) {
 		return NULL;
@@ -42,7 +43,7 @@ ObjectStructInstance *pop_struct_stack(VM *vm)
 	return vm->struct_instance_stack.structs[vm->struct_instance_stack.count];
 }
 
-ObjectStructInstance *peek_struct_stack(const VM *vm)
+ObjectStructInstance *peek_struct_stack(const CruxVM *vm)
 {
 	if (vm->struct_instance_stack.count > 0) {
 		return vm->struct_instance_stack.structs[vm->struct_instance_stack.count - 1];
@@ -50,7 +51,7 @@ ObjectStructInstance *peek_struct_stack(const VM *vm)
 	return NULL;
 }
 
-void free_import_stack(VM *vm)
+void free_import_stack(CruxVM *vm)
 {
 	FREE_ARRAY(vm, ObjectString *, vm->import_stack.paths, vm->import_stack.capacity);
 	init_import_stack(vm);
@@ -58,7 +59,7 @@ void free_import_stack(VM *vm)
 
 bool get_module_global_index(const ObjectModuleRecord *module_record, const ObjectString *name, uint32_t *index_out)
 {
-	Value index_value;
+	CruxValue index_value;
 	if (!table_get(&module_record->global_names, name, &index_value)) {
 		return false;
 	}
@@ -67,7 +68,7 @@ bool get_module_global_index(const ObjectModuleRecord *module_record, const Obje
 	return true;
 }
 
-bool push_import_stack(VM *vm, ObjectString *path)
+bool push_import_stack(CruxVM *vm, ObjectString *path)
 {
 	ImportStack *stack = &vm->import_stack;
 
@@ -76,8 +77,9 @@ bool push_import_stack(VM *vm, ObjectString *path)
 		stack->capacity = GROW_CAPACITY(oldCapacity);
 		stack->paths = GROW_ARRAY(vm, ObjectString *, stack->paths, oldCapacity, stack->capacity);
 		if (stack->paths == NULL) {
-			fprintf(stderr, "Fatal Error: Could not allocate "
-							"memory for import stack.\n");
+			vm_error(vm, CRUX_ERROR_RUNTIME, 0,
+					 "Fatal Error: Could not allocate "
+					 "memory for import stack.\n");
 			stack->capacity = oldCapacity;
 			return false;
 		}
@@ -88,7 +90,7 @@ bool push_import_stack(VM *vm, ObjectString *path)
 	return true;
 }
 
-void pop_import_stack(VM *vm)
+void pop_import_stack(CruxVM *vm)
 {
 	ImportStack *stack = &vm->import_stack;
 	if (stack->count == 0) {
@@ -104,7 +106,7 @@ static bool stringEquals(const ObjectString *a, const ObjectString *b)
 	return memcmp(a->chars, b->chars, a->byte_length) == 0;
 }
 
-bool is_in_import_stack(const VM *vm, const ObjectString *path)
+bool is_in_import_stack(const CruxVM *vm, const ObjectString *path)
 {
 	const ImportStack *stack = &vm->import_stack;
 	for (uint32_t i = 0; i < stack->count; i++) {
@@ -115,11 +117,21 @@ bool is_in_import_stack(const VM *vm, const ObjectString *path)
 	return false;
 }
 
-VM *new_vm(const int argc, const char **argv)
+CruxVM *new_vm(CruxConfiguration *config)
 {
-	VM *vm = calloc(1, sizeof(VM));
+	CruxVM *vm = NULL;
+	if (config && config->reallocateFn) {
+		vm = config->reallocateFn(NULL, sizeof(CruxVM), config->userData);
+		if (vm)
+			memset(vm, 0, sizeof(CruxVM));
+	} else {
+		vm = calloc(1, sizeof(CruxVM));
+	}
+
 	if (vm == NULL) {
-		fprintf(stderr, "Fatal Error: Could not allocate memory for VM\n");
+#ifndef CRUX_API
+		fprintf(stderr, "Fatal Error: Could not allocate memory for CruxVM\n");
+#endif
 		return NULL;
 	}
 
@@ -128,7 +140,7 @@ VM *new_vm(const int argc, const char **argv)
 		return NULL;
 	}
 
-	return init_vm(vm, argc, argv) ? vm : NULL;
+	return init_vm(vm, config) ? vm : NULL;
 }
 
 void reset_stack(ObjectModuleRecord *moduleRecord)
@@ -165,7 +177,7 @@ bool call(ObjectModuleRecord *module_record, ObjectClosure *closure, const int a
  * @param arg_count Number of arguments on the stack
  * @return true if the call succeeds, false otherwise
  */
-bool call_value(VM *vm, const Value callee, const int arg_count)
+bool call_value(CruxVM *vm, const CruxValue callee, const int arg_count)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
 
@@ -195,23 +207,44 @@ bool call_value(VM *vm, const Value callee, const int arg_count)
 		const ObjectNativeCallable *native = AS_CRUX_NATIVE_CALLABLE(callee);
 		check_native_arity(arg_count, native);
 
-		const Value *args = current_module_record->stack_top - arg_count;
-		for (int i = 0; i < arg_count; i++) {
-			if (!runtime_types_compatible(native->arg_types[i]->base_type, args[i])) {
-				char expected_name[128];
-				char actual_name[128];
-				type_mask_name(native->arg_types[i]->base_type, expected_name, sizeof(expected_name));
-				const TypeMask actual_mask = get_type_mask(args[i]);
-				type_mask_name(actual_mask, actual_name, sizeof(actual_name));
-				runtime_panic(current_module_record, TYPE,
-							  "In %s() --- arg %d: expected "
-							  "%s, got %s",
-							  native->name->chars, i + 1, expected_name, actual_name);
-				return false;
+		const CruxValue *args = current_module_record->stack_top - arg_count;
+		if (native->arg_types != NULL) {
+			for (int i = 0; i < arg_count; i++) {
+				if (!runtime_types_compatible(native->arg_types[i]->base_type, args[i])) {
+					char expected_name[128];
+					char actual_name[128];
+					type_mask_name(native->arg_types[i]->base_type, expected_name, sizeof(expected_name));
+					const TypeMask actual_mask = get_type_mask(args[i]);
+					type_mask_name(actual_mask, actual_name, sizeof(actual_name));
+					runtime_panic(current_module_record, TYPE,
+								  "In %s() --- arg %d: expected "
+								  "%s, got %s",
+								  native->name->chars, i + 1, expected_name, actual_name);
+					return false;
+				}
 			}
 		}
 
-		const Value result_value = native->function(vm, args);
+		CruxValue result_value;
+		if (native->foreign_fn != NULL) {
+			// Phase 5: Foreign Method Bridge
+			crux_ensure_slots(vm, arg_count + 1);
+
+			// Copy arguments to API slots (slot 1 to N)
+			for (int i = 0; i < arg_count; i++) {
+				vm->api_stack[i + 1] = args[i];
+			}
+			// Slot 0 is the receiver (for now NIL for functions)
+			vm->api_stack[0] = NIL_VAL;
+
+			// Call the host-provided C function
+			native->foreign_fn(vm);
+
+			// Result is expected in slot 0
+			result_value = vm->api_stack[0];
+		} else {
+			result_value = native->function(vm, args);
+		}
 
 		current_module_record->stack_top -= arg_count + 1;
 
@@ -226,7 +259,8 @@ bool call_value(VM *vm, const Value callee, const int arg_count)
 #undef panic_exit
 }
 
-bool handle_invoke(VM *vm, const int arg_count, const Value receiver, const Value original, const Value value)
+bool handle_invoke(CruxVM *vm, const int arg_count, const CruxValue receiver, const CruxValue original,
+				   const CruxValue value)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
 
@@ -241,7 +275,7 @@ bool handle_invoke(VM *vm, const int arg_count, const Value receiver, const Valu
 	}
 
 	// restore the caller and put the result in the right place
-	const Value result = pop(current_module_record);
+	const CruxValue result = pop(current_module_record);
 	push(current_module_record, original);
 	push(current_module_record, result);
 	return true;
@@ -253,9 +287,10 @@ bool handle_invoke(VM *vm, const int arg_count, const Value receiver, const Valu
 		return false;                                                                                                  \
 	} while (0)
 
-typedef bool (*TypeInvokeHandler)(VM *vm, const ObjectString *name, int arg_count, Value original, Value receiver);
+typedef bool (*TypeInvokeHandler)(CruxVM *vm, const ObjectString *name, int arg_count, CruxValue original,
+								  CruxValue receiver);
 
-static bool is_builtin_iterable_value(const Value value)
+static bool is_builtin_iterable_value(const CruxValue value)
 {
 	if (!IS_CRUX_OBJECT(value)) {
 		return false;
@@ -263,7 +298,6 @@ static bool is_builtin_iterable_value(const Value value)
 
 	switch (OBJECT_TYPE(value)) {
 	case OBJECT_ARRAY:
-	case OBJECT_SET:
 	case OBJECT_TUPLE:
 	case OBJECT_RANGE:
 	case OBJECT_BUFFER:
@@ -277,7 +311,7 @@ static bool is_builtin_iterable_value(const Value value)
 	}
 }
 
-static bool find_named_method_on_struct_instance(const Value receiver, ObjectString *name, Value *method_out)
+static bool find_named_method_on_struct_instance(const CruxValue receiver, ObjectString *name, CruxValue *method_out)
 {
 	if (!IS_CRUX_STRUCT_INSTANCE(receiver)) {
 		return false;
@@ -287,16 +321,17 @@ static bool find_named_method_on_struct_instance(const Value receiver, ObjectStr
 	return table_get(&instance->struct_type->methods, name, method_out);
 }
 
-static bool invoke_zero_arg_struct_method(VM *vm, const Value receiver, const char *method_name, Value *result_out)
+static bool invoke_zero_arg_struct_method(CruxVM *vm, const CruxValue receiver, const char *method_name,
+										  CruxValue *result_out)
 {
 	ObjectString *method_name_obj = copy_string(vm, method_name, (int)strlen(method_name));
-	Value method_val;
+	CruxValue method_val;
 	if (!find_named_method_on_struct_instance(receiver, method_name_obj, &method_val)) {
 		return false;
 	}
 
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
-	Value *saved_top = current_module_record->stack_top;
+	CruxValue *saved_top = current_module_record->stack_top;
 	push(current_module_record, receiver);
 
 	const uint32_t current_frame_count = current_module_record->frame_count;
@@ -321,7 +356,7 @@ static bool invoke_zero_arg_struct_method(VM *vm, const Value receiver, const ch
 	return true;
 }
 
-bool get_iterator_from_value(VM *vm, const Value value, Value *iterator_out)
+bool get_iterator_from_value(CruxVM *vm, const CruxValue value, CruxValue *iterator_out)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
 
@@ -342,7 +377,7 @@ bool get_iterator_from_value(VM *vm, const Value value, Value *iterator_out)
 	}
 
 	if (IS_CRUX_STRUCT_INSTANCE(value)) {
-		Value iter_result;
+		CruxValue iter_result;
 		if (invoke_zero_arg_struct_method(vm, value, "__iter", &iter_result)) {
 			if (!IS_CRUX_OBJECT(iter_result)) {
 				runtime_panic(current_module_record, TYPE, "__iter() must return an iterator object.");
@@ -368,13 +403,13 @@ bool get_iterator_from_value(VM *vm, const Value value, Value *iterator_out)
 	return false;
 }
 
-bool get_next_option_from_iterator(VM *vm, const Value iterator, Value *option_out)
+bool get_next_option_from_iterator(CruxVM *vm, const CruxValue iterator, CruxValue *option_out)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
 
 	if (IS_CRUX_ITERATOR(iterator)) {
 		ObjectIterator *builtin_iterator = AS_CRUX_ITERATOR(iterator);
-		Value next_value;
+		CruxValue next_value;
 		if (!iterate_next(current_module_record, builtin_iterator, &next_value)) {
 			ObjectOption *none = new_option(vm, NIL_VAL, false);
 			*option_out = OBJECT_VAL(none);
@@ -386,7 +421,7 @@ bool get_next_option_from_iterator(VM *vm, const Value iterator, Value *option_o
 	}
 
 	if (IS_CRUX_STRUCT_INSTANCE(iterator)) {
-		Value next_result;
+		CruxValue next_result;
 		if (!invoke_zero_arg_struct_method(vm, iterator, "__next", &next_result)) {
 			runtime_panic(current_module_record, TYPE, "Iterator struct must define __next() -> Option.");
 			return false;
@@ -405,17 +440,18 @@ bool get_next_option_from_iterator(VM *vm, const Value iterator, Value *option_o
 	return false;
 }
 
-static bool handle_string_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								 const Value receiver)
+static bool handle_string_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								 const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->string_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_undefined_invoke(VM *vm, const ObjectString *name, int arg_count, Value original, Value receiver)
+static bool handle_undefined_invoke(CruxVM *vm, const ObjectString *name, int arg_count, CruxValue original,
+									CruxValue receiver)
 {
 	(void)name;
 	(void)arg_count;
@@ -426,160 +462,150 @@ static bool handle_undefined_invoke(VM *vm, const ObjectString *name, int arg_co
 	return false;
 }
 
-static bool handle_array_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								const Value receiver)
+static bool handle_array_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->array_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_file_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-							   const Value receiver)
+static bool handle_file_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+							   const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->file_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_error_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								const Value receiver)
+static bool handle_error_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->error_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_table_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								const Value receiver)
+static bool handle_table_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->table_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_random_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								 const Value receiver)
+static bool handle_random_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								 const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->random_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_vector_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								 const Value receiver)
+static bool handle_vector_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								 const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->vector_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_complex_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								  const Value receiver)
+static bool handle_complex_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								  const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->complex_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_matrix_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								 const Value receiver)
+static bool handle_matrix_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								 const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->matrix_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_result_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								 const Value receiver)
+static bool handle_result_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								 const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->result_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_option_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								 const Value receiver)
+static bool handle_option_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								 const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->option_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_range_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								const Value receiver)
+static bool handle_range_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->range_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_set_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-							  const Value receiver)
+static bool handle_tuple_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								const CruxValue receiver)
 {
-	Value value;
-	if (table_get(&vm->set_type, name, &value)) {
-		return handle_invoke(vm, arg_count, receiver, original, value);
-	}
-	undefined_method_return(vm->current_module_record, name);
-}
-
-static bool handle_tuple_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								const Value receiver)
-{
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->tuple_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_buffer_invoke(VM *vm, const ObjectString *name, const int arg_count, const Value original,
-								 const Value receiver)
+static bool handle_buffer_invoke(CruxVM *vm, const ObjectString *name, const int arg_count, const CruxValue original,
+								 const CruxValue receiver)
 {
-	Value value;
+	CruxValue value;
 	if (table_get(&vm->buffer_type, name, &value)) {
 		return handle_invoke(vm, arg_count, receiver, original, value);
 	}
 	undefined_method_return(vm->current_module_record, name);
 }
 
-static bool handle_struct_instance_invoke(VM *vm, const ObjectString *name, int arg_count, Value original,
-										  const Value receiver)
+static bool handle_struct_instance_invoke(CruxVM *vm, const ObjectString *name, int arg_count, CruxValue original,
+										  const CruxValue receiver)
 {
 	(void)original;
 	arg_count--;
 	const ObjectStructInstance *instance = AS_CRUX_STRUCT_INSTANCE(receiver);
 
-	Value method_val;
+	CruxValue method_val;
 	if (table_get(&instance->struct_type->methods, name, &method_val)) {
 		return call_value(vm, method_val, arg_count);
 	}
 
 	// Allow function calls from struct fields
-	Value indexValue;
+	CruxValue indexValue;
 	if (table_get(&instance->struct_type->fields, name, &indexValue)) {
 		return call_value(vm, instance->fields[(uint16_t)AS_INT(indexValue)], arg_count);
 	}
@@ -606,7 +632,6 @@ static const TypeInvokeHandler invoke_dispatch_table[] = {
 	[OBJECT_VECTOR] = handle_vector_invoke,
 	[OBJECT_RANGE] = handle_range_invoke,
 	[OBJECT_ITERATOR] = handle_undefined_invoke,
-	[OBJECT_SET] = handle_set_invoke,
 	[OBJECT_TUPLE] = handle_tuple_invoke,
 	[OBJECT_BUFFER] = handle_buffer_invoke,
 	[OBJECT_COMPLEX] = handle_complex_invoke,
@@ -620,12 +645,12 @@ static const TypeInvokeHandler invoke_dispatch_table[] = {
  * @param arg_count Number of arguments on the stack
  * @return true if the method invocation succeeds, false otherwise
  */
-bool invoke(VM *vm, const ObjectString *name, int arg_count)
+bool invoke(CruxVM *vm, const ObjectString *name, int arg_count)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
-	const Value receiver = PEEK(current_module_record, arg_count);
-	const Value original = PEEK(current_module_record,
-								arg_count + 1); // Store the original caller
+	const CruxValue receiver = PEEK(current_module_record, arg_count);
+	const CruxValue original = PEEK(current_module_record,
+									arg_count + 1); // Store the original caller
 
 	if (!IS_CRUX_OBJECT(receiver)) {
 		runtime_panic(current_module_record, TYPE, "Only instances have methods");
@@ -636,7 +661,7 @@ bool invoke(VM *vm, const ObjectString *name, int arg_count)
 	return invoke_dispatch_table[OBJECT_TYPE(receiver)](vm, name, arg_count, original, receiver);
 }
 
-ObjectUpvalue *capture_upvalue(VM *vm, Value *local)
+ObjectUpvalue *capture_upvalue(CruxVM *vm, CruxValue *local)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
 	ObjectUpvalue *prevUpvalue = NULL;
@@ -667,7 +692,7 @@ ObjectUpvalue *capture_upvalue(VM *vm, Value *local)
  * @param moduleRecord the currently executing module
  * @param last Pointer to the last variable to close
  */
-void close_upvalues(ObjectModuleRecord *moduleRecord, const Value *last)
+void close_upvalues(ObjectModuleRecord *moduleRecord, const CruxValue *last)
 {
 	while (moduleRecord->open_upvalues != NULL && moduleRecord->open_upvalues->location >= last) {
 		ObjectUpvalue *upvalue = moduleRecord->open_upvalues;
@@ -682,7 +707,7 @@ void close_upvalues(ObjectModuleRecord *moduleRecord, const Value *last)
  * @param value The value to check
  * @return true if the value is falsy, false otherwise
  */
-bool is_falsy(const Value value)
+bool is_falsy(const CruxValue value)
 {
 	return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value)) || (IS_INT(value) && AS_INT(value) == 0) ||
 		   (IS_FLOAT(value) && AS_FLOAT(value) == 0.0);
@@ -693,11 +718,11 @@ bool is_falsy(const Value value)
  * @param vm The virtual machine
  * @return true if concatenation succeeds, false otherwise
  */
-bool concatenate(VM *vm)
+bool concatenate(CruxVM *vm)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
-	const Value b = PEEK(current_module_record, 0);
-	const Value a = PEEK(current_module_record, 1);
+	const CruxValue b = PEEK(current_module_record, 0);
+	const CruxValue a = PEEK(current_module_record, 1);
 
 	if (!IS_CRUX_STRING(a) || !IS_CRUX_STRING(b)) {
 		/* Concatenation is only defined for string */
@@ -773,9 +798,13 @@ void freeNativeModules(NativeModules *nativeModules)
 	nativeModules->count = 0;
 }
 
-bool init_vm(VM *vm, const int argc, const char **argv)
+bool init_vm(CruxVM *vm, CruxConfiguration *config)
 {
-	const bool is_repl = argc == 1 ? true : false;
+	if (config != NULL) {
+		vm->config = *config;
+	} else {
+		init_crux_configuration(&vm->config);
+	}
 
 	vm->object_count = 0;
 	vm->objects = NULL;
@@ -787,8 +816,9 @@ bool init_vm(VM *vm, const int argc, const char **argv)
 
 	vm->gc_status = PAUSED;
 	vm->exit_code = 0;
-	vm->min_gc_heap_size = MIN_GC_HEAP_SIZE;
-	vm->min_gc_growth_delta = MIN_GC_GROWTH_DELTA;
+
+	vm->min_gc_heap_size = vm->config.initialHeapSize > 0 ? vm->config.initialHeapSize : MIN_GC_HEAP_SIZE;
+	vm->min_gc_growth_delta = MIN_GC_GROWTH_DELTA; // TODO: make this configurable?
 	vm->bytes_allocated = 0;
 	vm->next_gc = vm->min_gc_heap_size;
 	vm->gray_count = 0;
@@ -797,9 +827,13 @@ bool init_vm(VM *vm, const int argc, const char **argv)
 	vm->struct_instance_stack.structs = NULL;
 	vm->main_compiler = NULL;
 
-	vm->heap_growth_factor = INIT_GC_HEAP_GROW_FACTOR;
+	vm->heap_growth_factor = 1.0 + (vm->config.heapGrowthPercent / 100.0);
+	if (vm->heap_growth_factor <= 1.0)
+		vm->heap_growth_factor = INIT_GC_HEAP_GROW_FACTOR;
 
-	vm->current_module_record = new_object_module_record(vm, NULL, is_repl, true);
+	// For now, we don't have is_repl in config, so we default to false or handle it via a separate flag if needed.
+	// Historically it was (argc == 1).
+	vm->current_module_record = new_object_module_record(vm, NULL, false, true);
 
 	reset_stack(vm->current_module_record);
 
@@ -815,7 +849,6 @@ bool init_vm(VM *vm, const int argc, const char **argv)
 	init_table(&vm->complex_type);
 	init_table(&vm->matrix_type);
 	init_table(&vm->range_type);
-	init_table(&vm->set_type);
 	init_table(&vm->tuple_type);
 	init_table(&vm->buffer_type);
 	init_table(&vm->core_fns);
@@ -828,8 +861,9 @@ bool init_vm(VM *vm, const int argc, const char **argv)
 	initNativeModules(&vm->native_modules);
 	vm->native_modules.modules = (NativeModule *)malloc(sizeof(NativeModule) * NATIVE_MODULES_CAPACITY);
 	if (vm->native_modules.modules == NULL) {
-		fprintf(stderr, "Fatal Error: Could not allocate memory for "
-						"native modules.\nShutting Down!\n");
+		vm_error(vm, CRUX_ERROR_RUNTIME, 0,
+				 "Fatal Error: Could not allocate memory for "
+				 "native modules.\nShutting Down!\n");
 		return false;
 	}
 
@@ -840,21 +874,29 @@ bool init_vm(VM *vm, const int argc, const char **argv)
 	}
 	vm->import_count = 0;
 
+	vm->api_stack = NULL;
+	vm->api_stack_capacity = 0;
+	vm->api_stack_count = 0;
+	vm->handles = NULL;
+
 	initStructInstanceStack(&vm->struct_instance_stack);
 	vm->struct_instance_stack.structs = (ObjectStructInstance **)malloc(sizeof(ObjectStructInstance *) *
 																		STRUCT_INSTANCE_DEPTH);
 	if (vm->struct_instance_stack.structs == NULL) {
-		fprintf(stderr, "Fatal Error: Could not allocate memory for "
-						"stack struct.\nShutting Down!\n");
+		vm_error(vm, CRUX_ERROR_RUNTIME, 0,
+				 "Fatal Error: Could not allocate memory for "
+				 "stack struct.\nShutting Down!\n");
 		return false;
 	}
 
-	vm->args.argc = argc;
-	vm->args.argv = argv;
+	// We still use internal args struct for now, but we can populate it from config in the future
+	// if we add argc/argv to CruxConfiguration.
+	vm->args.argc = 0;
+	vm->args.argv = NULL;
 
 	ObjectString *path;
-	if (argc > 1) {
-		path = copy_string(vm, argv[1], strlen(argv[1]));
+	if (vm->config.scriptPath != NULL) {
+		path = copy_string(vm, vm->config.scriptPath, strlen(vm->config.scriptPath));
 	} else {
 #ifdef _WIN32
 		path = copy_string(vm, ".\\", 2);
@@ -869,7 +911,7 @@ bool init_vm(VM *vm, const int argc, const char **argv)
 	return true;
 }
 
-void free_vm(VM *vm)
+void free_vm(CruxVM *vm)
 {
 	free_table(vm, &vm->strings);
 
@@ -885,7 +927,6 @@ void free_vm(VM *vm)
 	free_table(vm, &vm->complex_type);
 	free_table(vm, &vm->matrix_type);
 	free_table(vm, &vm->range_type);
-	free_table(vm, &vm->set_type);
 	free_table(vm, &vm->tuple_type);
 	free_table(vm, &vm->buffer_type);
 	free_table(vm, &vm->core_fns);
@@ -902,14 +943,21 @@ void free_vm(VM *vm)
 	freeStructInstanceStack(&vm->struct_instance_stack);
 
 	free_module_record(vm, vm->current_module_record);
-
 	free_objects(vm, true);
 	destroy_slab_allocator(vm->slab_24);
 	destroy_slab_allocator(vm->slab_32);
 	destroy_slab_allocator(vm->slab_48);
 	destroy_slab_allocator(vm->slab_64);
 
-	free(vm);
+	if (vm->api_stack) {
+		Crux_reallocate(vm, vm->api_stack, sizeof(CruxValue) * vm->api_stack_capacity, 0);
+	}
+
+	if (vm->config.reallocateFn) {
+		vm->config.reallocateFn(vm, 0, vm->config.userData);
+	} else {
+		free(vm);
+	}
 }
 
 typedef bool (*IntBinaryOp)(ObjectModuleRecord *current_module_record, int32_t intA, int32_t intB);
@@ -1167,13 +1215,13 @@ static const FloatBinaryOp float_binary_ops[] = {
 
 // Function pointer types for compound operations
 typedef InterpretResult (*IntCompoundOp)(ObjectModuleRecord *current_module_record, const char *target_name,
-										 char *operation, int32_t icurrent, int32_t ioperand, Value *resultValue);
+										 char *operation, int32_t icurrent, int32_t ioperand, CruxValue *resultValue);
 typedef InterpretResult (*FloatCompoundOp)(ObjectModuleRecord *current_module_record, const char *target_name,
-										   char *operation, double dcurrent, double doperand, Value *resultValue);
+										   char *operation, double dcurrent, double doperand, CruxValue *resultValue);
 
 // Integer compound operation handlers
 static InterpretResult int_compound_plus(ObjectModuleRecord *current_module_record, const char *target_name,
-										 char *operation, int32_t icurrent, int32_t ioperand, Value *resultValue)
+										 char *operation, int32_t icurrent, int32_t ioperand, CruxValue *resultValue)
 {
 	(void)current_module_record;
 	(void)operation;
@@ -1188,7 +1236,7 @@ static InterpretResult int_compound_plus(ObjectModuleRecord *current_module_reco
 }
 
 static InterpretResult int_compound_minus(ObjectModuleRecord *current_module_record, const char *target_name,
-										  char *operation, int32_t icurrent, int32_t ioperand, Value *resultValue)
+										  char *operation, int32_t icurrent, int32_t ioperand, CruxValue *resultValue)
 {
 	(void)current_module_record;
 	(void)target_name;
@@ -1203,7 +1251,7 @@ static InterpretResult int_compound_minus(ObjectModuleRecord *current_module_rec
 }
 
 static InterpretResult int_compound_star(ObjectModuleRecord *current_module_record, const char *target_name,
-										 char *operation, int32_t icurrent, int32_t ioperand, Value *resultValue)
+										 char *operation, int32_t icurrent, int32_t ioperand, CruxValue *resultValue)
 {
 	(void)current_module_record;
 	(void)target_name;
@@ -1218,7 +1266,7 @@ static InterpretResult int_compound_star(ObjectModuleRecord *current_module_reco
 }
 
 static InterpretResult int_compound_slash(ObjectModuleRecord *current_module_record, const char *target_name,
-										  char *operation, int32_t icurrent, int32_t ioperand, Value *resultValue)
+										  char *operation, int32_t icurrent, int32_t ioperand, CruxValue *resultValue)
 {
 	if (ioperand == 0) {
 		runtime_panic(current_module_record, MATH, "Division by zero in '%s %s'.", target_name, operation);
@@ -1229,7 +1277,8 @@ static InterpretResult int_compound_slash(ObjectModuleRecord *current_module_rec
 }
 
 static InterpretResult int_compound_int_divide(ObjectModuleRecord *current_module_record, const char *target_name,
-											   char *operation, int32_t icurrent, int32_t ioperand, Value *resultValue)
+											   char *operation, int32_t icurrent, int32_t ioperand,
+											   CruxValue *resultValue)
 {
 	if (ioperand == 0) {
 		runtime_panic(current_module_record, RUNTIME, "Division by zero in '%s %s'.", target_name, operation);
@@ -1244,7 +1293,7 @@ static InterpretResult int_compound_int_divide(ObjectModuleRecord *current_modul
 }
 
 static InterpretResult int_compound_modulus(ObjectModuleRecord *current_module_record, const char *target_name,
-											char *operation, int32_t icurrent, int32_t ioperand, Value *resultValue)
+											char *operation, int32_t icurrent, int32_t ioperand, CruxValue *resultValue)
 {
 	if (ioperand == 0) {
 		runtime_panic(current_module_record, RUNTIME, "Division by zero in '%s %s'.", target_name, operation);
@@ -1260,7 +1309,7 @@ static InterpretResult int_compound_modulus(ObjectModuleRecord *current_module_r
 
 // Float compound operation handlers
 static InterpretResult float_compound_plus(ObjectModuleRecord *current_module_record, const char *target_name,
-										   char *operation, double dcurrent, double doperand, Value *resultValue)
+										   char *operation, double dcurrent, double doperand, CruxValue *resultValue)
 {
 	(void)current_module_record;
 	(void)target_name;
@@ -1270,7 +1319,7 @@ static InterpretResult float_compound_plus(ObjectModuleRecord *current_module_re
 }
 
 static InterpretResult float_compound_minus(ObjectModuleRecord *current_module_record, const char *target_name,
-											char *operation, double dcurrent, double doperand, Value *resultValue)
+											char *operation, double dcurrent, double doperand, CruxValue *resultValue)
 {
 	(void)current_module_record;
 	(void)target_name;
@@ -1280,7 +1329,7 @@ static InterpretResult float_compound_minus(ObjectModuleRecord *current_module_r
 }
 
 static InterpretResult float_compound_star(ObjectModuleRecord *current_module_record, const char *target_name,
-										   char *operation, double dcurrent, double doperand, Value *resultValue)
+										   char *operation, double dcurrent, double doperand, CruxValue *resultValue)
 {
 	(void)current_module_record;
 	(void)target_name;
@@ -1290,7 +1339,7 @@ static InterpretResult float_compound_star(ObjectModuleRecord *current_module_re
 }
 
 static InterpretResult float_compound_slash(ObjectModuleRecord *current_module_record, const char *target_name,
-											char *operation, double dcurrent, double doperand, Value *resultValue)
+											char *operation, double dcurrent, double doperand, CruxValue *resultValue)
 {
 	if (doperand == 0.0) {
 		runtime_panic(current_module_record, MATH, "Division by zero in '%s %s'.", target_name, operation);
@@ -1302,7 +1351,7 @@ static InterpretResult float_compound_slash(ObjectModuleRecord *current_module_r
 
 static InterpretResult float_compound_invalid_int_op(ObjectModuleRecord *current_module_record, const char *target_name,
 													 char *operation, double dcurrent, double doperand,
-													 Value *resultValue)
+													 CruxValue *resultValue)
 {
 	(void)current_module_record;
 	(void)target_name;
@@ -1341,11 +1390,11 @@ static const FloatCompoundOp float_compound_ops[] = {
  * @param operation The operation code to perform
  * @return true if the operation succeeds, false otherwise
  */
-bool binary_operation(VM *vm, const OpCode operation)
+bool binary_operation(CruxVM *vm, const OpCode operation)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
-	const Value b = PEEK(current_module_record, 0);
-	const Value a = PEEK(current_module_record, 1);
+	const CruxValue b = PEEK(current_module_record, 0);
+	const CruxValue a = PEEK(current_module_record, 1);
 
 	const bool aIsInt = IS_INT(a);
 	const bool bIsInt = IS_INT(b);
@@ -1386,12 +1435,12 @@ bool binary_operation(VM *vm, const OpCode operation)
 	return true;
 }
 
-InterpretResult global_compound_operation(VM *vm, const uint16_t index, const OpCode opcode, char *operation)
+InterpretResult global_compound_operation(CruxVM *vm, const uint16_t index, const OpCode opcode, char *operation)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
-	Value currentValue = current_module_record->globals[index];
+	CruxValue currentValue = current_module_record->globals[index];
 
-	const Value operandValue = PEEK(current_module_record, 0);
+	const CruxValue operandValue = PEEK(current_module_record, 0);
 
 	const bool currentIsInt = IS_INT(currentValue);
 	const bool currentIsFloat = IS_FLOAT(currentValue);
@@ -1410,7 +1459,7 @@ InterpretResult global_compound_operation(VM *vm, const uint16_t index, const Op
 		return INTERPRET_RUNTIME_ERROR;
 	}
 
-	Value resultValue;
+	CruxValue resultValue;
 
 	if (currentIsInt && operandIsInt) {
 		const int32_t icurrent = AS_INT(currentValue);
@@ -1453,7 +1502,7 @@ InterpretResult global_compound_operation(VM *vm, const uint16_t index, const Op
 	return INTERPRET_OK;
 }
 
-InterpretResult interpret(VM *vm, char *source)
+InterpretResult interpret(CruxVM *vm, char *source)
 {
 	jmp_buf previous_jump_buffer;
 	memcpy(previous_jump_buffer, vm->jump_buffer, sizeof(jmp_buf));
@@ -1498,7 +1547,7 @@ InterpretResult interpret(VM *vm, char *source)
 	// allocate module globals array
 	if (current_module_record->global_count > 0 && current_module_record->globals == NULL) {
 		current_module_record->globals = realloc(current_module_record->globals,
-												 sizeof(Value) * current_module_record->global_count);
+												 sizeof(CruxValue) * current_module_record->global_count);
 	}
 
 	push(current_module_record, OBJECT_VAL(function));
@@ -1525,7 +1574,7 @@ InterpretResult interpret(VM *vm, char *source)
  * @param result result from executing the function
  * @return
  */
-ObjectResult *execute_callable(VM *vm, const Value callable, const int arg_count, InterpretResult *result)
+ObjectResult *execute_callable(CruxVM *vm, const CruxValue callable, const int arg_count, InterpretResult *result)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
 	const uint32_t currentFrameCount = current_module_record->frame_count;
@@ -1544,7 +1593,7 @@ ObjectResult *execute_callable(VM *vm, const Value callable, const int arg_count
 	}
 
 	if (*result == INTERPRET_OK) {
-		const Value executionResult = PEEK(current_module_record, 0);
+		const CruxValue executionResult = PEEK(current_module_record, 0);
 		if (IS_CRUX_ERROR(executionResult)) {
 			return new_error_result(vm, AS_CRUX_ERROR(executionResult));
 		}
@@ -1553,14 +1602,14 @@ ObjectResult *execute_callable(VM *vm, const Value callable, const int arg_count
 	return errorResult;
 }
 
-Value typeof_value(VM *vm, const Value value)
+CruxValue typeof_value(CruxVM *vm, const CruxValue value)
 {
 	char buffer[256];
 	sprint_type_to(buffer, sizeof(buffer), value);
 	return OBJECT_VAL(copy_string(vm, buffer, (uint32_t)strlen(buffer)));
 }
 
-bool handle_compound_assignment(ObjectModuleRecord *currentModuleRecord, Value *target, const Value operand,
+bool handle_compound_assignment(ObjectModuleRecord *currentModuleRecord, CruxValue *target, const CruxValue operand,
 								const OpCode op)
 {
 	const bool currentIsInt = IS_INT(*target);
@@ -1578,7 +1627,7 @@ bool handle_compound_assignment(ObjectModuleRecord *currentModuleRecord, Value *
 		return false;
 	}
 
-	Value result;
+	CruxValue result;
 
 	// both integers
 	if (currentIsInt && operandIsInt) {
@@ -1688,7 +1737,7 @@ bool range_indices_in_bounds(const ObjectRange *range, const uint32_t collection
 	return true;
 }
 
-bool collect_string_codepoint_starts(VM *vm, const ObjectString *string, const utf8_int8_t ***starts_out)
+bool collect_string_codepoint_starts(CruxVM *vm, const ObjectString *string, const utf8_int8_t ***starts_out)
 {
 	const uint32_t code_point_count = string->code_point_length;
 	const utf8_int8_t **starts = ALLOCATE(vm, const utf8_int8_t *, code_point_count + 1);
@@ -1708,7 +1757,7 @@ bool collect_string_codepoint_starts(VM *vm, const ObjectString *string, const u
 	return true;
 }
 
-bool bind_core_globals(VM *vm, ObjectModuleRecord *module_record)
+bool bind_core_globals(CruxVM *vm, ObjectModuleRecord *module_record)
 {
 	for (int i = 0; i < vm->core_fns.capacity; i++) {
 		if (vm->core_fns.entries[i].key == NULL) {
@@ -1716,9 +1765,9 @@ bool bind_core_globals(VM *vm, ObjectModuleRecord *module_record)
 		}
 
 		ObjectString *name = vm->core_fns.entries[i].key;
-		Value val = vm->core_fns.entries[i].value;
+		CruxValue val = vm->core_fns.entries[i].value;
 
-		Value index_value;
+		CruxValue index_value;
 		uint32_t index;
 		if (table_get(&module_record->global_names, name, &index_value)) {
 			index = (uint32_t)AS_INT(index_value);
@@ -1746,4 +1795,39 @@ bool bind_core_globals(VM *vm, ObjectModuleRecord *module_record)
 		}
 	}
 	return true;
+}
+
+void vm_print(CruxVM *vm, const char *format, ...)
+{
+	char buffer[CRUX_VM_PRINT_BUFFER_SIZE];
+	va_list args;
+
+	va_start(args, format);
+	vsnprintf(buffer, CRUX_VM_PRINT_BUFFER_SIZE, format, args);
+	va_end(args);
+
+	if (vm != NULL && vm->config.writeFn != NULL) {
+		vm->config.writeFn(vm, buffer);
+	}
+}
+
+void vm_error(CruxVM *vm, CruxErrorType error_type, int line_number, const char *format, ...)
+{
+	char buffer[CRUX_VM_PRINT_BUFFER_SIZE];
+	va_list args;
+
+	va_start(args, format);
+	vsnprintf(buffer, CRUX_VM_PRINT_BUFFER_SIZE, format, args);
+	va_end(args);
+
+	const char *module = "<unknown>";
+	if (vm != NULL && vm->current_module_record != NULL && vm->current_module_record->path != NULL) {
+		module = vm->current_module_record->path->chars;
+	}
+
+	if (vm != NULL && vm->config.errorFn != NULL) {
+		vm->config.errorFn(vm, error_type, module, line_number, buffer);
+	} else {
+		fprintf(stderr, "%s", buffer);
+	}
 }

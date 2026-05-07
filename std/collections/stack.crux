@@ -1,0 +1,36 @@
+//
+// Basic stack implementation.
+//
+
+pub struct Stack {
+	data: Array[Any]
+}
+
+impl Stack {
+    fn push(v: Any) -> Nil {
+        self.data.push(v);
+    }
+
+    fn pop() -> Any {
+        return self.data.pop();
+    }
+
+    fn peek() -> Option[Any] {
+        if len(self.data) == 0 {
+            return None;
+        }
+        return Some(self.data[0]);
+    }
+
+    fn is_empty() -> Bool {
+        return len(self.data) == 0;
+    }
+
+    fn len() -> Int {
+        return len(self.data);
+    }
+
+    fn clear() -> Nil {
+        self.data.clear();
+    }
+}

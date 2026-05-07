@@ -96,7 +96,7 @@ static ErrorDetails getErrorDetails(const ErrorType type)
 		return (ErrorDetails){"Branch Extent Error"};
 	}
 	case VALUE: {
-		return (ErrorDetails){"Value Error"};
+		return (ErrorDetails){"CruxValue Error"};
 	}
 	case RUNTIME:
 	default:
@@ -104,7 +104,7 @@ static ErrorDetails getErrorDetails(const ErrorType type)
 	}
 }
 
-void print_error_line(const int line, const char *source, int startCol, const int length)
+void print_error_line(CruxVM *vm, const int line, const char *source, int startCol, const int length)
 {
 	const char *lineStart = source;
 	for (int currentLine = 1; currentLine < line && *lineStart; currentLine++) {
@@ -120,10 +120,10 @@ void print_error_line(const int line, const char *source, int startCol, const in
 
 	const int lineNumWidth = snprintf(NULL, 0, "%d", line);
 
-	fprintf(stderr, "%*d | ", lineNumWidth, line);
-	fprintf(stderr, "%.*s\n", (int)(lineEnd - lineStart), lineStart);
+	vm_print(vm, "%*d | ", lineNumWidth, line);
+	vm_print(vm, "%.*s\n", (int)(lineEnd - lineStart), lineStart);
 
-	fprintf(stderr, "%*s | ", lineNumWidth, "");
+	vm_print(vm, "%*s | ", lineNumWidth, "");
 
 	int relativeStartCol = 0;
 	const int maxCol = (int)(lineEnd - lineStart);
@@ -141,14 +141,14 @@ void print_error_line(const int line, const char *source, int startCol, const in
 	}
 
 	for (int i = 0; i < relativeStartCol; i++) {
-		fprintf(stderr, " ");
+		vm_print(vm, " ");
 	}
 
-	fprintf(stderr, "%s^", RED);
+	vm_print(vm, "%s^", RED);
 	for (int i = 1; i < length && startCol + i < maxCol; i++) {
-		fprintf(stderr, "~");
+		vm_print(vm, "~");
 	}
-	fprintf(stderr, "%s\n", RESET);
+	vm_print(vm, "%s\n", RESET);
 }
 
 // Internal helper — formats the message via va_list and prints the full
@@ -164,19 +164,18 @@ static void error_at_vfmt(Parser *parser, const Token *token, ErrorType error_ty
 
 	const ErrorDetails details = getErrorDetails(error_type);
 
-	fprintf(stderr, "%s%s%s\n", RED, repeat('=', 60), RESET);
+	// Still print the pretty block to writeFn if available
+	vm_print(parser->vm, "%s%s%s\n", RED, repeat('=', 60), RESET);
+	vm_print(parser->vm, "%s%s: %s", RED, details.name, MAGENTA);
 
-	// "ErrorName: <message> at line N"
-	fprintf(stderr, "%s%s: %s", RED, details.name, MAGENTA);
-	vfprintf(stderr, format, args);
-	fprintf(stderr, " at line %d%s\n", token->line, RESET);
+	char message[1024];
+	vsnprintf(message, sizeof(message), format, args);
+	vm_print(parser->vm, "%s", message);
+	vm_print(parser->vm, " at line %d%s\n", token->line, RESET);
 
 	if (token->type != CRUX_TOKEN_EOF && parser->source != NULL) {
-		fprintf(stderr, "\n");
+		vm_print(parser->vm, "\n");
 
-		// Compute the token's column by walking from the start of its
-		// line.  We trust token->line (set by the scanner) and
-		// token->start (pointer into source).
 		int startCol = 0;
 		if (token->start >= parser->source) {
 			const char *lineStart = parser->source;
@@ -191,10 +190,10 @@ static void error_at_vfmt(Parser *parser, const Token *token, ErrorType error_ty
 				startCol = 0;
 		}
 
-		print_error_line(token->line, parser->source, startCol, token->length > 0 ? token->length : 1);
+		print_error_line(parser->vm, token->line, parser->source, startCol, token->length > 0 ? token->length : 1);
 	}
 
-	fprintf(stderr, "%s%s%s\n\n", RED, repeat('=', 60), RESET);
+	vm_print(parser->vm, "%s%s%s\n\n", RED, repeat('=', 60), RESET);
 }
 
 void error_at(Parser *parser, const Token *token, const char *message, const ErrorType error_type)
@@ -207,11 +206,11 @@ void error_at(Parser *parser, const Token *token, const char *message, const Err
 
 	const ErrorDetails details = getErrorDetails(error_type);
 
-	fprintf(stderr, "%s%s%s\n", RED, repeat('=', 60), RESET);
-	fprintf(stderr, "%s%s: %s%s at line %d%s\n", RED, details.name, MAGENTA, message, token->line, RESET);
+	vm_print(parser->vm, "%s%s%s\n", RED, repeat('=', 60), RESET);
+	vm_print(parser->vm, "%s%s: %s%s at line %d%s\n", RED, details.name, MAGENTA, message, token->line, RESET);
 
 	if (token->type != CRUX_TOKEN_EOF && parser->source != NULL) {
-		fprintf(stderr, "\n");
+		vm_print(parser->vm, "\n");
 
 		int startCol = 0;
 		if (token->start >= parser->source) {
@@ -227,9 +226,9 @@ void error_at(Parser *parser, const Token *token, const char *message, const Err
 				startCol = 0;
 		}
 
-		print_error_line(token->line, parser->source, startCol, token->length > 0 ? token->length : 1);
+		print_error_line(parser->vm, token->line, parser->source, startCol, token->length > 0 ? token->length : 1);
 	}
-	fprintf(stderr, "%s%s%s\n\n", RED, repeat('=', 60), RESET);
+	vm_print(parser->vm, "%s%s%s\n\n", RED, repeat('=', 60), RESET);
 }
 
 // ── Public compiler_panic* family ────────────────────────────────────────────
@@ -268,30 +267,41 @@ void compiler_panicf_at_current(Parser *parser, ErrorType error_type, const char
 void runtime_panic(ObjectModuleRecord *module_record, const ErrorType type, const char *format, ...)
 {
 	const ErrorDetails details = getErrorDetails(type);
+	CruxVM *vm = module_record->owner;
 
 	va_list args;
 	va_start(args, format);
 
-	fprintf(stderr, "%s%s%s\n", RED, repeat('=', 60), RESET);
-	fprintf(stderr, "\n%s%s: %s", RED, details.name, MAGENTA);
-	vfprintf(stderr, format, args);
-	fprintf(stderr, "%s\n", RESET);
+	char message[1024];
+	vsnprintf(message, sizeof(message), format, args);
 	va_end(args);
+
+	if (vm->config.errorFn) {
+		char full_message[1280];
+		snprintf(full_message, sizeof(full_message), "%s: %s\n", details.name, message);
+		vm->config.errorFn(vm, CRUX_ERROR_RUNTIME, module_record->path ? module_record->path->chars : "<unknown>", -1,
+						   full_message);
+	}
+
+	vm_print(vm, "%s%s%s\n", RED, repeat('=', 60), RESET);
+	vm_print(vm, "\n%s%s: %s", RED, details.name, MAGENTA);
+	vm_print(vm, "%s", message);
+	vm_print(vm, "%s\n", RESET);
 
 	if (module_record == NULL) {
 		return;
 	}
 
-	fprintf(stderr, "\n%sStack trace (most recent call last):%s", CYAN, RESET);
+	vm_print(vm, "\n%sStack trace (most recent call last):%s", CYAN, RESET);
 
 	const ObjectModuleRecord *traceModule = module_record;
 	int globalFrameNumber = 0;
 
 	while (traceModule != NULL) {
 		if (!traceModule->is_main) {
-			fprintf(stderr, "\n  %s--- imported from module \"%s\" ---%s", MAGENTA,
-					traceModule->enclosing_module->path ? traceModule->enclosing_module->path->chars : "<unknown>",
-					RESET);
+			vm_print(vm, "\n  %s--- imported from module \"%s\" ---%s", MAGENTA,
+					 traceModule->enclosing_module->path ? traceModule->enclosing_module->path->chars : "<unknown>",
+					 RESET);
 		}
 
 		for (int i = (int)traceModule->frame_count - 1; i >= 0; i--) {
@@ -308,7 +318,7 @@ void runtime_panic(ObjectModuleRecord *module_record, const ErrorType type, cons
 				instruction = function->chunk.count - 1;
 			}
 
-			fprintf(stderr, "\n  %s[frame %d]%s ", CYAN, globalFrameNumber++, RESET);
+			vm_print(vm, "\n  %s[frame %d]%s ", CYAN, globalFrameNumber++, RESET);
 
 			int line = 0;
 			if (function->chunk.lines != NULL && instruction < (size_t)function->chunk.capacity) {
@@ -316,7 +326,7 @@ void runtime_panic(ObjectModuleRecord *module_record, const ErrorType type, cons
 			} else if (function->chunk.lines != NULL && function->chunk.capacity > 0) {
 				line = function->chunk.lines[0]; // Fallback
 			}
-			fprintf(stderr, "line %d in ", line);
+			vm_print(vm, "line %d in ", line);
 
 			const ObjectString *funcModulePath = NULL;
 			if (function->module_record != NULL && function->module_record->path != NULL) {
@@ -325,33 +335,40 @@ void runtime_panic(ObjectModuleRecord *module_record, const ErrorType type, cons
 				funcModulePath = traceModule->path;
 			}
 
+			char trace_msg[512];
 			if (function->name == NULL || function->name->byte_length == 0) {
 				if (funcModulePath != NULL) {
 					if (traceModule->is_repl) {
-						fprintf(stderr,
-								"%sscript from "
-								"\"repl\" %s",
-								CYAN, RESET);
+						vm_print(vm, "script from \"repl\"");
+						snprintf(trace_msg, sizeof(trace_msg), "script from \"repl\"");
 					} else {
-						fprintf(stderr,
-								"%sscript from \"%s\" "
-								"%s",
-								CYAN, funcModulePath->chars, RESET);
+						vm_print(vm, "script from \"%s\"", funcModulePath->chars);
+						snprintf(trace_msg, sizeof(trace_msg), "script from \"%s\"", funcModulePath->chars);
 					}
 				} else {
-					fprintf(stderr, "%s<script>%s", CYAN, RESET);
+					vm_print(vm, "<script>");
+					snprintf(trace_msg, sizeof(trace_msg), "<script>");
 				}
 			} else {
 				if (funcModulePath != NULL) {
-					fprintf(stderr, "%s%s() from \"%s\"%s", CYAN, function->name->chars, funcModulePath->chars, RESET);
+					vm_print(vm, "%s() from \"%s\"", function->name->chars, funcModulePath->chars);
+					snprintf(trace_msg, sizeof(trace_msg), "%s() from \"%s\"", function->name->chars,
+							 funcModulePath->chars);
 				} else {
-					fprintf(stderr, "%s%s()%s", CYAN, function->name->chars, RESET);
+					vm_print(vm, "%s()", function->name->chars);
+					snprintf(trace_msg, sizeof(trace_msg), "%s()", function->name->chars);
 				}
+			}
+
+			// Report each trace line to errorFn too
+			if (vm->config.errorFn) {
+				vm->config.errorFn(vm, CRUX_ERROR_STACK_TRACE, funcModulePath ? funcModulePath->chars : "<unknown>",
+								   line, trace_msg);
 			}
 		}
 		traceModule = traceModule->enclosing_module;
 	}
-	fprintf(stderr, "\n%s%s%s\n\n", RED, repeat('=', 60), RESET);
+	vm_print(vm, "\n%s%s%s\n\n", RED, repeat('=', 60), RESET);
 
 	reset_stack(module_record);
 	longjmp(module_record->owner->jump_buffer, INTERPRET_RUNTIME_ERROR);
@@ -361,11 +378,11 @@ void runtime_panic(ObjectModuleRecord *module_record, const ErrorType type, cons
  * Creates a formatted error message for type mismatches with actual type
  * information.
  */
-char *type_error_message(VM *vm, const Value value, const char *expected_type)
+char *type_error_message(CruxVM *vm, const CruxValue value, const char *expected_type)
 {
 	static char buffer[1024];
 
-	const Value typeValue = typeof_value(vm, value);
+	const CruxValue typeValue = typeof_value(vm, value);
 	char *actualType = AS_C_STRING(typeValue);
 
 	snprintf(buffer, sizeof(buffer), "Expected type '%s', but got '%s'.", expected_type, actualType);
