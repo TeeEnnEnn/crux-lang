@@ -883,7 +883,7 @@ void synchronize(const Compiler *compiler)
 		case CRUX_TOKEN_STRUCT:
 		case CRUX_TOKEN_PUB:
 		case CRUX_TOKEN_FN:
-		case CRUX_TOKEN_LET:
+		case CRUX_TOKEN_VAR:
 		case CRUX_TOKEN_FOR:
 		case CRUX_TOKEN_IF:
 		case CRUX_TOKEN_WHILE:

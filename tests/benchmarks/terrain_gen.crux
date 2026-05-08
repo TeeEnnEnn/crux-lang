@@ -5,35 +5,35 @@ use Random from "crux:random";
 use stats from "crux:gc";
 
 println("=== START OF TERRAIN GENERATOR ===");
-let IMAGE_WIDTH: Int = 1024;
-let IMAGE_HEIGHT: Int = 1024;
-let OCTAVES: Int = 8;      // Detail level. Higher = more taxing.
-let PERSISTENCE: Float = 0.5;
-let SCALE: Float = 0.005;    // Zoom level
+var IMAGE_WIDTH: Int = 1024;
+var IMAGE_HEIGHT: Int = 1024;
+var OCTAVES: Int = 8;      // Detail level. Higher = more taxing.
+var PERSISTENCE: Float = 0.5;
+var SCALE: Float = 0.005;    // Zoom level
 
 // The Permutation Table (0-255 randomized)
 // We double it to 512 to avoid buffer overflow checks during lookup
-let PERM: Array[Int] = [];
+var PERM: Array[Int] = [];
 
 fn init_permutation() -> Nil {
-    let rand = Random();
-    let p: Array[Int] = [];
+    var rand = Random();
+    var p: Array[Int] = [];
 
     // Fill 0-255
-    for let i = 0; i < 256; i += 1 {
+    for var i = 0; i < 256; i += 1 {
         p.push(i);
     }
 
     // Shuffle (Fisher-Yates)
-    for let i = 255; i > 0; i -= 1 {
-        let j: Int = int(rand.float(0, i + 1)?)?;
-        let swap = p[i];
+    for var i = 255; i > 0; i -= 1 {
+        var j: Int = int(rand.float(0, i + 1)?)?;
+        var swap = p[i];
         p[i] = p[j];
         p[j] = swap;
     }
 
     // Duplicate array to avoid buffer overflow wrapping
-    for let i = 0; i < 512; i += 1 {
+    for var i = 0; i < 512; i += 1 {
         if i < 256 {
             PERM.push(p[i]);
         } else {
@@ -57,9 +57,9 @@ fn lerp(t: Float, a: Float, b: Float) -> Float {
 // Calculates dot product between distance vector and gradient vector
 // heavily reliant on Bitwise ops
 fn grad(hash: Int, x: Float, y: Float, z: Float) -> Float {
-    let h = hash & 15; // Take first 4 bits
-    let u: Float = 0;
-    let v: Float = 0;
+    var h = hash & 15; // Take first 4 bits
+    var u: Float = 0;
+    var v: Float = 0;
 
     if h < 8 { u = x; } else { u = y; }
 
@@ -73,8 +73,8 @@ fn grad(hash: Int, x: Float, y: Float, z: Float) -> Float {
         }
     }
 
-    let res_u: Float = 0;
-    let res_v: Float = 0;
+    var res_u: Float = 0;
+    var res_v: Float = 0;
 
     // Simulate bitwise check for sign
     if (h & 1) == 0 { res_u = u; } else { res_u = -u; }
@@ -85,9 +85,9 @@ fn grad(hash: Int, x: Float, y: Float, z: Float) -> Float {
 
 fn noise(x: Float, y: Float, z: Float) -> Float {
     // Find unit cube that contains point
-    let X = int(floor(x))? & 255;
-    let Y = int(floor(y))? & 255;
-    let Z = int(floor(z))? & 255;
+    var X = int(floor(x))? & 255;
+    var Y = int(floor(y))? & 255;
+    var Z = int(floor(z))? & 255;
 
     // Find relative x,y,z of point in cube
     x -= floor(x);
@@ -95,18 +95,18 @@ fn noise(x: Float, y: Float, z: Float) -> Float {
     z -= floor(z);
 
     // Compute fade curves
-    let u = fade(x);
-    let v = fade(y);
-    let w = fade(z);
+    var u = fade(x);
+    var v = fade(y);
+    var w = fade(z);
 
     // Hash coordinates of the 8 cube corners
     // This nested array access is a stress test
-    let A = PERM[X] + Y;
-    let AA = PERM[A] + Z;
-    let AB = PERM[A + 1] + Z;
-    let B = PERM[X + 1] + Y;
-    let BA = PERM[B] + Z;
-    let BB = PERM[B + 1] + Z;
+    var A = PERM[X] + Y;
+    var AA = PERM[A] + Z;
+    var AB = PERM[A + 1] + Z;
+    var B = PERM[X + 1] + Y;
+    var BA = PERM[B] + Z;
+    var BB = PERM[B + 1] + Z;
 
     // Add blended results from 8 corners of cube
     return lerp(w,
@@ -124,12 +124,12 @@ fn noise(x: Float, y: Float, z: Float) -> Float {
 // Fractal Brownian Motion
 // Superimposes multiple layers of noise
 fn fbm(x: Float, y: Float) -> Float {
-    let total = 0.0;
-    let amplitude = 1.0;
-    let frequency = 1.0;
-    let maxValue = 0.0;  // Used for normalizing result to 0.0 - 1.0
+    var total = 0.0;
+    var amplitude = 1.0;
+    var frequency = 1.0;
+    var maxValue = 0.0;  // Used for normalizing result to 0.0 - 1.0
 
-    for let i = 0; i < OCTAVES; i += 1 {
+    for var i = 0; i < OCTAVES; i += 1 {
         total += noise(x * frequency, y * frequency, 0.0) * amplitude;
 
         maxValue += amplitude;
@@ -172,31 +172,31 @@ fn main() -> Nil {
     init_permutation();
 
     println("Generating Terrain (" + string(IMAGE_WIDTH) + "x" + string(IMAGE_HEIGHT) + ")...");
-    let start_time = time_ms();
+    var start_time = time_ms();
 
-    let file: File = open("renders/terrain.ppm", "w")?;
+    var file: File = open("renders/terrain.ppm", "w")?;
 
     file.write("P3\n");
     file.write(string(IMAGE_WIDTH) + " " + string(IMAGE_HEIGHT) + "\n");
     file.write("255\n");
 
-    for let y = 0; y < IMAGE_HEIGHT; y += 1 {
+    for var y = 0; y < IMAGE_HEIGHT; y += 1 {
         if y % 32 == 0 {
             println("Processing line " + string(y));
         }
 
-        for let x = 0; x < IMAGE_WIDTH; x += 1 {
+        for var x = 0; x < IMAGE_WIDTH; x += 1 {
             // Generate Noise value
-            let n = fbm(x * SCALE, y * SCALE);
+            var n = fbm(x * SCALE, y * SCALE);
 
             // Map to color
-            let color = get_terrain_color(n);
+            var color = get_terrain_color(n);
 
             file.write(string(color["r"]) + " " + string(color["g"]) + " " + string(color["b"]) + "\n");
         }
     }
 
-    let end_time = time_ms();
+    var end_time = time_ms();
     println("Terrain generated in " + string(end_time - start_time) + " ms");
     file.close();
 }

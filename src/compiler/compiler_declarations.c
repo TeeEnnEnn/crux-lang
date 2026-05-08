@@ -213,7 +213,7 @@ void impl_declaration(Compiler *compiler)
 
 		if (is_static_method) {
 			emit_words(compiler, OP_STATIC_METHOD, method_name_const);
-		}else {
+		} else {
 			emit_words(compiler, OP_METHOD, method_name_const);
 		}
 		pop(compiler->owner->current_module_record); // method_type
@@ -262,7 +262,7 @@ void public_declaration(Compiler *compiler)
 	emit_word(compiler, OP_PUB);
 	if (match(compiler, CRUX_TOKEN_FN)) {
 		fn_declaration(compiler, true);
-	} else if (match(compiler, CRUX_TOKEN_LET)) {
+	} else if (match(compiler, CRUX_TOKEN_VAR)) {
 		var_declaration(compiler, true);
 	} else if (match(compiler, CRUX_TOKEN_STRUCT)) {
 		struct_declaration(compiler, true);
@@ -273,14 +273,14 @@ void public_declaration(Compiler *compiler)
 	} else if (match(compiler, CRUX_TOKEN_NATIVE)) {
 		native_declaration(compiler, true);
 	} else {
-		compiler_panic(compiler->parser, "Expected 'fn', 'let', 'struct', 'type', 'use' or 'native' after 'pub'.",
+		compiler_panic(compiler->parser, "Expected 'fn', 'var', 'struct', 'type', 'use' or 'native' after 'pub'.",
 					   SYNTAX);
 	}
 }
 
 void declaration(Compiler *compiler)
 {
-	if (match(compiler, CRUX_TOKEN_LET)) {
+	if (match(compiler, CRUX_TOKEN_VAR)) {
 		var_declaration(compiler, false);
 	} else if (match(compiler, CRUX_TOKEN_FN)) {
 		fn_declaration(compiler, false);

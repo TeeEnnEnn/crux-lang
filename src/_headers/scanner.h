@@ -72,7 +72,7 @@ typedef enum {
 	CRUX_TOKEN_OR, // or
 	CRUX_TOKEN_RETURN, // return
 	CRUX_TOKEN_TRUE, // true
-	CRUX_TOKEN_LET, // let
+	CRUX_TOKEN_VAR, // var
 	CRUX_TOKEN_WHILE, // while
 	CRUX_TOKEN_ERROR, //
 	CRUX_TOKEN_BREAK, // break

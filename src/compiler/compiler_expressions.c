@@ -1407,7 +1407,7 @@ void binary(Compiler *compiler, bool can_assign)
 
 void colon_colon(Compiler *compiler, const bool can_assign)
 {
-	(void) can_assign;
+	(void)can_assign;
 	consume(compiler, CRUX_TOKEN_IDENTIFIER, "Expected property name after '::'.");
 	const uint16_t name_constant = identifier_constant(compiler, &compiler->parser->previous);
 	const Token method_name_token = compiler->parser->previous;
@@ -1455,7 +1455,8 @@ void colon_colon(Compiler *compiler, const bool can_assign)
 			const ObjectString *field_name = copy_string(compiler->owner, method_name_token.start,
 														 method_name_token.length);
 			ObjectTypeRecord *fn_type = NULL;
-			if (type_table_get(field_types, field_name, &fn_type) && fn_type && fn_type->base_type == FUNCTION_TYPE && fn_type->as.function_type.is_static) {
+			if (type_table_get(field_types, field_name, &fn_type) && fn_type && fn_type->base_type == FUNCTION_TYPE &&
+				fn_type->as.function_type.is_static) {
 				method_arg_types = fn_type->as.function_type.arg_types;
 				method_arity = fn_type->as.function_type.arg_count;
 				method_return = fn_type->as.function_type.return_type;
@@ -2074,7 +2075,7 @@ ParseRule rules[] = {
 	[CRUX_TOKEN_OR] = {NULL, or_, NULL, PREC_OR},
 	[CRUX_TOKEN_RETURN] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_TRUE] = {literal, NULL, NULL, PREC_NONE},
-	[CRUX_TOKEN_LET] = {NULL, NULL, NULL, PREC_NONE},
+	[CRUX_TOKEN_VAR] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_USE] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_FROM] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_PUB] = {NULL, NULL, NULL, PREC_NONE},

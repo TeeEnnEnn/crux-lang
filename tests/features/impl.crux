@@ -16,7 +16,7 @@ impl Counter {
     }
 }
 
-let c = new Counter { count = 0 };
+var c = new Counter { count = 0 };
 c.inc().add(5).inc();
 assert(c.count == 7, "Mutation and chaining failed");
 println("Chaining passed!");
@@ -45,8 +45,8 @@ impl Car {
     }
 }
 
-let v8 = new Engine { hp = 500 };
-let mustang = new Car { make = "Ford", engine = v8 };
+var v8 = new Engine { hp = 500 };
+var mustang = new Car { make = "Ford", engine = v8 };
 assert(mustang.start() == "Ford says: Vroom! 500 HP", "Composition failed");
 println("Composition passed!");
 
@@ -64,8 +64,8 @@ impl Multiplier {
     }
 }
 
-let m = new Multiplier { factor = 10 };
-let my_closure = m.get_closure();
+var m = new Multiplier { factor = 10 };
+var my_closure = m.get_closure();
 assert(my_closure(5) == 50, "Closure capturing self failed");
 println("Self-capturing closures passed!");
 
@@ -83,7 +83,7 @@ impl Data {
     }
 }
 
-let d = new Data {
+var d = new Data {
     val = 5,
     action = fn(x: Int) -> Int { return x + 1; } // Field closure
 };

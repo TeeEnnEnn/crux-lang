@@ -2,7 +2,7 @@
 
 // Testing compound operations
 
-let x = 5;
+var x = 5;
 println("=== Testing += ===");
 x += 5;
 assert(x == 10, "Expected x to be 10 - Failed to add 5");
@@ -21,7 +21,7 @@ assert(x == 14, "Expected x to be 14 - Failed to divide by 2");
 
 
 fn compound_operations() {
-    let x = 5;
+    var x = 5;
     println("=== Testing += ===");
     x += 5;
     assert(x == 10, "Expected x to be 10 - Failed to add 5");
@@ -44,8 +44,8 @@ compound_operations();
 
 println("=== Testing Compound Operations in Closure Scope ===");
 fn compound_closure() {
-    let x = 0;
-    let call_counter = 0;
+    var x = 0;
+    var call_counter = 0;
     fn make_counter() {
         call_counter += 1;
         if call_counter % 4 == 0 {
@@ -72,7 +72,7 @@ fn compound_closure() {
     return make_counter;
 }
 
-let counter = compound_closure();
+var counter = compound_closure();
 assert(counter() == -1, "Failed to perform -= operation in a closure.");
 assert(counter() == -2, "Failed to perform *= operation in a closure.");
 assert(counter() == -1, "Failed to perform /= operation in a closure.");

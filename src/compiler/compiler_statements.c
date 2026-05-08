@@ -154,7 +154,7 @@ void for_statement(Compiler *compiler)
 {
 	begin_scope(compiler);
 
-	if (check(compiler, CRUX_TOKEN_LET)) {
+	if (check(compiler, CRUX_TOKEN_VAR)) {
 		advance(compiler);
 		if (check(compiler, CRUX_TOKEN_IDENTIFIER) && peek_next_token(compiler).type == CRUX_TOKEN_IN) {
 			for_in(compiler, true);

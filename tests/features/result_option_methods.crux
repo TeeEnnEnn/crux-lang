@@ -1,9 +1,9 @@
 println("=== Testing Result and Option methods ===");
 
-let ok = Ok(42);
-let err = Err("boom");
-let some = Some("value");
-let none = None;
+var ok = Ok(42);
+var err = Err("boom");
+var some = Some("value");
+var none = None;
 
 assert(ok.is_ok(), "Ok should report is_ok");
 assert(not ok.is_err(), "Ok should not report is_err");

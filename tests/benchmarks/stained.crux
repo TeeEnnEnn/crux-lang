@@ -6,10 +6,10 @@ use open from "crux:fs";
 
 println("=== START OF VORONOI & COMPUTER VISION BENCHMARK ===");
 
-let g_random = Random();
-let WIDTH: Int = 800;
-let HEIGHT: Int = 800;
-let NUM_SEEDS: Int = 200;
+var g_random = Random();
+var WIDTH: Int = 800;
+var HEIGHT: Int = 800;
+var NUM_SEEDS: Int = 200;
 
 struct Seed {
     x: Float,
@@ -20,13 +20,13 @@ struct Seed {
 }
 
 fn main() -> Nil {
-    let start_time = time_ms();
+    var start_time = time_ms();
 
     // 1. Generate Seeds
     println("Generating " + string(NUM_SEEDS) + " Voronoi seeds...");
-    let seeds: Array[Seed] = [];
+    var seeds: Array[Seed] = [];
 
-    for let i = 0; i < NUM_SEEDS; i += 1 {
+    for var i = 0; i < NUM_SEEDS; i += 1 {
         seeds.push(new Seed {
             x = g_random.float(0.0, float(WIDTH)?)?,
             y = g_random.float(0.0, float(HEIGHT)?)?,
@@ -38,29 +38,29 @@ fn main() -> Nil {
 
     // We use Matrices to hold our isolated image channels
     // This heavily tests your Matrix struct allocation and memory.
-    let r_channel = Matrix(HEIGHT, WIDTH)?;
-    let g_channel = Matrix(HEIGHT, WIDTH)?;
-    let b_channel = Matrix(HEIGHT, WIDTH)?;
+    var r_channel = Matrix(HEIGHT, WIDTH)?;
+    var g_channel = Matrix(HEIGHT, WIDTH)?;
+    var b_channel = Matrix(HEIGHT, WIDTH)?;
 
     // 2. Compute Voronoi (128 Million inner loop iterations)
     println("Calculating Voronoi distances (128 Million iterations)...");
-    for let y = 0; y < HEIGHT; y += 1 {
+    for var y = 0; y < HEIGHT; y += 1 {
         if y % 100 == 0 { println("  Row: " + string(y)); }
 
-        let fy = float(y)?;
+        var fy = float(y)?;
 
-        for let x = 0; x < WIDTH; x += 1 {
-            let fx = float(x)?;
-            let min_dist1 = 999999.0;
-            let min_dist2 = 999999.0;
-            let closest_index = 0;
+        for var x = 0; x < WIDTH; x += 1 {
+            var fx = float(x)?;
+            var min_dist1 = 999999.0;
+            var min_dist2 = 999999.0;
+            var closest_index = 0;
 
             // The Extreme Hot Loop
-            for let s = 0; s < NUM_SEEDS; s += 1 {
-                let seed = seeds[s];
-                let dx = seed.x - fx;
-                let dy = seed.y - fy;
-                let dist = sqrt(dx * dx + dy * dy)?;
+            for var s = 0; s < NUM_SEEDS; s += 1 {
+                var seed = seeds[s];
+                var dx = seed.x - fx;
+                var dy = seed.y - fy;
+                var dist = sqrt(dx * dx + dy * dy)?;
 
                 if dist < min_dist1 {
                     min_dist2 = min_dist1;
@@ -73,11 +73,11 @@ fn main() -> Nil {
                 }
             }
 
-            let closest = seeds[closest_index];
+            var closest = seeds[closest_index];
 
             // Darken edges where the two closest points are roughly equidistant
-            let edge_factor = min_dist2 - min_dist1;
-            let multiplier = 0.1 + (edge_factor / 2.0);
+            var edge_factor = min_dist2 - min_dist1;
+            var multiplier = 0.1 + (edge_factor / 2.0);
             if multiplier > 1.0 {
                 multiplier = 1.0;
             }
@@ -90,50 +90,50 @@ fn main() -> Nil {
 
     // 3. Computer Vision: Sobel Edge Detection
     println("Applying Sobel Edge Detection Filter (Matrix Convolution)...");
-    let sobel_output = Matrix(HEIGHT, WIDTH)?;
+    var sobel_output = Matrix(HEIGHT, WIDTH)?;
 
     // We run the Sobel operator on the Green channel as a proxy for luminance.
     // This creates a sliding 3x3 window over the entire matrix.
-    for let y = 1; y < HEIGHT - 1; y += 1 {
+    for var y = 1; y < HEIGHT - 1; y += 1 {
         if y % 100 == 0 { println("  Convolution Row: " + string(y)); }
-        for let x = 1; x < WIDTH - 1; x += 1 {
+        for var x = 1; x < WIDTH - 1; x += 1 {
 
             // 9 Lookups per pixel!
-            let p00 = g_channel.get(y-1, x-1)?;
-            let p01 = g_channel.get(y-1, x)?;
-            let p02 = g_channel.get(y-1, x+1)?;
+            var p00 = g_channel.get(y-1, x-1)?;
+            var p01 = g_channel.get(y-1, x)?;
+            var p02 = g_channel.get(y-1, x+1)?;
 
-            let p10 = g_channel.get(y,   x-1)?;
-            let p12 = g_channel.get(y,   x+1)?;
+            var p10 = g_channel.get(y,   x-1)?;
+            var p12 = g_channel.get(y,   x+1)?;
 
-            let p20 = g_channel.get(y+1, x-1)?;
-            let p21 = g_channel.get(y+1, x)?;
-            let p22 = g_channel.get(y+1, x+1)?;
+            var p20 = g_channel.get(y+1, x-1)?;
+            var p21 = g_channel.get(y+1, x)?;
+            var p22 = g_channel.get(y+1, x+1)?;
 
             // Convolution Math
-            let gx = (p02 + 2.0 * p12 + p22) - (p00 + 2.0 * p10 + p20);
-            let gy = (p20 + 2.0 * p21 + p22) - (p00 + 2.0 * p01 + p02);
+            var gx = (p02 + 2.0 * p12 + p22) - (p00 + 2.0 * p10 + p20);
+            var gy = (p20 + 2.0 * p21 + p22) - (p00 + 2.0 * p01 + p02);
 
-            let magnitude = sqrt(gx * gx + gy * gy)?;
+            var magnitude = sqrt(gx * gx + gy * gy)?;
             sobel_output.set(y, x, magnitude);
         }
     }
 
     // 4. Render to File
     println("Compositing and saving to file...");
-    let file = open("renders/stained_glass.ppm", "w")?;
+    var file = open("renders/stained_glass.ppm", "w")?;
     file.write("P3\n");
     file.write(string(WIDTH) + " " + string(HEIGHT) + "\n");
     file.write("255\n");
 
-    for let y = 0; y < HEIGHT; y += 1 {
-        for let x = 0; x < WIDTH; x += 1 {
-            let r = r_channel.get(y, x)?;
-            let g = g_channel.get(y, x)?;
-            let b = b_channel.get(y, x)?;
+    for var y = 0; y < HEIGHT; y += 1 {
+        for var x = 0; x < WIDTH; x += 1 {
+            var r = r_channel.get(y, x)?;
+            var g = g_channel.get(y, x)?;
+            var b = b_channel.get(y, x)?;
 
             // Overlay the Sobel Edge Detection (creates glowing white highlights on borders)
-            let edge = sobel_output.get(y, x)?;
+            var edge = sobel_output.get(y, x)?;
             if edge > 40.0 {
                 r += edge;
                 g += edge;
@@ -150,7 +150,7 @@ fn main() -> Nil {
     }
     file.close();
 
-    let end_time = time_ms();
+    var end_time = time_ms();
     println("Benchmark finished in " + string(end_time - start_time) + " ms.");
 }
 

@@ -278,8 +278,6 @@ static CruxTokenType identifier_type(Scanner *scanner)
 			}
 		}
 		return check_keyword(scanner, 1, 1, "f", CRUX_TOKEN_IF);
-	case 'l':
-		return check_keyword(scanner, 1, 2, "et", CRUX_TOKEN_LET);
 	case 'n':
 		if (scanner->current - scanner->start > 1) {
 			switch (scanner->start[1]) {
@@ -327,6 +325,8 @@ static CruxTokenType identifier_type(Scanner *scanner)
 	}
 	case 'w':
 		return check_keyword(scanner, 1, 4, "hile", CRUX_TOKEN_WHILE);
+	case 'v':
+		return check_keyword(scanner, 1, 2, "ar", CRUX_TOKEN_VAR);
 	case 'f': {
 		if (scanner->current - scanner->start > 1) {
 			switch (scanner->start[1]) {

@@ -7,7 +7,7 @@ fn unwrap(r) {
     };
 }
 
-let test_string = "Hello, World!";
+var test_string = "Hello, World!";
 
 // Test first
 println("--- Testing first ---");

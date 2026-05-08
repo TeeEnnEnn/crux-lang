@@ -2,7 +2,7 @@ use off, on, set_heap_growth, set_min_heap, set_min_growth, collect, heap_used, 
 
 println("=== Testing GC Module ===");
 
-let original = is_on();
+var original = is_on();
 assert(typeof original == "Bool", "is_on() should return Bool");
 
 off();
@@ -11,26 +11,26 @@ assert(not is_on(), "off() should pause GC");
 on();
 assert(is_on(), "on() should resume GC");
 
-let set_result = set_heap_growth(2.5);
+var set_result = set_heap_growth(2.5);
 assert(set_result.is_ok(), "set_heap_growth() should accept values > 1.0");
 
-let bad_result = set_heap_growth(1.0);
+var bad_result = set_heap_growth(1.0);
 assert(bad_result.is_err(), "set_heap_growth() should reject values <= 1.0");
 
-let min_heap_result = set_min_heap(2097152);
+var min_heap_result = set_min_heap(2097152);
 assert(min_heap_result.is_ok(), "set_min_heap() should accept non-negative values");
 
-let bad_min_heap_result = set_min_heap(-1.0);
+var bad_min_heap_result = set_min_heap(-1.0);
 assert(bad_min_heap_result.is_err(), "set_min_heap() should reject negative values");
 
-let min_growth_result = set_min_growth(524288);
+var min_growth_result = set_min_growth(524288);
 assert(min_growth_result.is_ok(), "set_min_growth() should accept non-negative values");
 
-let bad_min_growth_result = set_min_growth(-1.0);
+var bad_min_growth_result = set_min_growth(-1.0);
 assert(bad_min_growth_result.is_err(), "set_min_growth() should reject negative values");
 
-let used = heap_used();
-let capacity = heap_capacity();
+var used = heap_used();
+var capacity = heap_capacity();
 assert(typeof used == "Float", "heap_used() should return Float");
 assert(typeof capacity == "Float", "heap_capacity() should return Float");
 assert(capacity >= used, "heap_capacity() should be at least heap_used()");
@@ -38,7 +38,7 @@ assert(capacity >= 2097152, "heap_capacity() should respect the configured minim
 
 collect();
 
-let gc_stats = stats();
+var gc_stats = stats();
 assert(typeof gc_stats == "Table", "stats() should return a Table");
 assert(gc_stats["collections"] >= 1, "stats() should report at least one collection after collect()");
 assert(gc_stats["last_pool_capacity"] >= gc_stats["last_live_objects"],

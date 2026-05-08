@@ -29,31 +29,31 @@ print_to("stdout", "This is not an error with a new line at the end.");
 // Commenting these tests out because require user input
 // // testing scan
 // println("type 1 character");
-// let scan_res = scan()?;
+// var scan_res = scan()?;
 // println("You typed: " + scan_res);
 //
 // // testing nscan
 // println("Type 3 characters");
-// let nscan_res = nscan(3)?;
+// var nscan_res = nscan(3)?;
 // println("you typed: " + nscan_res);
 //
 // // testing scanln
 // println("Type a line");
-// let scanln_res = scanln()?;
+// var scanln_res = scanln()?;
 // println("you typed: " + scanln_res);
 //
 // // testing scan_from
 // println("type 1 character");
-// let scanfrom_res = scan_from("stdin")?;
+// var scanfrom_res = scan_from("stdin")?;
 // println("you typed: " + scanfrom_res);
 //
 // // testing scanln_from
 // println("type a line");
-// let scanlnfrom_res = scanln_from("stdin")?;
+// var scanlnfrom_res = scanln_from("stdin")?;
 // println("you typed: " + scanlnfrom_res);
 //
 // // testing nscan_from
 // println("type 3 characters");
-// let nscanfrom_res = nscan_from("stdin", 3)?;
+// var nscanfrom_res = nscan_from("stdin", 3)?;
 // println("you typed: " + nscanfrom_res);
 //
