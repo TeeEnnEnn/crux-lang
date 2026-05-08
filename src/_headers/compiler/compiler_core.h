@@ -69,7 +69,7 @@ typedef struct {
 	ObjectTypeRecord *type;
 } Upvalue;
 
-typedef enum { TYPE_FUNCTION, TYPE_SCRIPT, TYPE_METHOD, TYPE_ANONYMOUS } FunctionType;
+typedef enum { TYPE_FUNCTION, TYPE_SCRIPT, TYPE_METHOD, TYPE_STATIC_METHOD, TYPE_ANONYMOUS } FunctionType;
 
 typedef enum { LOOP_FOR, LOOP_WHILE } LoopType;
 

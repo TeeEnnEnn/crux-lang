@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "compiler/compiler_core.h"
 #include "garbage_collector.h"
 #include "object/object.h"
 #include "panic.h"
@@ -244,7 +245,7 @@ ObjectTypeRecord *new_matrix_type_rec(CruxVM *vm, const int rows, const int cols
  * Roots the argument types and return type
  */
 ObjectTypeRecord *new_function_type_rec(CruxVM *vm, ObjectTypeRecord **arg_types, const int arg_count,
-										ObjectTypeRecord *return_type)
+										ObjectTypeRecord *return_type, bool is_static)
 {
 	for (int i = 0; i < arg_count; i++) {
 		push(vm->current_module_record, OBJECT_VAL(arg_types[i]));
@@ -258,6 +259,7 @@ ObjectTypeRecord *new_function_type_rec(CruxVM *vm, ObjectTypeRecord **arg_types
 	rec->as.function_type.arg_types = arg_types;
 	rec->as.function_type.arg_count = arg_count;
 	rec->as.function_type.return_type = return_type;
+	rec->as.function_type.is_static = is_static;
 	return rec;
 }
 
@@ -806,7 +808,7 @@ ObjectTypeRecord *type_from_string(CruxVM *vm, const ObjectTypeTable *type_table
 	if (strncmp(str, "Function", 8) == 0) {
 		ObjectTypeRecord *any_type = new_type_rec(vm, ANY_TYPE);
 		push(vm->current_module_record, OBJECT_VAL(any_type));
-		ObjectTypeRecord *res = new_function_type_rec(vm, NULL, 0, any_type);
+		ObjectTypeRecord *res = new_function_type_rec(vm, NULL, 0, any_type, false);
 		pop(vm->current_module_record);
 		return res;
 	}

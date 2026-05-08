@@ -1351,6 +1351,7 @@ ObjectStruct *new_struct_type(CruxVM *vm, ObjectString *name)
 	structObject->name = name;
 	init_table(&structObject->fields);
 	init_table(&structObject->methods);
+	init_table(&structObject->static_methods);
 	return structObject;
 }
 

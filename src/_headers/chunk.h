@@ -164,6 +164,8 @@ typedef enum {
 	OP_0_FLOAT,
 	OP_1_FLOAT,
 	OP_2_FLOAT,
+	OP_STATIC_INVOKE,
+	OP_STATIC_METHOD,
 } OpCode;
 
 typedef struct {

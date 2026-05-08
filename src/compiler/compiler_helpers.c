@@ -40,6 +40,9 @@ bool check(const Compiler *compiler, const CruxTokenType type)
 	return compiler->parser->current.type == type;
 }
 
+/**
+ * checks of the token matches, and advances if it does.
+ */
 bool match(const Compiler *compiler, const CruxTokenType type)
 {
 	if (!check(compiler, type))

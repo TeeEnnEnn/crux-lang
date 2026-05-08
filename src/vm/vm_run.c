@@ -204,6 +204,8 @@ InterpretResult run(CruxVM *vm, const bool is_anonymous_frame)
 									&&OP_0_FLOAT,
 									&&OP_1_FLOAT,
 									&&OP_2_FLOAT,
+									&&OP_STATIC_INVOKE,
+									&&OP_STATIC_METHOD,
 									&&end};
 
 	register uint16_t instruction;
@@ -550,6 +552,17 @@ OP_INVOKE: {
 	frame = &current_module_record->frames[current_module_record->frame_count - 1];
 	DISPATCH();
 }
+
+OP_STATIC_INVOKE: {
+	ObjectString* method_name = READ_STRING();
+	int arg_count = READ_SHORT();
+	if (!static_method_invoke(vm, method_name, arg_count)) {
+		return INTERPRET_RUNTIME_ERROR;
+	}
+	frame = &current_module_record->frames[current_module_record->frame_count - 1];
+	DISPATCH();
+}
+
 
 OP_ARRAY: {
 	uint16_t elementCount = READ_SHORT();
@@ -1380,6 +1393,18 @@ OP_METHOD: {
 
 	ObjectStruct *struct_obj = AS_CRUX_STRUCT(struct_val);
 	table_set(vm, &struct_obj->methods, method_name, method_closure);
+
+	pop(current_module_record); // closure
+	DISPATCH();
+}
+
+OP_STATIC_METHOD: {
+	ObjectString *method_name = READ_STRING();
+	CruxValue method_closure = PEEK(current_module_record, 0);
+	CruxValue struct_val = PEEK(current_module_record, 1);
+
+	ObjectStruct *struct_obj = AS_CRUX_STRUCT(struct_val);
+	table_set(vm, &struct_obj->static_methods, method_name, method_closure);
 
 	pop(current_module_record); // closure
 	DISPATCH();
@@ -2243,7 +2268,7 @@ OP_INVOKE_STDLIB: {
 	CruxValue callable = READ_CONSTANT();
 	int arg_count = READ_SHORT();
 
-	ObjectModuleRecord *current_module_record = vm->current_module_record;
+	current_module_record = vm->current_module_record;
 	const CruxValue receiver = PEEK(current_module_record, arg_count);
 	const CruxValue original = PEEK(current_module_record,
 									arg_count + 1); // Store the original caller
@@ -2279,7 +2304,7 @@ OP_INVOKE_STDLIB_UNWRAP: {
 	CruxValue callable = READ_CONSTANT();
 	int arg_count = READ_SHORT();
 
-	ObjectModuleRecord *current_module_record = vm->current_module_record;
+	current_module_record = vm->current_module_record;
 	const CruxValue receiver = PEEK(current_module_record, arg_count);
 	const CruxValue original = PEEK(current_module_record,
 									arg_count + 1); // Store the original caller

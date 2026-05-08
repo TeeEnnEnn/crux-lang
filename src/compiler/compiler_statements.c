@@ -380,7 +380,7 @@ void use_statement(Compiler *compiler, bool is_public)
 					args_copy[k] = native_callable->arg_types[k];
 			}
 			ObjectTypeRecord *resolved_type = new_function_type_rec(compiler->owner, args_copy, native_callable->arity,
-																	native_callable->return_type);
+																	native_callable->return_type, false);
 
 			if (compiler->scope_depth > 0) {
 				if (is_public) {
@@ -415,8 +415,10 @@ void use_statement(Compiler *compiler, bool is_public)
 
 		char *resolved_chars = NULL;
 		if (compiler->owner->config.resolveModuleFn) {
-			const char* resolved = compiler->owner->config.resolveModuleFn(compiler->owner, base_path, raw_path_str->chars);
-			if (resolved) resolved_chars = strdup(resolved);
+			const char *resolved = compiler->owner->config.resolveModuleFn(compiler->owner, base_path,
+																		   raw_path_str->chars);
+			if (resolved)
+				resolved_chars = strdup(resolved);
 		}
 
 		if (resolved_chars == NULL) {

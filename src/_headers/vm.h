@@ -272,6 +272,8 @@ bool get_next_option_from_iterator(CruxVM *vm, CruxValue iterator, CruxValue *op
  */
 bool invoke(CruxVM *vm, const ObjectString *name, int arg_count);
 
+bool static_method_invoke(CruxVM *vm, const ObjectString *name, int arg_count);
+
 /**
  * Defines a method on a class.
  * @param vm The virtual machine

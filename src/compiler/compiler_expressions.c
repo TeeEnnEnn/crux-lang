@@ -1,9 +1,13 @@
 #include "compiler/compiler_expressions.h"
 #include <errno.h>
+#include "common.h"
+#include "compiler/compiler_core.h"
 #include "compiler/compiler_functions.h"
 #include "compiler/compiler_helpers.h"
 #include "compiler/compiler_match.h"
 #include "panic.h"
+#include "scanner.h"
+#include "type_system.h"
 
 void and_(Compiler *compiler, const bool can_assign)
 {
@@ -1401,6 +1405,106 @@ void binary(Compiler *compiler, bool can_assign)
 	pop(compiler->owner->current_module_record); // left_type
 }
 
+void colon_colon(Compiler *compiler, const bool can_assign)
+{
+	(void) can_assign;
+	consume(compiler, CRUX_TOKEN_IDENTIFIER, "Expected property name after '::'.");
+	const uint16_t name_constant = identifier_constant(compiler, &compiler->parser->previous);
+	const Token method_name_token = compiler->parser->previous;
+
+	if (name_constant >= UINT16_MAX) {
+		compiler_panic(compiler->parser, "Too many constants.", SYNTAX);
+	}
+
+	ObjectTypeRecord *object_type = peek_type_record(compiler);
+	if (!object_type) {
+		object_type = T_ANY;
+	}
+	push(compiler->owner->current_module_record, OBJECT_VAL(object_type));
+
+	if (match(compiler, CRUX_TOKEN_LEFT_PAREN)) {
+		uint16_t arg_count = 0;
+		ObjectTypeRecord *arg_types[UINT8_COUNT] = {0};
+
+		// compiling arguments
+		if (!check(compiler, CRUX_TOKEN_RIGHT_PAREN)) {
+			do {
+				if (arg_count >= UINT8_COUNT) {
+					for (int i = 0; i < arg_count; i++)
+						pop(compiler->owner->current_module_record);
+					pop(compiler->owner->current_module_record); // object_type
+					compiler_panic(compiler->parser, "Cannot have more than 255 arguments.", ARGUMENT_EXTENT);
+					return;
+				}
+
+				expression(compiler);
+				arg_types[arg_count] = pop_type_record(compiler);
+				push(compiler->owner->current_module_record, OBJECT_VAL(arg_types[arg_count]));
+				arg_count++;
+			} while (match(compiler, CRUX_TOKEN_COMMA));
+		}
+		consume(compiler, CRUX_TOKEN_RIGHT_PAREN, "Expected ')' after arguments.");
+
+		ObjectTypeRecord **method_arg_types = NULL;
+		ObjectTypeRecord *method_return = NULL;
+		int method_arity = 0;
+		bool method_found = false;
+
+		if (object_type->base_type == STRUCT_TYPE) {
+			const ObjectTypeTable *field_types = object_type->as.struct_type.field_types;
+			const ObjectString *field_name = copy_string(compiler->owner, method_name_token.start,
+														 method_name_token.length);
+			ObjectTypeRecord *fn_type = NULL;
+			if (type_table_get(field_types, field_name, &fn_type) && fn_type && fn_type->base_type == FUNCTION_TYPE && fn_type->as.function_type.is_static) {
+				method_arg_types = fn_type->as.function_type.arg_types;
+				method_arity = fn_type->as.function_type.arg_count;
+				method_return = fn_type->as.function_type.return_type;
+				method_found = true;
+			} else {
+				compiler_panicf(compiler->parser, TYPE, "'%.*s' is not callable as a static method.",
+								(int)method_name_token.length, method_name_token.start);
+			}
+		}
+
+		if (method_found && method_arg_types) {
+			const int param_offset = 0;
+			int user_params = method_arity - param_offset;
+			if (user_params < 0)
+				user_params = 0;
+
+			if ((int)arg_count != user_params) {
+				compiler_panicf(compiler->parser, ARGUMENT_MISMATCH, "Method '%.*s' expects %d argument(s), got %d.",
+								(int)method_name_token.length, method_name_token.start, user_params, (int)arg_count);
+			} else {
+				for (int i = 0; i < (int)arg_count; i++) {
+					ObjectTypeRecord *expected = method_arg_types[i + param_offset];
+					ObjectTypeRecord *got_type = arg_types[i];
+					if (expected && got_type && expected->base_type != ANY_TYPE && got_type->base_type != ANY_TYPE &&
+						!types_compatible(expected, got_type)) {
+						char exp_name[128], got_name[128];
+						type_record_name(expected, exp_name, sizeof(exp_name));
+						type_record_name(got_type, got_name, sizeof(got_name));
+						compiler_panicf(compiler->parser, TYPE, "Argument %d type mismatch: expected '%s', got '%s'.",
+										i + 1, exp_name, got_name);
+					}
+				}
+			}
+		}
+
+		emit_words(compiler, OP_STATIC_INVOKE, name_constant);
+		emit_word(compiler, arg_count);
+
+		pop_type_record(compiler);
+		push_type_record(compiler, method_return ? method_return : T_ANY);
+
+		for (int i = 0; i < (int)arg_count; i++) {
+			pop(compiler->owner->current_module_record);
+		}
+		pop(compiler->owner->current_module_record); // object_type
+		return;
+	}
+}
+
 void dot(Compiler *compiler, const bool can_assign)
 {
 	const ObjectNativeCallable *stdlib_callable = NULL;
@@ -1930,6 +2034,7 @@ ParseRule rules[] = {
 	[CRUX_TOKEN_DOLLAR_LEFT_SQUARE] = {tuple_literal, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_COMMA] = {NULL, NULL, NULL, PREC_NONE},
 	[CRUX_TOKEN_DOT] = {NULL, dot, NULL, PREC_CALL},
+	[CRUX_TOKEN_COLON_COLON] = {NULL, colon_colon, NULL, PREC_CALL},
 	[CRUX_TOKEN_MINUS] = {unary, binary, NULL, PREC_TERM},
 	[CRUX_TOKEN_PLUS] = {NULL, binary, NULL, PREC_TERM},
 	[CRUX_TOKEN_SEMICOLON] = {NULL, NULL, NULL, PREC_NONE},
