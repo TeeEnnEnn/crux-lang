@@ -15,7 +15,6 @@ typedef enum {
 	CRUX_TOKEN_RIGHT_BRACE, // }
 	CRUX_TOKEN_LEFT_SQUARE, // [
 	CRUX_TOKEN_RIGHT_SQUARE, // ]
-	CRUX_TOKEN_DOLLAR_LEFT_BRACE, // ${
 	CRUX_TOKEN_DOLLAR_LEFT_SQUARE, // $[
 	CRUX_TOKEN_COMMA, // ,
 	CRUX_TOKEN_DOT, // .
@@ -53,6 +52,7 @@ typedef enum {
 	CRUX_TOKEN_BACK_SLASH_EQUAL, // \=
 	CRUX_TOKEN_PERCENT_EQUAL, // %=
 	CRUX_TOKEN_QUESTION_MARK, // ?
+	CRUX_TOKEN_COLON_COLON, // ::
 	// Literals. //
 	CRUX_TOKEN_IDENTIFIER, //
 	CRUX_TOKEN_STRING, //
@@ -72,7 +72,7 @@ typedef enum {
 	CRUX_TOKEN_OR, // or
 	CRUX_TOKEN_RETURN, // return
 	CRUX_TOKEN_TRUE, // true
-	CRUX_TOKEN_LET, // let
+	CRUX_TOKEN_VAR, // var
 	CRUX_TOKEN_WHILE, // while
 	CRUX_TOKEN_ERROR, //
 	CRUX_TOKEN_BREAK, // break
@@ -99,6 +99,7 @@ typedef enum {
 	CRUX_TOKEN_TYPE, // type
 	CRUX_TOKEN_IN, // in
 	CRUX_TOKEN_NATIVE, // native
+	CRUX_TOKEN_STATIC, // static
 
 	CRUX_TOKEN_NIL_TYPE, // Nil
 	CRUX_TOKEN_BOOL_TYPE, // Bool

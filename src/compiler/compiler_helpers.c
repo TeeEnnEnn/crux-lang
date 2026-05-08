@@ -40,6 +40,9 @@ bool check(const Compiler *compiler, const CruxTokenType type)
 	return compiler->parser->current.type == type;
 }
 
+/**
+ * checks of the token matches, and advances if it does.
+ */
 bool match(const Compiler *compiler, const CruxTokenType type)
 {
 	if (!check(compiler, type))
@@ -880,7 +883,7 @@ void synchronize(const Compiler *compiler)
 		case CRUX_TOKEN_STRUCT:
 		case CRUX_TOKEN_PUB:
 		case CRUX_TOKEN_FN:
-		case CRUX_TOKEN_LET:
+		case CRUX_TOKEN_VAR:
 		case CRUX_TOKEN_FOR:
 		case CRUX_TOKEN_IF:
 		case CRUX_TOKEN_WHILE:

@@ -479,7 +479,7 @@ bool init_compiler(CruxVM *vm, Compiler *compiler, Compiler *enclosing, const Fu
 						}
 					}
 					ObjectTypeRecord *fn_type = new_function_type_rec(vm, args_copy, callable->arity,
-																	  callable->return_type);
+																	  callable->return_type, false);
 					type_table_set(compiler->type_table, name, fn_type);
 
 					if (vm->current_module_record) {

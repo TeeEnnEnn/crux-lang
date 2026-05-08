@@ -6,23 +6,23 @@ use stats from "crux:gc";
 
 println("=== START OF RAY TRACER ===");
 
-let g_random = Random();
+var g_random = Random();
 
-let IMAGE_ASPECT_RATIO = 16.0 / 9.0;
-let IMAGE_WIDTH = 480;
-let IMAGE_HEIGHT = int(IMAGE_WIDTH / IMAGE_ASPECT_RATIO)?;
+var IMAGE_ASPECT_RATIO = 16.0 / 9.0;
+var IMAGE_WIDTH = 480;
+var IMAGE_HEIGHT = int(IMAGE_WIDTH / IMAGE_ASPECT_RATIO)?;
 
-let SAMPLES_PER_PIXEL = 50;
-let MAX_DEPTH = 25;
+var SAMPLES_PER_PIXEL = 50;
+var MAX_DEPTH = 25;
 
-let SCALE = 1.0 / SAMPLES_PER_PIXEL;
-let COLOR_SCALE = 255.999;
-let INV_WIDTH = 1.0 / (IMAGE_WIDTH - 1);
-let INV_HEIGHT = 1.0 / (IMAGE_HEIGHT - 1);
+var SCALE = 1.0 / SAMPLES_PER_PIXEL;
+var COLOR_SCALE = 255.999;
+var INV_WIDTH = 1.0 / (IMAGE_WIDTH - 1);
+var INV_HEIGHT = 1.0 / (IMAGE_HEIGHT - 1);
 
-let VEC3_ZERO: Vector[3] = Vector(3, [0, 0, 0]);
-let VEC3_WHITE: Vector[3] = Vector(3, [1.0, 1.0, 1.0]);
-let VEC3_BLUE: Vector[3] = Vector(3, [0.5, 0.7, 1.0]);
+var VEC3_ZERO: Vector[3] = Vector(3, [0, 0, 0]);
+var VEC3_WHITE: Vector[3] = Vector(3, [1.0, 1.0, 1.0]);
+var VEC3_BLUE: Vector[3] = Vector(3, [0.5, 0.7, 1.0]);
 
 struct Ray {
     origin: Vector[3],
@@ -60,13 +60,13 @@ struct Sphere {
 }
 
 fn reflect(vector: Vector[3], normal: Vector[3]) -> Vector[3] {
-    let d = vector.dot(normal)?;
+    var d = vector.dot(normal)?;
     return vector - normal * (2.0 * d);
 }
 
 fn random_in_unit_sphere() -> Vector[3] {
     while true {
-        let p = Vector(3, [
+        var p = Vector(3, [
             g_random.float(-1.0, 1.0)?,
             g_random.float(-1.0, 1.0)?,
             g_random.float(-1.0, 1.0)?
@@ -89,8 +89,8 @@ impl Ray {
 
 impl Metal {
     fn scatter(ray_in: Ray, rec: HitRecord) -> Table[String, Any] | Nil {
-        let reflected = reflect(ray_in.direction.normalize()?, rec.normal);
-        let scattered_ray = new Ray{
+        var reflected = reflect(ray_in.direction.normalize()?, rec.normal);
+        var scattered_ray = new Ray{
             origin = rec.p,
             direction = reflected + random_unit_vector() * (self.fuzz as Float)
         };
@@ -106,7 +106,7 @@ impl Metal {
 
 impl Lambertian {
     fn scatter(ray_in: Ray, rec: HitRecord) -> Table[String, Any] {
-        let scatter_direction = rec.normal + random_unit_vector();
+        var scatter_direction = rec.normal + random_unit_vector();
 
         // Degenerate scatter direction — fall back to the surface normal
         if scatter_direction.magnitude() < 0.001 {
@@ -121,18 +121,18 @@ impl Lambertian {
 }
 
 fn hit_sphere(sphere: Sphere, ray: Ray, t_min: Float, t_max: Float) -> Nil | HitRecord {
-    let oc          = ray.origin - sphere.center;
-    let a           = ray.direction.dot(ray.direction)?;
-    let half_b      = oc.dot(ray.direction)?;
-    let c           = oc.dot(oc)? - sphere.radius_squared;
-    let discriminant = half_b * half_b - a * c;
+    var oc          = ray.origin - sphere.center;
+    var a           = ray.direction.dot(ray.direction)?;
+    var half_b      = oc.dot(ray.direction)?;
+    var c           = oc.dot(oc)? - sphere.radius_squared;
+    var discriminant = half_b * half_b - a * c;
 
     if discriminant < 0.0 {
         return nil;
     }
 
-    let sqrt_d = sqrt(discriminant)?;
-    let root   = (-half_b - sqrt_d) / a;
+    var sqrt_d = sqrt(discriminant)?;
+    var root   = (-half_b - sqrt_d) / a;
 
     if root < t_min or root > t_max {
         root = (-half_b + sqrt_d) / a;
@@ -141,10 +141,10 @@ fn hit_sphere(sphere: Sphere, ray: Ray, t_min: Float, t_max: Float) -> Nil | Hit
         }
     }
 
-    let hit_p          = ray.at(root);
-    let outward_normal = (hit_p - sphere.center) / sphere.radius;
-    let is_front_face  = ray.direction.dot(outward_normal)? < 0.0;
-    let hit_normal: Vector[3] = outward_normal;
+    var hit_p          = ray.at(root);
+    var outward_normal = (hit_p - sphere.center) / sphere.radius;
+    var is_front_face  = ray.direction.dot(outward_normal)? < 0.0;
+    var hit_normal: Vector[3] = outward_normal;
 
     if not is_front_face {
         hit_normal = outward_normal * -1.0;
@@ -160,11 +160,11 @@ fn hit_sphere(sphere: Sphere, ray: Ray, t_min: Float, t_max: Float) -> Nil | Hit
 }
 
 fn hit_world(ray: Ray, world: Array[Sphere], t_min: Float, t_max: Float) -> HitRecord | Nil {
-    let closest   = t_max;
-    let final_rec: HitRecord | Nil = nil;
+    var closest   = t_max;
+    var final_rec: HitRecord | Nil = nil;
 
-    for let i = 0; i < len(world); i += 1 {
-        let rec = hit_sphere(world[i], ray, t_min, closest);
+    for var i = 0; i < len(world); i += 1 {
+        var rec = hit_sphere(world[i], ray, t_min, closest);
         if rec != nil {
             closest   = rec.t;
             final_rec = rec;
@@ -179,14 +179,14 @@ fn ray_color(ray: Ray, depth: Float, world: Array[Sphere]) -> Vector[3] {
         return VEC3_ZERO;
     }
 
-    let rec = hit_world(ray, world, 0.001, 999999999.0);
+    var rec = hit_world(ray, world, 0.001, 999999999.0);
 
     if rec != nil {
-        let scatter_result = rec.material.scatter(ray, rec);
+        var scatter_result = rec.material.scatter(ray, rec);
 
         if scatter_result != nil {
-            let scattered_color = ray_color(scatter_result["scattered"], depth - 1, world);
-            let att             = scatter_result["attenuation"];
+            var scattered_color = ray_color(scatter_result["scattered"], depth - 1, world);
+            var att             = scatter_result["attenuation"];
             return Vector(3, [
                 att.x() * scattered_color.x(),
                 att.y() * scattered_color.y(),
@@ -198,18 +198,18 @@ fn ray_color(ray: Ray, depth: Float, world: Array[Sphere]) -> Vector[3] {
     }
 
     // Background: vertical gradient from white to sky blue
-    let unit_dir = ray.direction.normalize()?;
-    let t        = 0.5 * (unit_dir.y() + 1.0);
+    var unit_dir = ray.direction.normalize()?;
+    var t        = 0.5 * (unit_dir.y() + 1.0);
     return VEC3_WHITE * (1.0 - t) + VEC3_BLUE * t;
 }
 
 fn main() -> Nil {
-    let world: Array[Sphere] = [];
+    var world: Array[Sphere] = [];
 
-    let ground = new Lambertian { albedo = Vector(3, [0.5, 0.5, 0.5]), fuzz = nil };
-    let material1 = new Lambertian { albedo = Vector(3, [0.7, 0.3, 0.3]), fuzz = nil };
-    let material2 = new Metal { albedo = Vector(3, [0.8, 0.6, 0.2]), fuzz = 0.2};
-    let material3 = new Metal { albedo = Vector(3, [0.8, 0.8, 0.8]), fuzz = 0.0};
+    var ground = new Lambertian { albedo = Vector(3, [0.5, 0.5, 0.5]), fuzz = nil };
+    var material1 = new Lambertian { albedo = Vector(3, [0.7, 0.3, 0.3]), fuzz = nil };
+    var material2 = new Metal { albedo = Vector(3, [0.8, 0.6, 0.2]), fuzz = 0.2};
+    var material3 = new Metal { albedo = Vector(3, [0.8, 0.8, 0.8]), fuzz = 0.0};
 
     world.push(
         new Sphere {
@@ -246,22 +246,22 @@ fn main() -> Nil {
 
     // Camera — positioned at (13,2,3) looking at the origin
     // with a fixed vertical field of view of ~20 degrees
-    let camera_origin = Vector(3, [13.0, 2.0, 3.0]);
-    let camera_target = Vector(3, [0.0,  0.0, 0.0]);
-    let camera_vup    = Vector(3, [0.0,  1.0, 0.0]);
+    var camera_origin = Vector(3, [13.0, 2.0, 3.0]);
+    var camera_target = Vector(3, [0.0,  0.0, 0.0]);
+    var camera_vup    = Vector(3, [0.0,  1.0, 0.0]);
 
-    let focal_length    = 10.0;  // fixed — controls zoom independent of distance
-    let viewport_height = 2.0 * (0.17632698070004336); // 2 * tan(vfov/2), vfov = 20 deg
-    let viewport_width  = IMAGE_ASPECT_RATIO * viewport_height;
+    var focal_length    = 10.0;  // fixed — controls zoom independent of distance
+    var viewport_height = 2.0 * (0.17632698070004336); // 2 * tan(vfov/2), vfov = 20 deg
+    var viewport_width  = IMAGE_ASPECT_RATIO * viewport_height;
 
     // Orthonormal camera basis
-    let w = (camera_origin - camera_target).normalize()?;
-    let u = (camera_vup * w).normalize()?;
-    let v = w * u;
+    var w = (camera_origin - camera_target).normalize()?;
+    var u = (camera_vup * w).normalize()?;
+    var v = w * u;
 
-    let horizontal         = u * (viewport_width * focal_length);
-    let vertical           = v * (viewport_height * focal_length);
-    let lower_left_corner  = camera_origin
+    var horizontal         = u * (viewport_width * focal_length);
+    var vertical           = v * (viewport_height * focal_length);
+    var lower_left_corner  = camera_origin
         - horizontal * 0.5
         - vertical * 0.5
         - w * focal_length;
@@ -270,36 +270,36 @@ fn main() -> Nil {
     println("Samples per pixel : " + string(SAMPLES_PER_PIXEL));
     println("Max ray depth     : " + string(MAX_DEPTH));
 
-    let file = open("renders/rays.ppm", "w")?;
+    var file = open("renders/rays.ppm", "w")?;
     file.write("P3\n");
     file.write(string(IMAGE_WIDTH) + " " + string(IMAGE_HEIGHT) + "\n");
     file.write("255\n");
 
-    for let j = IMAGE_HEIGHT - 1; j >= 0; j -= 1 {
+    for var j = IMAGE_HEIGHT - 1; j >= 0; j -= 1 {
         if j % 10 == 0 {
             println("Scanlines remaining: " + string(j));
         }
 
-        for let i = 0; i < IMAGE_WIDTH; i += 1 {
-            let pixel_color = VEC3_ZERO;
+        for var i = 0; i < IMAGE_WIDTH; i += 1 {
+            var pixel_color = VEC3_ZERO;
 
-            for let s = 0; s < SAMPLES_PER_PIXEL; s += 1 {
-                let uu = (i + g_random.float(0.0, 1.0)?) * INV_WIDTH;
-                let vv = (j + g_random.float(0.0, 1.0)?) * INV_HEIGHT;
+            for var s = 0; s < SAMPLES_PER_PIXEL; s += 1 {
+                var uu = (i + g_random.float(0.0, 1.0)?) * INV_WIDTH;
+                var vv = (j + g_random.float(0.0, 1.0)?) * INV_HEIGHT;
 
-                let ray_dir = lower_left_corner
+                var ray_dir = lower_left_corner
                     + horizontal * uu
                     + vertical * vv
                     - camera_origin;
 
-                let r = new Ray {origin = camera_origin, direction = ray_dir};
+                var r = new Ray {origin = camera_origin, direction = ray_dir};
                 pixel_color = pixel_color + ray_color(r, MAX_DEPTH, world);
             }
 
             // Gamma-correct (gamma 2) and convert to [0, 255]
-            let ir = int(COLOR_SCALE * sqrt(pixel_color.x() * SCALE)?)?;
-            let ig = int(COLOR_SCALE * sqrt(pixel_color.y() * SCALE)?)?;
-            let ib = int(COLOR_SCALE * sqrt(pixel_color.z() * SCALE)?)?;
+            var ir = int(COLOR_SCALE * sqrt(pixel_color.x() * SCALE)?)?;
+            var ig = int(COLOR_SCALE * sqrt(pixel_color.y() * SCALE)?)?;
+            var ib = int(COLOR_SCALE * sqrt(pixel_color.z() * SCALE)?)?;
 
             file.write(string(ir) + " " + string(ig) + " " + string(ib) + "\n");
         }

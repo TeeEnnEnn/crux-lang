@@ -92,7 +92,7 @@ static ObjectString **make_names(CruxVM *vm, ObjectString **src, int count)
 #define VEC(dim) new_vector_type_rec(SA, (dim))
 #define MAT(row, col) new_matrix_type_rec(SA, (row), (col))
 #define UNI(args, names, count) new_union_type_rec(SA, (args), (names), (count))
-#define FUNC(args, count, return_type) new_function_type_rec(SA, (args), (count), (return_type))
+#define FUNC(args, count, return_type) new_function_type_rec(SA, (args), (count), (return_type), false)
 
 #define t_nil REC(NIL_TYPE)
 #define t_bool REC(BOOL_TYPE)

@@ -341,6 +341,7 @@ typedef struct {
 	ObjectString *name;
 	Table fields;
 	Table methods;
+	Table static_methods;
 } ObjectStruct;
 
 
@@ -395,7 +396,7 @@ struct ObjectTypeRecord {
 			ObjectTypeRecord **arg_types;
 			int arg_count;
 			ObjectTypeRecord *return_type;
-			// TODO: add is_native flag
+			bool is_static;
 		} function_type;
 		struct {
 			ObjectTypeRecord *element_type;

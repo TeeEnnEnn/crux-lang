@@ -1,13 +1,13 @@
 use Stack from "std:collections";
 
 
-let stack = new Stack {data = []};
+var stack = new Stack {data = []};
 stack.push(1);
 stack.push(2);
 stack.push(3);
-let poppeda = (stack.pop() as Option[Any]).unwrap();
+var poppeda = (stack.pop() as Option[Any]).unwrap();
 assert(poppeda == 3, "pop should return 3 got: " + string(poppeda));
-let poppedb = (stack.pop() as Option[Any]).unwrap();
+var poppedb = (stack.pop() as Option[Any]).unwrap();
 assert(poppedb == 2, "pop should return 2 got: " + string(poppedb));
-let poppedc = (stack.pop() as Option[Any]).unwrap();
+var poppedc = (stack.pop() as Option[Any]).unwrap();
 assert(poppedc == 1, "pop should return 1 got: " + string(poppedc));

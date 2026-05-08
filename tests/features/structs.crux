@@ -1,11 +1,11 @@
 println("=== START OF TESTING STRUCTS ===");
 
 struct Point { x, y }
-let p = new Point { x = 10, y = 20 };
+var p = new Point { x = 10, y = 20 };
 assert(p.x == 10 and p.y == 20, "Point coordinates are incorrect");
 
 struct TypedPoint { x: Int, y: Int }
-let tp = new TypedPoint { x = 10, y = 20 };
+var tp = new TypedPoint { x = 10, y = 20 };
 assert(tp.x == 10 and tp.y == 20, "TypedPoint coordinates are incorrect");
 
 struct PointWithMethods { x, y }
@@ -17,7 +17,7 @@ impl PointWithMethods {
         return self.y * self.y;
     }
 }
-let pw = new PointWithMethods { x = 10, y = 20 };
+var pw = new PointWithMethods { x = 10, y = 20 };
 assert(pw.x_squared() == 100 and pw.y_squared() == 400, "PointWithMethods failed to execute methods");
 
 struct Rect {
@@ -29,7 +29,7 @@ impl Rect {
         return self.width * self.height;
     }
 }
-let r = new Rect { width = 10.0, height = 20.0 };
+var r = new Rect { width = 10.0, height = 20.0 };
 assert(r.area() == 200.0, "Rect area calculation is incorrect");
 
 struct Square {
@@ -41,8 +41,78 @@ impl Square {
         return self.rect.area();
     }
 }
-let s = new Square { rect = r };
+var s = new Square { rect = r };
 assert(s.area() == 200.0, "Failed to call method from composed struct");
 
+struct Counter {
+    count: Int
+}
+impl Counter {
+    static fn create() -> Counter {
+        return new Counter { count = 0 };
+    }
+    static fn from_value(val: Int) -> Counter {
+        return new Counter { count = val };
+    }
+    fn increment() -> Nil {
+        self.count = self.count + 1;
+    }
+}
+var c = Counter::create();
+assert(c.count == 0, "Static method create() failed");
+var c2 = Counter::from_value(42);
+assert(c2.count == 42, "Static method from_value() failed");
+c2.increment();
+assert(c2.count == 43, "Instance method increment() failed");
+
+struct MathUtils {}
+impl MathUtils {
+    static fn add(a: Int, b: Int) -> Int {
+        return a + b;
+    }
+    static fn multiply(a: Int, b: Int) -> Int {
+        return a * b;
+    }
+}
+assert(MathUtils::add(5, 3) == 8, "Static method add() failed");
+assert(MathUtils::multiply(4, 7) == 28, "Static method multiply() failed");
+
+struct StaticCalls {}
+impl StaticCalls {
+    static fn one() -> Int { return 1; }
+    static fn two() -> Int {
+        return StaticCalls::one() + StaticCalls::one();
+    }
+}
+assert(StaticCalls::two() == 2, "Static method calling another static method failed");
+
+struct InstanceCallsStatic {
+    value: Int
+}
+impl InstanceCallsStatic {
+    static fn get_default() -> Int { return 10; }
+    fn get_value_plus_default() -> Int {
+        return self.value + InstanceCallsStatic::get_default();
+    }
+}
+var ics = new InstanceCallsStatic { value = 5 };
+assert(ics.get_value_plus_default() == 15, "Instance method calling static method failed");
+
+struct RecursiveStatic {}
+impl RecursiveStatic {
+    static fn factorial(n: Int) -> Int {
+        if (n <= 1) { return 1; }
+        return n * RecursiveStatic::factorial(n - 1);
+    }
+}
+assert(RecursiveStatic::factorial(5) == 120, "Recursive static method failed");
+
+struct MultiArgs {}
+impl MultiArgs {
+    static fn sum4(a: Int, b: Int, c: Int, d: Int) -> Int {
+        return a + b + c + d;
+    }
+}
+assert(MultiArgs::sum4(1, 2, 3, 4) == 10, "Static method with multiple arguments failed");
 
 println("=== END OF TESTING STRUCTS ===");

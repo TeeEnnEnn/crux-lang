@@ -1,7 +1,7 @@
-#include "compiler/compiler_helpers.h"
 #include "compiler/compiler_declarations.h"
 #include "compiler/compiler_expressions.h"
 #include "compiler/compiler_functions.h"
+#include "compiler/compiler_helpers.h"
 #include "compiler/compiler_statements.h"
 #include "panic.h"
 
@@ -92,7 +92,14 @@ static void struct_declaration(Compiler *compiler, bool is_public)
 
 	consume(compiler, CRUX_TOKEN_LEFT_BRACE, "Expected '{' before struct body.");
 
-	ObjectTypeTable *field_types = new_type_table(compiler->owner, INITIAL_TYPE_TABLE_SIZE);
+	ObjectTypeRecord *existing_type = NULL;
+	ObjectTypeTable *field_types = NULL;
+	if (compiler->scope_depth == 0 && type_table_get(compiler->type_table, struct_name_str, &existing_type) &&
+		existing_type->base_type == STRUCT_TYPE) {
+		field_types = existing_type->as.struct_type.field_types;
+	} else {
+		field_types = new_type_table(compiler->owner, INITIAL_TYPE_TABLE_SIZE);
+	}
 	push(compiler->owner->current_module_record, OBJECT_VAL(field_types));
 	int fieldCount = 0;
 
@@ -187,6 +194,8 @@ void impl_declaration(Compiler *compiler)
 	consume(compiler, CRUX_TOKEN_LEFT_BRACE, "Expected '{' before impl body.");
 
 	while (!check(compiler, CRUX_TOKEN_RIGHT_BRACE) && !check(compiler, CRUX_TOKEN_EOF)) {
+		const bool is_static_method = match(compiler, CRUX_TOKEN_STATIC);
+
 		consume(compiler, CRUX_TOKEN_FN, "Expected 'fn' inside impl block.");
 		consume(compiler, CRUX_TOKEN_IDENTIFIER, "Expected method name.");
 
@@ -195,14 +204,18 @@ void impl_declaration(Compiler *compiler)
 		push(compiler->owner->current_module_record, OBJECT_VAL(method_name_str));
 		const uint16_t method_name_const = make_constant(compiler, OBJECT_VAL(method_name_str));
 
-		// slot 0 is preserved for self
-		function(compiler, TYPE_METHOD, struct_type, NULL, -1);
+		// slot 0 is preserved for self if the method is not static
+		function(compiler, is_static_method ? TYPE_STATIC_METHOD : TYPE_METHOD, struct_type, NULL, -1);
 
 		ObjectTypeRecord *method_type = pop_type_record(compiler);
 		push(compiler->owner->current_module_record, OBJECT_VAL(method_type));
 		type_table_set(struct_type->as.struct_type.field_types, method_name_str, method_type);
 
-		emit_words(compiler, OP_METHOD, method_name_const);
+		if (is_static_method) {
+			emit_words(compiler, OP_STATIC_METHOD, method_name_const);
+		} else {
+			emit_words(compiler, OP_METHOD, method_name_const);
+		}
 		pop(compiler->owner->current_module_record); // method_type
 		pop(compiler->owner->current_module_record); // method_name_str
 	}
@@ -241,7 +254,6 @@ void type_declaration(Compiler *compiler, bool is_public)
 	pop(compiler->owner->current_module_record);
 }
 
-
 void public_declaration(Compiler *compiler)
 {
 	if (compiler->scope_depth > 0) {
@@ -250,7 +262,7 @@ void public_declaration(Compiler *compiler)
 	emit_word(compiler, OP_PUB);
 	if (match(compiler, CRUX_TOKEN_FN)) {
 		fn_declaration(compiler, true);
-	} else if (match(compiler, CRUX_TOKEN_LET)) {
+	} else if (match(compiler, CRUX_TOKEN_VAR)) {
 		var_declaration(compiler, true);
 	} else if (match(compiler, CRUX_TOKEN_STRUCT)) {
 		struct_declaration(compiler, true);
@@ -261,13 +273,14 @@ void public_declaration(Compiler *compiler)
 	} else if (match(compiler, CRUX_TOKEN_NATIVE)) {
 		native_declaration(compiler, true);
 	} else {
-		compiler_panic(compiler->parser, "Expected 'fn', 'let', 'struct', 'type', 'use' or 'native' after 'pub'.", SYNTAX);
+		compiler_panic(compiler->parser, "Expected 'fn', 'var', 'struct', 'type', 'use' or 'native' after 'pub'.",
+					   SYNTAX);
 	}
 }
 
 void declaration(Compiler *compiler)
 {
-	if (match(compiler, CRUX_TOKEN_LET)) {
+	if (match(compiler, CRUX_TOKEN_VAR)) {
 		var_declaration(compiler, false);
 	} else if (match(compiler, CRUX_TOKEN_FN)) {
 		fn_declaration(compiler, false);

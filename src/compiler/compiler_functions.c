@@ -3,8 +3,8 @@
 #include "compiler/compiler_statements.h"
 #include "panic.h"
 
-void function(Compiler *compiler, const FunctionType type, ObjectTypeRecord *self_type,
-					 ObjectString *recursive_name, int recursive_global_index)
+void function(Compiler *compiler, const FunctionType type, ObjectTypeRecord *self_type, ObjectString *recursive_name,
+			  int recursive_global_index)
 {
 	Compiler function_compiler = {0};
 	if (!init_compiler(compiler->owner, &function_compiler, compiler, type)) {
@@ -104,7 +104,7 @@ void function(Compiler *compiler, const FunctionType type, ObjectTypeRecord *sel
 	}
 
 	ObjectTypeRecord *func_type = new_function_type_rec(compiler->owner, param_types, param_count,
-														annotated_return_type);
+														annotated_return_type, type == TYPE_STATIC_METHOD);
 	push_type_record(compiler, func_type);
 
 	for (int i = 0; i < param_count; i++) {
@@ -218,7 +218,7 @@ void native_declaration(Compiler *compiler, const bool is_public)
 	// Define the global variable (it will be populated by OP_BIND_NATIVE at runtime)
 	define_variable(compiler, global, is_public);
 
-	ObjectTypeRecord *fn_type = new_function_type_rec(compiler->owner, param_types, param_count, return_type);
+	ObjectTypeRecord *fn_type = new_function_type_rec(compiler->owner, param_types, param_count, return_type, false);
 	if (compiler->scope_depth == 0) {
 		type_table_set(compiler->type_table, name_str, fn_type);
 		if (is_public && compiler->owner->current_module_record) {
@@ -331,7 +331,7 @@ void anonymous_function(Compiler *compiler, const bool can_assign)
 	param_types = GROW_ARRAY(compiler->owner, ObjectTypeRecord *, param_types, param_capacity, param_count);
 
 	ObjectTypeRecord *func_type = new_function_type_rec(compiler->owner, param_types, param_count,
-														annotated_return_type);
+														annotated_return_type, false);
 	push_type_record(compiler, func_type);
 
 	for (int i = 0; i < param_count; i++) {

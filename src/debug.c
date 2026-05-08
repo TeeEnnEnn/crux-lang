@@ -390,6 +390,9 @@ int disassemble_instruction(CruxVM *vm, const Chunk *chunk, int offset)
 	case OP_METHOD: {
 		return constant_instruction(vm, "OP_METHOD", chunk, offset);
 	}
+	case OP_STATIC_METHOD: {
+		return constant_instruction(vm, "OP_STATIC_METHOD", chunk, offset);
+	}
 	case OP_SET_PROPERTY_PLUS: {
 		return constant_instruction(vm, "OP_SET_PROPERTY_PLUS", chunk, offset);
 	}
@@ -566,6 +569,9 @@ int disassemble_instruction(CruxVM *vm, const Chunk *chunk, int offset)
 	}
 	case OP_INVOKE_STDLIB_UNWRAP: {
 		return invoke_instruction(vm, "OP_INVOKE_STDLIB_UNWRAP", chunk, offset);
+	}
+	case OP_STATIC_INVOKE: {
+		return invoke_instruction(vm, "OP_STATIC_INVOKE", chunk, offset);
 	}
 	case OP_POP_N: {
 		return inline_arg_instruction(vm, "OP_POP_N", chunk, offset);

@@ -15,33 +15,33 @@ impl Counter {
             return None;
         }
 
-        let value = self.current;
+        var value = self.current;
         self.current = self.current + 1;
         return Some(value);
     }
 }
 
-let counter = new Counter {
+var counter = new Counter {
     current = 0,
     end = 4
 };
 
-let sum = 0;
-for let value in counter {
+var sum = 0;
+for var value in counter {
     sum = sum + value;
 }
 
 assert(sum == 6, "for-in should work with user-defined iterables");
 
-let counter2 = new Counter {
+var counter2 = new Counter {
     current = 1,
     end = 3
 };
 
-let it = iter(counter2)?;
-let first = next(it);
-let second = next(it);
-let third = next(it);
+var it = iter(counter2)?;
+var first = next(it);
+var second = next(it);
+var third = next(it);
 
 assert(first.is_some(), "first next() should produce Some");
 assert(second.is_some(), "second next() should produce Some");

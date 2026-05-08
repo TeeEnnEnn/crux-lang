@@ -4,7 +4,7 @@ println("=== Testing Sys Module ===");
 
 // Test platform
 println("--- Testing platform ---");
-let plat = platform();
+var plat = platform();
 assert(typeof plat == "String", "platform should return String");
 println("Platform: " + plat);
 assert(plat == "linux" or plat == "windows" or plat == "apple", "platform should return known platform");
@@ -12,14 +12,14 @@ println("platform() test passed");
 
 // Test arch
 println("--- Testing arch ---");
-let arch_str = arch();
+var arch_str = arch();
 assert(typeof arch_str == "String", "arch should return String");
 println("Architecture: " + arch_str);
 println("arch() test passed");
 
 // Test pid
 println("--- Testing pid ---");
-let process_id = pid();
+var process_id = pid();
 assert(typeof process_id == "Int", "pid should return int");
 assert(process_id > 0, "pid should return positive integer");
 println("PID: " + string(process_id));
@@ -27,9 +27,9 @@ println("pid() test passed");
 
 // Test args
 println("--- Testing args ---");
-let arguments = args();
+var arguments = args();
 assert(typeof arguments == "Result[Array[Int]]", "args should return Result");
-let args_arr = match arguments {
+var args_arr = match arguments {
     Ok(v) => give v;
     Err(_) => give [];
 };
@@ -40,9 +40,9 @@ println("args() test passed");
 // Test get_env
 println("--- Testing get_env ---");
 // Test with a common environment variable
-let path_result = get_env("PATH");
+var path_result = get_env("PATH");
 assert(typeof path_result == "Result[String]", "get_env should return Result");
-let path = match path_result {
+var path = match path_result {
     Ok(v) => give v;
     Err(_) => { panic "Failed to get PATH environment variable"; }
 };
@@ -55,7 +55,7 @@ println("get_env() test passed");
 
 // Test get_env with non-existent variable
 println("--- Testing get_env with non-existent ---");
-let no_var_result = get_env("DEFINITELY_NOT_A_REAL_ENV_VAR_12345");
+var no_var_result = get_env("DEFINITELY_NOT_A_REAL_ENV_VAR_12345");
 println(typeof no_var_result);
 assert(typeof no_var_result == "Result[Error]", "Failed to get non-existent environment variable");
 println("get_env() non-existent test passed");

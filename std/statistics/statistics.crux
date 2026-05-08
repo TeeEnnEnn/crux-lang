@@ -1,20 +1,20 @@
 // Statistics Package
 
 pub fn mean(data: Array[Int | Float]) -> Float {
-    let count = len(data);
+    var count = len(data);
     if count == 0 {
         return 0.0;
     }
-    let sum = data.reduce(fn (acc, curr) { return acc + curr; }, 0.0)? as Float;
+    var sum = data.reduce(fn (acc, curr) { return acc + curr; }, 0.0)? as Float;
     return sum / count;
 }
 
 pub fn median(data: Array[Int | Float]) -> Float {
-    let count = len(data);
+    var count = len(data);
     if count == 0 {
         return 0.0;
     }
-    let sorted = data.sort()?;
+    var sorted = data.sort()?;
     if count % 2 == 0 {
         return (sorted[int(count / 2 - 1)?] + sorted[int(count / 2)?]) / 2.0;
     } else {

@@ -2,14 +2,14 @@
 use Buffer from "crux:buffer";
 
 println("=== Testing basic buffer creation ===");
-let buf = Buffer();
+var buf = Buffer();
 assert(typeof buf == "Buffer", "Failed to create basic buffer");
 
 println("=== Testing is_empty() method ===");
 assert(buf.is_empty() == true, "Newly created buffer should be empty");
 
 println("=== Testing capacity() method ===");
-let cap = buf.capacity();
+var cap = buf.capacity();
 assert(cap > 0, "Buffer should have capacity");
 
 println("=== Testing write_byte() method ===");
@@ -17,134 +17,134 @@ buf.write_byte(65);
 assert(buf.is_empty() == false, "Buffer should not be empty after write_byte");
 
 println("=== Testing write_string() method ===");
-let buf2 = Buffer();
+var buf2 = Buffer();
 buf2.write_string("Hello");
-let content = buf2.read_all().unwrap();
+var content = buf2.read_all().unwrap();
 assert(content == "Hello", "read_all should return 'Hello'");
 
 println("=== Testing multiple write operations ===");
-let buf3 = Buffer();
+var buf3 = Buffer();
 buf3.write_string("Hello");
 buf3.write_string(" World");
-let combined = buf3.read_all().unwrap();
+var combined = buf3.read_all().unwrap();
 assert(combined == "Hello World", "Combined string should be 'Hello World'");
 
 println("=== Testing clear() method ===");
-let buf4 = Buffer();
+var buf4 = Buffer();
 buf4.write_string("test");
 assert(buf4.is_empty() == false, "Buffer should not be empty before clear");
 buf4.clear();
 assert(buf4.is_empty() == true, "Buffer should be empty after clear");
 
 println("=== Testing clone() method ===");
-let buf5 = Buffer();
+var buf5 = Buffer();
 buf5.write_string("test");
-let buf5_clone = buf5.clone();
+var buf5_clone = buf5.clone();
 assert(buf5_clone.read_all().unwrap() == "test", "Clone should have same content");
 
 println("=== Testing write_int16_le() ===");
-let buf6 = Buffer();
+var buf6 = Buffer();
 buf6.write_int16_le(4660);
-let data = buf6.read_all().unwrap();
+var data = buf6.read_all().unwrap();
 assert(len(data) == 2, "int16 should be 2 bytes");
 
 println("=== Testing write_int16_be() ===");
-let buf7 = Buffer();
+var buf7 = Buffer();
 buf7.write_int16_be(4660);
-let data7 = buf7.read_all().unwrap();
+var data7 = buf7.read_all().unwrap();
 assert(len(data7) == 2, "int16 should be 2 bytes");
 
 println("=== Testing write_int32_le() ===");
-let buf8 = Buffer();
+var buf8 = Buffer();
 buf8.write_int32_le(305419896);
-let data8 = buf8.read_all().unwrap();
+var data8 = buf8.read_all().unwrap();
 assert(len(data8) == 4, "int32 should be 4 bytes");
 
 println("=== Testing write_int32_be() ===");
-let buf9 = Buffer();
+var buf9 = Buffer();
 buf9.write_int32_be(305419896);
-let data9 = buf9.read_all().unwrap();
+var data9 = buf9.read_all().unwrap();
 assert(len(data9) == 4, "int32 should be 4 bytes");
 
 println("=== Testing write_float32_le() ===");
-let buf10 = Buffer();
+var buf10 = Buffer();
 buf10.write_float32_le(3.14);
-let data10 = buf10.read_all().unwrap();
+var data10 = buf10.read_all().unwrap();
 assert(data10.byte_length() == 4, "float32 should be 4 bytes");
 
 println("=== Testing write_float64_le() ===");
-let buf11 = Buffer();
+var buf11 = Buffer();
 buf11.write_float64_le(3.14159);
-let data11 = buf11.read_all().unwrap();
+var data11 = buf11.read_all().unwrap();
 assert(data11.byte_length() == 8, "float64 should be 8 bytes");
 
 println("=== Testing write_buffer() ===");
-let buf12 = Buffer();
-let buf13 = Buffer();
+var buf12 = Buffer();
+var buf13 = Buffer();
 buf13.write_string("nested");
 buf12.write_buffer(buf13);
-let nested_content = buf12.read_all().unwrap();
+var nested_content = buf12.read_all().unwrap();
 assert(nested_content == "nested", "write_buffer should write buffer content");
 
 println("=== Testing peek_byte() ===");
-let buf14 = Buffer();
+var buf14 = Buffer();
 buf14.write_string("ABC");
-let peeked = buf14.peek_byte();
+var peeked = buf14.peek_byte();
 assert(peeked == 65, "peek_byte should return first byte (65 = 'A')");
-let after_peek = buf14.read_all().unwrap();
+var after_peek = buf14.read_all().unwrap();
 assert(after_peek == "ABC", "peek_byte should not consume bytes");
 
 println("=== Testing skip_bytes() ===");
-let buf15 = Buffer();
+var buf15 = Buffer();
 buf15.write_string("ABCDEF");
 buf15.skip_bytes(2);
-let remaining = buf15.read_all().unwrap();
+var remaining = buf15.read_all().unwrap();
 assert(remaining == "CDEF", "skip_bytes should skip first 2 bytes");
 
 println("=== Testing compact() ===");
-let buf16 = Buffer();
+var buf16 = Buffer();
 buf16.write_string("ABC");
 buf16.skip_bytes(1);
 buf16.compact();
-let compacted = buf16.read_all().unwrap();
+var compacted = buf16.read_all().unwrap();
 assert(compacted == "BC", "compact should remove skipped bytes");
 
 println("=== Testing read_line() ===");
-let buf17 = Buffer();
+var buf17 = Buffer();
 buf17.write_string("line1\nline2\nline3");
-let line1 = buf17.read_line().unwrap();
+var line1 = buf17.read_line().unwrap();
 assert(line1 == "line1", "read_line should return first line");
-let line2 = buf17.read_line().unwrap();
+var line2 = buf17.read_line().unwrap();
 assert(line2 == "line2", "read_line should return second line");
 
 println("=== Testing read_int16_le() ===");
-let buf18 = Buffer();
+var buf18 = Buffer();
 buf18.write_int16_le(100);
-let read_val = buf18.read_int16_le().unwrap();
+var read_val = buf18.read_int16_le().unwrap();
 assert(read_val == 100, "read_int16_le should return written value");
 
 println("=== Testing read_int32_le() ===");
-let buf19 = Buffer();
+var buf19 = Buffer();
 buf19.write_int32_le(100000);
-let read_val32 = buf19.read_int32_le().unwrap();
+var read_val32 = buf19.read_int32_le().unwrap();
 assert(read_val32 == 100000, "read_int32_le should return written value");
 
 println("=== Testing read_float32_le() ===");
-let buf20 = Buffer();
+var buf20 = Buffer();
 buf20.write_float32_le(2.5);
-let read_f32 = buf20.read_float32_le().unwrap();
+var read_f32 = buf20.read_float32_le().unwrap();
 assert(read_f32 > 2.4 and read_f32 < 2.6, "read_float32_le should return written value");
 
 println("=== Testing read_float64_le() ===");
-let buf21 = Buffer();
+var buf21 = Buffer();
 buf21.write_float64_le(2.5);
-let read_f64 = buf21.read_float64_le().unwrap();
+var read_f64 = buf21.read_float64_le().unwrap();
 assert(read_f64 > 2.4 and read_f64 < 2.6, "read_float64_le should return written value");
 
 println("=== Testing sequential read/write ===");
-let buf22 = Buffer();
+var buf22 = Buffer();
 buf22.write_string("test");
-let str_val = buf22.read_all().unwrap();
+var str_val = buf22.read_all().unwrap();
 assert(str_val == "test", "First read_all should work");
 
 println("=== All buffer tests passed ===");

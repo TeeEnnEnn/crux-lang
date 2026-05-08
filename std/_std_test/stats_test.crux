@@ -1,9 +1,9 @@
 use mean, median from "std:statistics";
 
 fn main() {
-    let data = [345, 242, 981.53, 431.3, 456];
-    let avg = mean(data);
-    let med = median(data);
+    var data = [345, 242, 981.53, 431.3, 456];
+    var avg = mean(data);
+    var med = median(data);
     println("Average: " + string(avg));
     println("Median: " + string(med));
 }

@@ -3,9 +3,9 @@
 println("===  Start of testing continue statement  ===");
 
 println("--- Testing basic continue in while loop ---");
-let a = 0;
-let a_sum = 0;
-let a_iterations = 0;
+var a = 0;
+var a_sum = 0;
+var a_iterations = 0;
 while a < 5 {
     a_iterations += 1;
     a += 1; // Increment first: a becomes 1, 2, 3, 4, 5
@@ -19,9 +19,9 @@ assert(a_sum == 9, "Basic continue: Expected a_sum to be 9 (1+3+5) but got ".con
 assert(a_iterations == 5, "Basic continue: Expected 5 iterations but got ".concat(string(a_iterations))?);
 
 println("--- Testing continue in first iteration ---");
-let b = 0;
-let b_sum = 0;
-let b_total_iterations = 0;
+var b = 0;
+var b_sum = 0;
+var b_total_iterations = 0;
 while b < 3 {
     b_total_iterations += 1;
     if (b == 0) {
@@ -36,9 +36,9 @@ assert(b_sum == 3, "Continue first iteration: Expected b_sum to be 3 (1+2) but g
 assert(b_total_iterations == 3, "Continue first iteration: Expected 3 total iterations but got ".concat(string(b_total_iterations))?);
 
 println("--- Testing continue with multiple conditions ---");
-let c = 0;
-let c_processed = 0;
-let c_sum = 0;
+var c = 0;
+var c_processed = 0;
+var c_sum = 0;
 while c < 10 {
     c += 1; // c becomes 1, 2, 3, ..., 10
     if (c % 3 == 0) {
@@ -55,11 +55,11 @@ assert(c_processed == 5, "Continue multiple conditions: Expected 5 processed num
 assert(c_sum == 22, "Continue multiple conditions: Expected c_sum to be 22 (1+2+4+7+8) but got ".concat(string(c_sum))?);
 
 println("--- Testing continue in nested while loops (inner continue) ---");
-let d_outer = 0;
-let d_inner_processed = 0;
-let d_inner_skipped = 0;
+var d_outer = 0;
+var d_inner_processed = 0;
+var d_inner_skipped = 0;
 while d_outer < 2 { // Outer: 0, 1
-    let d_inner = 0;
+    var d_inner = 0;
     while d_inner < 4 { // Inner: 0, 1, 2, 3
         d_inner += 1; // d_inner becomes 1, 2, 3, 4
         if (d_inner % 2 == 0) {
@@ -75,9 +75,9 @@ assert(d_inner_processed == 4, "Nested continue (inner): Expected 4 processed (2
 assert(d_inner_skipped == 4, "Nested continue (inner): Expected 4 skipped (2 outer * 2 even per inner) but got ".concat(string(d_inner_skipped))?);
 
 println("--- Testing continue doesn't skip loop increment ---");
-let e = 0;
-let e_processed_count = 0;
-let e_continue_count = 0;
+var e = 0;
+var e_processed_count = 0;
+var e_continue_count = 0;
 while e < 6 {
     if (e < 3) {
         e_continue_count += 1;
@@ -92,9 +92,9 @@ assert(e_continue_count == 3, "Continue with increment: Expected 3 continues but
 assert(e_processed_count == 3, "Continue with increment: Expected 3 processed but got ".concat(string(e_processed_count))?);
 
 println("--- Testing continue with complex logic ---");
-let f = 0;
-let f_sum_special = 0;
-let f_count_special = 0;
+var f = 0;
+var f_sum_special = 0;
+var f_count_special = 0;
 while f < 20 {
     f += 1;
     if (f % 2 == 0) {
@@ -113,13 +113,13 @@ assert(f_count_special == 7, "Continue complex logic: Expected 7 special numbers
 assert(f_sum_special == 73, "Continue complex logic: Expected f_sum_special to be 73 but got ".concat(string(f_sum_special))?);
 
 println("--- Testing continue with variable modification ---");
-let g = 0;
-let g_modified_sum = 0;
-let g_unmodified_sum = 0;
+var g = 0;
+var g_modified_sum = 0;
+var g_unmodified_sum = 0;
 while g < 8 {
     g += 1;
     if (g % 4 == 0) { // g = 4, 8
-        let temp = g * 2;
+        var temp = g * 2;
         g_modified_sum += temp;
         continue;
     }
@@ -130,9 +130,9 @@ assert(g_modified_sum == 24, "Continue with modification: Expected g_modified_su
 assert(g_unmodified_sum == 24, "Continue with modification: Expected g_unmodified_sum to be 24 (1+2+3+5+6+7) but got ".concat(string(g_unmodified_sum))?);
 
 println("--- Testing continue in while true loop ---");
-let h = 0;
-let h_processed = 0;
-let h_safety = 0;
+var h = 0;
+var h_processed = 0;
+var h_safety = 0;
 while true {
     h += 1;
     h_safety += 1;
@@ -151,11 +151,11 @@ assert(h == 10, "Continue in while true: Expected h to be 10 but got ".concat(st
 assert(h_processed == 5, "Continue in while true: Expected 4 processed (6,7,8,9) but got ".concat(string(h_processed))?);
 
 println("--- Testing continue doesn't affect outer scope ---");
-let i_outer = 0;
-let i_outer_sum = 0;
+var i_outer = 0;
+var i_outer_sum = 0;
 while i_outer < 4 {
     i_outer += 1;
-    let i_inner = i_outer * 10;
+    var i_inner = i_outer * 10;
     if (i_outer == 2) {
         i_inner = 999; // Modify inner variable
         continue; // Skip adding to sum
@@ -166,9 +166,9 @@ assert(i_outer == 4, "Continue scope: Expected i_outer to be 4 but got ".concat(
 assert(i_outer_sum == 8, "Continue scope: Expected i_outer_sum to be 8 (1+3+4) but got ".concat(string(i_outer_sum))?);
 
 println("--- Testing continue after other statements ---");
-let j = 0;
-let j_even_sum = 0;
-let j_odd_count = 0;
+var j = 0;
+var j_even_sum = 0;
+var j_odd_count = 0;
 while j < 12 {
     j += 1;
     if (j % 2 == 0) {

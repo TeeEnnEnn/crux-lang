@@ -164,6 +164,7 @@ static void mark_object_struct(CruxVM *vm, ObjectStruct *structure)
 	mark_object(vm, (CruxObject *)structure->name);
 	mark_table(vm, &structure->fields);
 	mark_table(vm, &structure->methods);
+	mark_table(vm, &structure->static_methods);
 	mark_object(vm, (CruxObject *)structure);
 }
 
@@ -628,6 +629,7 @@ static void free_object_struct(CruxVM *vm, CruxObject *object)
 	ObjectStruct *structure = (ObjectStruct *)object;
 	free_table(vm, &structure->fields);
 	free_table(vm, &structure->methods);
+	free_table(vm, &structure->static_methods);
 	FREE_OBJECT(vm, ObjectStruct, object);
 }
 

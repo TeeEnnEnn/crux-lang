@@ -27,7 +27,7 @@ ObjectTypeRecord *new_vector_type_rec(CruxVM *vm, int dimensions);
 ObjectTypeRecord *new_tuple_type_rec(CruxVM *vm, ObjectTypeRecord **element_types, int element_count);
 ObjectTypeRecord *new_matrix_type_rec(CruxVM *vm, int rows, int cols);
 ObjectTypeRecord *new_function_type_rec(CruxVM *vm, ObjectTypeRecord **arg_types, int arg_count,
-										ObjectTypeRecord *return_type);
+										ObjectTypeRecord *return_type, bool is_static);
 ObjectTypeRecord *new_shape_type_rec(CruxVM *vm, ObjectTypeTable *element_types, int element_count);
 ObjectTypeRecord *new_union_type_rec(CruxVM *vm, ObjectTypeRecord **element_types, ObjectString **element_names,
 									 int element_count);
