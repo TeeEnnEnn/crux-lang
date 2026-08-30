@@ -1,6 +1,6 @@
 {
   "name": "statistics",
   "version": "0.1.0",
-  "main": "main.crux",
+  "main": "pkg.crux",
   "dependencies": {}
 }

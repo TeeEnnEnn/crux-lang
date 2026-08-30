@@ -102,15 +102,11 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.arch == 'amd64'
         run: |
           mkdir -p dist/stdlib
-          cp -r src/stdlib/* dist/stdlib/
           if [ -d "std" ]; then
             cp -r std/* dist/stdlib/
           fi
           tar -czf crux-stdlib.tar.gz -C dist stdlib
-          zip -r crux-stdlib.zip -j src/stdlib/*
-          if [ -d "std" ]; then
-            zip -r crux-stdlib.zip std/*
-          fi
+          cd dist && zip -r ../crux-stdlib.zip stdlib
           
       - name: Upload Stdlib Archives
         if: matrix.os == 'ubuntu-latest' && matrix.arch == 'amd64'
