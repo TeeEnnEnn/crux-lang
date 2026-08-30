@@ -19,7 +19,7 @@ impl Stack {
         if len(self.data) == 0 {
             return None;
         }
-        return Some(self.data[0]);
+        return Some(self.data[len(self.data) - 1]);
     }
 
     fn is_empty() -> Bool {

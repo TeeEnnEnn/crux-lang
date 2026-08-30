@@ -124,8 +124,8 @@ static ObjectString **make_names(CruxVM *vm, ObjectString **src, int count)
 	UNI(ARGS(t_nil, t_int, t_flt, t_bool, t_str), NAMES(name_nil, name_int, name_float, name_bool, name_string), 5)
 #define numeric UNI(ARGS(t_int, t_flt), NAMES(name_int, name_float), 2)
 #define iterable                                                                                                       \
-	UNI(ARGS(iter_any, arr_any, mat_any, TUP_ANY, t_str, set_any, vec_any, t_rang, t_buf),                             \
-		NAMES(name_iter, name_arr, name_mat, name_tup, name_string, name_set, name_vec, name_rang, name_buf), 9)
+	UNI(ARGS(iter_any, arr_any, mat_any, TUP_ANY, t_str, vec_any, t_rang, t_buf),                                      \
+		NAMES(name_iter, name_arr, name_mat, name_tup, name_string, name_vec, name_rang, name_buf), 8)
 
 // Compound types
 #define res_nil RES(t_nil)

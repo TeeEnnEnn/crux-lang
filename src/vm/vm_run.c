@@ -686,7 +686,7 @@ OP_SET_COLLECTION: {
 	switch (object_get_type(AS_CRUX_OBJECT(collection))) {
 	case OBJECT_TABLE: {
 		ObjectTable *table = AS_CRUX_TABLE(collection);
-		if (IS_INT(indexValue) || IS_CRUX_STRING(indexValue)) {
+		if (IS_CRUX_HASHABLE(indexValue)) {
 			if (!object_table_set(vm, table, indexValue, value)) {
 				runtime_panic(current_module_record, COLLECTION_GET, "Failed to set value in table");
 				return INTERPRET_RUNTIME_ERROR;

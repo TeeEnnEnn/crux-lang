@@ -5,6 +5,7 @@ set(CMAKE_C_COMPILER gcc)
 project(crux-lang C)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(CRUX_STACK_SAFETY "Enable stack push/pop safety checks" OFF)
 option(CRUX_DEBUG_TRACE_EXECUTION "Enable execution tracing" OFF)
@@ -121,7 +122,6 @@ target_link_libraries(crux_embedding_example PRIVATE crux_lib)
 target_include_directories(crux_embedding_example PRIVATE include)
 target_include_directories(crux_embedding_example PRIVATE src/_headers)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Print enabled compile flags
 message(STATUS "Crux-lang build configuration:")
