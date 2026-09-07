@@ -11,7 +11,7 @@ impl Stack {
         self.data.push(v);
     }
 
-    fn pop() -> Any {
+    fn pop() -> Option[Any] {
         return self.data.pop();
     }
 

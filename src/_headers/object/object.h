@@ -399,9 +399,6 @@ struct ObjectTypeRecord {
 			bool is_static;
 		} function_type;
 		struct {
-			ObjectTypeRecord *element_type;
-		} set_type;
-		struct {
 			ObjectTypeRecord **element_types;
 			ObjectString **element_names;
 			int element_count;

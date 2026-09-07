@@ -14,7 +14,10 @@ $Platform = "windows"
 $Binary = "crux-${Platform}-${Arch}.exe"
 $StdlibArchive = "crux-stdlib.zip"
 
-if ($Version -eq "latest") {
+# Allow overriding base URL for local testing (e.g. $env:CRUX_BASE_URL="http://127.0.0.1:8766")
+if ($env:CRUX_BASE_URL) {
+  $UrlBase = $env:CRUX_BASE_URL
+} elseif ($Version -eq "latest") {
   $UrlBase = "https://github.com/$Repo/releases/latest/download"
 } else {
   if (-not $Version.StartsWith("v")) { $Version = "v$Version" }

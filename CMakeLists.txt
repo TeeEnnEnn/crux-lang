@@ -60,7 +60,6 @@ file(GLOB SOURCES
 )
 
 list(REMOVE_ITEM SOURCES
-    "${CMAKE_SOURCE_DIR}/src/main.c"
     "${CMAKE_SOURCE_DIR}/src/file_handler.c"
 )
 

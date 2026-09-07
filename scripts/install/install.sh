@@ -23,22 +23,26 @@ detect_platform() {
     arm64|aarch64) ARCH="arm64" ;;
     *) echo "Unsupported arch: $ARCH" >&2; exit 1 ;;
   esac
-  # macos amd64 vs arm64, linux only amd64
-  if [ "$PLATFORM" = "linux" ]; then
-    ARCH="amd64"
+  # macos supports amd64 vs arm64, linux currently only amd64 (release matrix)
+  if [ "$PLATFORM" = "linux" ] && [ "$ARCH" != "amd64" ]; then
+    echo "Unsupported linux arch: $ARCH (only amd64 supported)" >&2
+    exit 1
   fi
   echo "${PLATFORM}-${ARCH}"
 }
 
-PLATFORM_ARCH="$(detect_platform)"
-BINARY="crux-${PLATFORM_ARCH}"
-if [ "$PLATFORM" = "linux" ] && [ "$ARCH" = "amd64" ]; then
-  STDLIB_ARCHIVE="crux-stdlib.tar.gz"
-else
-  STDLIB_ARCHIVE="crux-stdlib.tar.gz"
+if ! PLATFORM_ARCH="$(detect_platform)"; then
+  exit 1
 fi
+PLATFORM="${PLATFORM_ARCH%%-*}"
+ARCH="${PLATFORM_ARCH##*-}"
+BINARY="crux-${PLATFORM_ARCH}"
+STDLIB_ARCHIVE="crux-stdlib.tar.gz"
 
-if [ "$VERSION" = "latest" ]; then
+# Allow overriding base URL for local testing (e.g. CRUX_BASE_URL=http://localhost:8000)
+if [ -n "${CRUX_BASE_URL:-}" ]; then
+  URL_BASE="${CRUX_BASE_URL}"
+elif [ "$VERSION" = "latest" ]; then
   URL_BASE="https://github.com/${REPO}/releases/latest/download"
 else
   URL_BASE="https://github.com/${REPO}/releases/download/${VERSION}"

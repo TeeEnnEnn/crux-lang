@@ -132,6 +132,12 @@ jobs:
           CRUX_EXE: ${{ github.workspace }}/build/${{ matrix.binary_name }}
         shell: bash
 
+      - name: Validate documentation
+        run: python scripts/check_docs.py --require-runtime
+        env:
+          CRUX_STDLIB: ${{ github.workspace }}/std
+          CRUX_EXE: ${{ github.workspace }}/build/${{ matrix.binary_name }}
+
       - name: Run Embedding Example
         run: |
           if [ "${{ matrix.platform }}" = "windows" ]; then
