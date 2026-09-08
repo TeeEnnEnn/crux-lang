@@ -5,7 +5,6 @@
 #include "chunk.h"
 #include "file_handler.h"
 #include "garbage_collector.h"
-#include "stdlib/stdlib.h"
 #include "type_system.h"
 #include "utf8.h"
 #include "value.h"
@@ -14,12 +13,12 @@
 #include <string.h>
 
 #include "debug.h"
-#include "object.h"
+#include "native/complex.h"
+#include "native/matrix.h"
+#include "native/range.h"
+
+#include "object/object.h"
 #include "panic.h"
-#include "stdlib/complex.h"
-#include "stdlib/matrix.h"
-#include "stdlib/range.h"
-#include "stdlib/set.h"
 
 #ifdef DEBUG_TRACE_EXECUTION
 #define DISPATCH() goto *dispatchTable[endIndex]
@@ -36,7 +35,7 @@
  * from run() at OP_RETURN?)
  * @return The interpretation result
  */
-InterpretResult run(VM *vm, const bool is_anonymous_frame)
+InterpretResult run(CruxVM *vm, const bool is_anonymous_frame)
 {
 	register ObjectModuleRecord *current_module_record = vm->current_module_record;
 	register CallFrame *frame = &current_module_record->frames[current_module_record->frame_count - 1];
@@ -98,7 +97,6 @@ InterpretResult run(VM *vm, const bool is_anonymous_frame)
 									&&OP_SET_GLOBAL_PLUS,
 									&&OP_SET_GLOBAL_MINUS,
 									&&OP_TABLE,
-									&&OP_SET,
 									&&OP_TUPLE,
 									&&OP_RANGE,
 									&&OP_ANON_FUNCTION,
@@ -120,6 +118,8 @@ InterpretResult run(VM *vm, const bool is_anonymous_frame)
 									&&OP_SET_UPVALUE_MODULUS,
 									&&OP_USE_MODULE,
 									&&OP_FINISH_USE,
+									&&OP_FINISH_PUB_USE,
+									&&OP_BIND_NATIVE,
 									&&OP_TYPEOF,
 									&&OP_STRUCT,
 									&&OP_STRUCT_INSTANCE_START,
@@ -204,6 +204,8 @@ InterpretResult run(VM *vm, const bool is_anonymous_frame)
 									&&OP_0_FLOAT,
 									&&OP_1_FLOAT,
 									&&OP_2_FLOAT,
+									&&OP_STATIC_INVOKE,
+									&&OP_STATIC_METHOD,
 									&&end};
 
 	register uint16_t instruction;
@@ -212,10 +214,15 @@ InterpretResult run(VM *vm, const bool is_anonymous_frame)
 #endif
 	DISPATCH();
 OP_RETURN: {
-	Value result = pop(current_module_record);
+	CruxValue result = pop(current_module_record);
 	close_upvalues(current_module_record, frame->slots);
 	current_module_record->frame_count--;
 	if (current_module_record->frame_count == 0) {
+		if (is_anonymous_frame) {
+			current_module_record->stack_top = frame->slots;
+			push(current_module_record, result);
+			return INTERPRET_OK;
+		}
 		pop(current_module_record);
 		return INTERPRET_OK;
 	}
@@ -229,7 +236,7 @@ OP_RETURN: {
 }
 
 OP_CONSTANT: {
-	Value constant = READ_CONSTANT();
+	CruxValue constant = READ_CONSTANT();
 	push(current_module_record, constant);
 	DISPATCH();
 }
@@ -250,7 +257,7 @@ OP_FALSE: {
 }
 
 OP_NEGATE: {
-	Value operand = PEEK(current_module_record, 0);
+	CruxValue operand = PEEK(current_module_record, 0);
 	if (IS_INT(operand)) {
 		int32_t iVal = AS_INT(operand);
 		if (iVal == INT32_MIN) {
@@ -269,8 +276,8 @@ OP_NEGATE: {
 }
 
 OP_EQUAL: {
-	Value b = pop(current_module_record);
-	Value a = pop(current_module_record);
+	CruxValue b = pop(current_module_record);
+	CruxValue a = pop(current_module_record);
 	push(current_module_record, BOOL_VAL(values_equal(a, b)));
 	DISPATCH();
 }
@@ -304,8 +311,8 @@ OP_GREATER_EQUAL: {
 }
 
 OP_NOT_EQUAL: {
-	Value b = pop(current_module_record);
-	Value a = pop(current_module_record);
+	CruxValue b = pop(current_module_record);
+	CruxValue a = pop(current_module_record);
 	push(current_module_record, BOOL_VAL(!values_equal(a, b)));
 	DISPATCH();
 }
@@ -366,7 +373,7 @@ OP_DEFINE_GLOBAL: {
 OP_GET_GLOBAL: {
 	uint16_t index = READ_SHORT();
 	ObjectModuleRecord *frame_module_record = frame->closure->function->module_record;
-	Value value = frame_module_record->globals[index];
+	CruxValue value = frame_module_record->globals[index];
 	push(current_module_record, value);
 	DISPATCH();
 }
@@ -391,8 +398,8 @@ OP_SET_LOCAL: {
 }
 
 OP_ITER_INIT: {
-	const Value iterable = PEEK(current_module_record, 0);
-	Value iterator;
+	const CruxValue iterable = PEEK(current_module_record, 0);
+	CruxValue iterator;
 	if (!get_iterator_from_value(vm, iterable, &iterator)) {
 		return INTERPRET_RUNTIME_ERROR;
 	}
@@ -402,7 +409,7 @@ OP_ITER_INIT: {
 
 OP_ITER_NEXT: {
 	uint16_t offset = READ_SHORT();
-	Value option;
+	CruxValue option;
 	if (!get_next_option_from_iterator(vm, PEEK(current_module_record, 0), &option)) {
 		return INTERPRET_RUNTIME_ERROR;
 	}
@@ -485,7 +492,7 @@ OP_CLOSE_UPVALUE: {
 }
 
 OP_GET_PROPERTY: {
-	Value receiver = pop(current_module_record);
+	CruxValue receiver = pop(current_module_record);
 	if (!IS_CRUX_STRUCT_INSTANCE(receiver)) {
 		runtime_panic(current_module_record, TYPE, "Cannot get property on non 'struct instance' type.");
 		return INTERPRET_RUNTIME_ERROR;
@@ -495,7 +502,7 @@ OP_GET_PROPERTY: {
 	ObjectStructInstance *instance = AS_CRUX_STRUCT_INSTANCE(receiver);
 	ObjectStruct *structType = instance->struct_type;
 
-	Value indexValue;
+	CruxValue indexValue;
 	if (!table_get(&structType->fields, name, &indexValue)) {
 		runtime_panic(current_module_record, NAME, "Property '%s' does not exist on struct '%s'.", name->chars,
 					  structType->name->chars);
@@ -507,8 +514,8 @@ OP_GET_PROPERTY: {
 }
 
 OP_SET_PROPERTY: {
-	Value valueToSet = pop(current_module_record);
-	Value receiver = pop(current_module_record);
+	CruxValue valueToSet = pop(current_module_record);
+	CruxValue receiver = pop(current_module_record);
 
 	if (!IS_CRUX_STRUCT_INSTANCE(receiver)) {
 		ObjectString *name = READ_STRING();
@@ -523,7 +530,7 @@ OP_SET_PROPERTY: {
 	ObjectString *name = READ_STRING();
 	ObjectStruct *structType = instance->struct_type;
 
-	Value indexValue;
+	CruxValue indexValue;
 	if (!table_get(&structType->fields, name, &indexValue)) {
 		runtime_panic(current_module_record, NAME, "Property '%s' does not exist on struct '%s'.", name->chars,
 					  structType->name->chars);
@@ -546,6 +553,17 @@ OP_INVOKE: {
 	DISPATCH();
 }
 
+OP_STATIC_INVOKE: {
+	ObjectString* method_name = READ_STRING();
+	int arg_count = READ_SHORT();
+	if (!static_method_invoke(vm, method_name, arg_count)) {
+		return INTERPRET_RUNTIME_ERROR;
+	}
+	frame = &current_module_record->frames[current_module_record->frame_count - 1];
+	DISPATCH();
+}
+
+
 OP_ARRAY: {
 	uint16_t elementCount = READ_SHORT();
 	ObjectArray *array = new_array(vm, elementCount);
@@ -557,7 +575,7 @@ OP_ARRAY: {
 }
 
 OP_GET_COLLECTION: {
-	Value indexValue = pop(current_module_record);
+	CruxValue indexValue = pop(current_module_record);
 	if (!IS_CRUX_OBJECT(PEEK(current_module_record, 0))) {
 		runtime_panic(current_module_record, TYPE, "Cannot get from a non-collection type.");
 		return INTERPRET_RUNTIME_ERROR;
@@ -566,7 +584,7 @@ OP_GET_COLLECTION: {
 	case OBJECT_TABLE: {
 		if (IS_CRUX_HASHABLE(indexValue)) {
 			ObjectTable *table = AS_CRUX_TABLE(PEEK(current_module_record, 0));
-			Value value;
+			CruxValue value;
 			if (!object_table_get(table->entries, table->size, table->capacity, indexValue, &value)) {
 				runtime_panic(current_module_record, COLLECTION_GET, "Failed to get value from table");
 				return INTERPRET_RUNTIME_ERROR;
@@ -596,7 +614,7 @@ OP_GET_COLLECTION: {
 			return INTERPRET_RUNTIME_ERROR;
 		}
 
-		Value value = array->values[index];
+		CruxValue value = array->values[index];
 
 		pop_push(current_module_record,
 				 value); // pop the array off the stack // push the
@@ -632,7 +650,7 @@ OP_GET_COLLECTION: {
 			runtime_panic(current_module_record, BOUNDS, "Index out of bounds.");
 			return INTERPRET_RUNTIME_ERROR;
 		}
-		Value value = tuple->elements[index];
+		CruxValue value = tuple->elements[index];
 		pop_push(current_module_record, value); // pop the tuple off the stack, push the value onto the stack
 		DISPATCH();
 	}
@@ -647,7 +665,7 @@ OP_GET_COLLECTION: {
 			runtime_panic(current_module_record, BOUNDS, "Index out of bounds.");
 			return INTERPRET_RUNTIME_ERROR;
 		}
-		Value value = AS_INT(buffer->data[index + buffer->read_pos]);
+		CruxValue value = AS_INT(buffer->data[index + buffer->read_pos]);
 		pop_push(current_module_record, value); // pop the buffer off the stack, push the value onto the stack
 		DISPATCH();
 	}
@@ -661,14 +679,14 @@ OP_GET_COLLECTION: {
 }
 
 OP_SET_COLLECTION: {
-	Value value = pop(current_module_record);
-	Value indexValue = PEEK(current_module_record, 0);
-	Value collection = PEEK(current_module_record, 1);
+	CruxValue value = pop(current_module_record);
+	CruxValue indexValue = PEEK(current_module_record, 0);
+	CruxValue collection = PEEK(current_module_record, 1);
 
 	switch (object_get_type(AS_CRUX_OBJECT(collection))) {
 	case OBJECT_TABLE: {
 		ObjectTable *table = AS_CRUX_TABLE(collection);
-		if (IS_INT(indexValue) || IS_CRUX_STRING(indexValue)) {
+		if (IS_CRUX_HASHABLE(indexValue)) {
 			if (!object_table_set(vm, table, indexValue, value)) {
 				runtime_panic(current_module_record, COLLECTION_GET, "Failed to set value in table");
 				return INTERPRET_RUNTIME_ERROR;
@@ -690,7 +708,7 @@ OP_SET_COLLECTION: {
 		break;
 	}
 	default: {
-		runtime_panic(current_module_record, TYPE, "Value is not a mutable collection type.");
+		runtime_panic(current_module_record, TYPE, "CruxValue is not a mutable collection type.");
 		return INTERPRET_RUNTIME_ERROR;
 	}
 	}
@@ -723,8 +741,8 @@ OP_RIGHT_SHIFT: {
 
 OP_SET_LOCAL_SLASH: {
 	uint16_t slot = READ_SHORT();
-	Value currentValue = frame->slots[slot];
-	Value operandValue = PEEK(current_module_record, 0); // Right-hand side
+	CruxValue currentValue = frame->slots[slot];
+	CruxValue operandValue = PEEK(current_module_record, 0); // Right-hand side
 
 	bool currentIsInt = IS_INT(currentValue);
 	bool currentIsFloat = IS_FLOAT(currentValue);
@@ -736,7 +754,7 @@ OP_SET_LOCAL_SLASH: {
 		return INTERPRET_RUNTIME_ERROR;
 	}
 
-	Value resultValue;
+	CruxValue resultValue;
 
 	double dcurrent = currentIsFloat ? AS_FLOAT(currentValue) : (double)AS_INT(currentValue);
 	double doperand = operandIsFloat ? AS_FLOAT(operandValue) : (double)AS_INT(operandValue);
@@ -753,8 +771,8 @@ OP_SET_LOCAL_SLASH: {
 
 OP_SET_LOCAL_STAR: {
 	uint16_t slot = READ_SHORT();
-	Value currentValue = frame->slots[slot];
-	Value operandValue = PEEK(current_module_record, 0);
+	CruxValue currentValue = frame->slots[slot];
+	CruxValue operandValue = PEEK(current_module_record, 0);
 
 	bool currentIsInt = IS_INT(currentValue);
 	bool currentIsFloat = IS_FLOAT(currentValue);
@@ -766,7 +784,7 @@ OP_SET_LOCAL_STAR: {
 		return INTERPRET_RUNTIME_ERROR;
 	}
 
-	Value resultValue;
+	CruxValue resultValue;
 
 	if (currentIsInt && operandIsInt) {
 		int32_t icurrent = AS_INT(currentValue);
@@ -877,8 +895,8 @@ OP_TABLE: {
 	uint16_t elementCount = READ_SHORT();
 	ObjectTable *table = new_object_table(vm, elementCount);
 	for (int i = elementCount - 1; i >= 0; i--) {
-		Value value = pop(current_module_record);
-		Value key = pop(current_module_record);
+		CruxValue value = pop(current_module_record);
+		CruxValue key = pop(current_module_record);
 		if (IS_CRUX_HASHABLE(key)) {
 			if (!object_table_set(vm, table, key, value)) {
 				runtime_panic(current_module_record, COLLECTION_SET, "Failed to set value in table.");
@@ -893,24 +911,6 @@ OP_TABLE: {
 	DISPATCH();
 }
 
-OP_SET: {
-	uint16_t elementCount = READ_SHORT();
-	ObjectSet *set = new_set(vm, elementCount);
-	push(current_module_record, OBJECT_VAL(set));
-	for (int i = elementCount - 1; i >= 0; i--) {
-		(void)i;
-		Value value = current_module_record->stack_top[-2];
-		current_module_record->stack_top[-2] = current_module_record->stack_top[-1];
-		current_module_record->stack_top--;
-		if (!set_add_value(vm, set, value)) {
-			pop(current_module_record); // set
-			runtime_panic(current_module_record, TYPE, "All set elements must be hashable.");
-			return INTERPRET_RUNTIME_ERROR;
-		}
-	}
-	DISPATCH();
-}
-
 OP_TUPLE: {
 	uint16_t elementCount = READ_SHORT();
 	ObjectTuple *tuple = new_tuple(vm, elementCount);
@@ -922,9 +922,9 @@ OP_TUPLE: {
 }
 
 OP_RANGE: {
-	Value end_value = pop(current_module_record);
-	Value step_value = pop(current_module_record);
-	Value start_value = pop(current_module_record);
+	CruxValue end_value = pop(current_module_record);
+	CruxValue step_value = pop(current_module_record);
+	CruxValue start_value = pop(current_module_record);
 
 	if (!IS_INT(start_value) || !IS_INT(step_value) || !IS_INT(end_value)) {
 		runtime_panic(current_module_record, TYPE, "Range literal operands must be Int values.");
@@ -967,7 +967,7 @@ OP_PUB: {
 }
 
 OP_MATCH: {
-	Value target = PEEK(current_module_record, 0);
+	CruxValue target = PEEK(current_module_record, 0);
 	if (vm->match_handler_stack.count >= vm->match_handler_stack.capacity) {
 		runtime_panic(current_module_record, RUNTIME, "Match nesting depth exceeded.");
 		return INTERPRET_RUNTIME_ERROR;
@@ -982,8 +982,8 @@ OP_MATCH: {
 
 OP_MATCH_JUMP: {
 	uint16_t offset = READ_SHORT();
-	Value pattern = pop(current_module_record);
-	Value target = PEEK(current_module_record, 0);
+	CruxValue pattern = pop(current_module_record);
+	CruxValue target = PEEK(current_module_record, 0);
 	if (!values_equal(pattern, target)) {
 		frame->ip += offset;
 	}
@@ -1001,11 +1001,11 @@ OP_MATCH_END: {
 
 OP_RESULT_MATCH_OK: {
 	uint16_t offset = READ_SHORT();
-	Value target = PEEK(current_module_record, 0);
+	CruxValue target = PEEK(current_module_record, 0);
 	if (!IS_CRUX_RESULT(target) || !AS_CRUX_RESULT(target)->is_ok) {
 		frame->ip += offset;
 	} else {
-		Value value = AS_CRUX_RESULT(target)->as.value;
+		CruxValue value = AS_CRUX_RESULT(target)->as.value;
 		pop_push(current_module_record, value);
 	}
 	DISPATCH();
@@ -1013,11 +1013,11 @@ OP_RESULT_MATCH_OK: {
 
 OP_RESULT_MATCH_ERR: {
 	uint16_t offset = READ_SHORT();
-	Value target = PEEK(current_module_record, 0);
+	CruxValue target = PEEK(current_module_record, 0);
 	if (!IS_CRUX_RESULT(target) || AS_CRUX_RESULT(target)->is_ok) {
 		frame->ip += offset;
 	} else {
-		Value error = OBJECT_VAL(AS_CRUX_RESULT(target)->as.error);
+		CruxValue error = OBJECT_VAL(AS_CRUX_RESULT(target)->as.error);
 		pop_push(current_module_record, error);
 	}
 	DISPATCH();
@@ -1025,7 +1025,7 @@ OP_RESULT_MATCH_ERR: {
 
 OP_RESULT_BIND: {
 	uint16_t slot = READ_SHORT();
-	Value bind = PEEK(current_module_record, 0);
+	CruxValue bind = PEEK(current_module_record, 0);
 	vm->match_handler_stack.handlers[vm->match_handler_stack.count - 1].match_bind = bind;
 	vm->match_handler_stack.handlers[vm->match_handler_stack.count - 1].is_match_bind = true;
 	frame->slots[slot] = bind;
@@ -1034,11 +1034,11 @@ OP_RESULT_BIND: {
 
 OP_OPTION_MATCH_SOME: {
 	uint16_t offset = READ_SHORT();
-	Value target = PEEK(current_module_record, 0);
+	CruxValue target = PEEK(current_module_record, 0);
 	if (!IS_CRUX_OPTION(target) || !AS_CRUX_OPTION(target)->is_some) {
 		frame->ip += offset;
 	} else {
-		Value value = AS_CRUX_OPTION(target)->value;
+		CruxValue value = AS_CRUX_OPTION(target)->value;
 		pop_push(current_module_record, value);
 	}
 	DISPATCH();
@@ -1046,7 +1046,7 @@ OP_OPTION_MATCH_SOME: {
 
 OP_OPTION_MATCH_NONE: {
 	uint16_t offset = READ_SHORT();
-	Value target = PEEK(current_module_record, 0);
+	CruxValue target = PEEK(current_module_record, 0);
 	if (!IS_CRUX_OPTION(target) || AS_CRUX_OPTION(target)->is_some) {
 		frame->ip += offset;
 	}
@@ -1056,7 +1056,7 @@ OP_OPTION_MATCH_NONE: {
 OP_TYPE_MATCH: {
 	TypeMask expected = (TypeMask)READ_SHORT();
 	uint16_t offset = READ_SHORT();
-	Value target = PEEK(current_module_record, 0);
+	CruxValue target = PEEK(current_module_record, 0);
 	if (!runtime_types_compatible(expected, target)) {
 		frame->ip += offset;
 	}
@@ -1064,7 +1064,7 @@ OP_TYPE_MATCH: {
 }
 
 OP_GIVE: {
-	Value result = pop(current_module_record);
+	CruxValue result = pop(current_module_record);
 	pop_push(current_module_record, result);
 	DISPATCH();
 }
@@ -1145,7 +1145,7 @@ OP_USE_MODULE: {
 		return INTERPRET_RUNTIME_ERROR;
 	}
 
-	Value cachedModule;
+	CruxValue cachedModule;
 	if (table_get(&vm->module_cache, resolvedPath, &cachedModule)) {
 		ObjectModuleRecord *module = AS_CRUX_MODULE_RECORD(cachedModule);
 
@@ -1156,7 +1156,7 @@ OP_USE_MODULE: {
 
 			// Allocate globals for the module
 			if (module->global_count > 0 && module->globals == NULL) {
-				module->globals = malloc(sizeof(Value) * module->global_count);
+				module->globals = malloc(sizeof(CruxValue) * module->global_count);
 			}
 
 			// Execute the module code
@@ -1184,10 +1184,12 @@ OP_USE_MODULE: {
 	return INTERPRET_RUNTIME_ERROR;
 }
 
-OP_FINISH_USE: {
+OP_FINISH_USE:
+OP_FINISH_PUB_USE: {
 	uint16_t nameCount = READ_SHORT();
+	bool is_public_reexport = (instruction == OP_FINISH_PUB_USE);
 
-	Value moduleValue = pop(current_module_record);
+	CruxValue moduleValue = pop(current_module_record);
 	if (!IS_CRUX_MODULE_RECORD(moduleValue)) {
 		runtime_panic(current_module_record, RUNTIME, "Stack corrupted during import.");
 		return INTERPRET_RUNTIME_ERROR;
@@ -1204,7 +1206,7 @@ OP_FINISH_USE: {
 		ObjectString *export_name = READ_STRING();
 		uint16_t global_index = READ_SHORT();
 
-		Value value;
+		CruxValue value;
 		if (!table_get(&importedModule->publics, export_name, &value)) {
 			runtime_panic(current_module_record, IMPORT, "'%s' is not an exported name.", export_name->chars);
 			return INTERPRET_RUNTIME_ERROR;
@@ -1215,6 +1217,9 @@ OP_FINISH_USE: {
 			push(current_module_record, value);
 		} else {
 			current_module_record->globals[global_index] = value;
+			if (is_public_reexport) {
+				table_set(vm, &current_module_record->publics, export_name, value);
+			}
 		}
 	}
 
@@ -1224,9 +1229,36 @@ OP_FINISH_USE: {
 	DISPATCH();
 }
 
+OP_BIND_NATIVE: {
+	ObjectString *name = READ_STRING();
+	uint16_t arity = READ_SHORT();
+
+	CruxForeignMethodFn foreign_fn = NULL;
+	if (vm->config.bindForeignMethodFn) {
+		foreign_fn = vm->config.bindForeignMethodFn(vm,
+													current_module_record->path ? current_module_record->path->chars
+																				: "",
+													"", // Class name (NULL/empty for top-level)
+													false, // isStatic
+													name->chars);
+	}
+
+	if (foreign_fn == NULL) {
+		runtime_panic(current_module_record, IMPORT, "Could not bind native function '%s'.", name->chars);
+		return INTERPRET_RUNTIME_ERROR;
+	}
+
+	// bind foreign function - should be checked at compile time so types can be null
+	ObjectNativeCallable *native = new_native_callable(vm, NULL, arity, name, NULL, NULL);
+	native->foreign_fn = foreign_fn;
+
+	push(current_module_record, OBJECT_VAL(native));
+	DISPATCH();
+}
+
 OP_TYPEOF: {
-	Value value = PEEK(current_module_record, 0);
-	Value typeValue = typeof_value(vm, value);
+	CruxValue value = PEEK(current_module_record, 0);
+	CruxValue typeValue = typeof_value(vm, value);
 	pop(current_module_record);
 	push(current_module_record, typeValue);
 	DISPATCH();
@@ -1239,7 +1271,7 @@ OP_STRUCT: {
 }
 
 OP_STRUCT_INSTANCE_START: {
-	Value value = PEEK(current_module_record, 0);
+	CruxValue value = PEEK(current_module_record, 0);
 	ObjectStruct *objectStruct = AS_CRUX_STRUCT(value);
 	ObjectStructInstance *structInstance = new_struct_instance(vm, objectStruct, objectStruct->fields.count);
 	pop(current_module_record); // struct type
@@ -1260,7 +1292,7 @@ OP_STRUCT_NAMED_FIELD: {
 	ObjectString *fieldName = READ_STRING();
 
 	ObjectStruct *structType = structInstance->struct_type;
-	Value indexValue;
+	CruxValue indexValue;
 	if (!table_get(&structType->fields, fieldName, &indexValue)) {
 		runtime_panic(current_module_record, RUNTIME, "Field '%s' does not exist on strut type '%s'.", fieldName->chars,
 					  structType->name->chars);
@@ -1299,7 +1331,7 @@ OP_NIL_RETURN: {
 }
 
 OP_UNWRAP: {
-	Value value = pop(current_module_record);
+	CruxValue value = pop(current_module_record);
 	if (!IS_CRUX_RESULT(value)) {
 		runtime_panic(current_module_record, TYPE, "Only the 'result' type supports unwrapping.");
 		return INTERPRET_RUNTIME_ERROR;
@@ -1315,15 +1347,15 @@ OP_UNWRAP: {
 }
 
 OP_PANIC: {
-	Value value = pop(current_module_record);
+	CruxValue value = pop(current_module_record);
 	ObjectString *message = to_string(vm, value);
 	runtime_panic(vm->current_module_record, RUNTIME, "Panic --- %s", message->chars);
 	return INTERPRET_RUNTIME_ERROR;
 }
 
 OP_BITWISE_AND: {
-	Value left = pop(current_module_record);
-	Value right = pop(current_module_record);
+	CruxValue left = pop(current_module_record);
+	CruxValue right = pop(current_module_record);
 	if (!IS_INT(left) || !IS_INT(right)) {
 		runtime_panic(current_module_record, TYPE, "Bitwise AND operation requires type 'Int'.");
 		return INTERPRET_RUNTIME_ERROR;
@@ -1333,8 +1365,8 @@ OP_BITWISE_AND: {
 }
 
 OP_BITWISE_XOR: {
-	Value left = pop(current_module_record);
-	Value right = pop(current_module_record);
+	CruxValue left = pop(current_module_record);
+	CruxValue right = pop(current_module_record);
 	if (!IS_INT(left) || !IS_INT(right)) {
 		runtime_panic(current_module_record, TYPE, "Bitwise XOR operation requires type 'Int'.");
 		return INTERPRET_RUNTIME_ERROR;
@@ -1344,8 +1376,8 @@ OP_BITWISE_XOR: {
 }
 
 OP_BITWISE_OR: {
-	Value left = pop(current_module_record);
-	Value right = pop(current_module_record);
+	CruxValue left = pop(current_module_record);
+	CruxValue right = pop(current_module_record);
 	if (!IS_INT(left) || !IS_INT(right)) {
 		runtime_panic(current_module_record, TYPE, "Bitwise OR operation requires type 'Int'.");
 		return INTERPRET_RUNTIME_ERROR;
@@ -1356,11 +1388,23 @@ OP_BITWISE_OR: {
 
 OP_METHOD: {
 	ObjectString *method_name = READ_STRING();
-	Value method_closure = PEEK(current_module_record, 0);
-	Value struct_val = PEEK(current_module_record, 1);
+	CruxValue method_closure = PEEK(current_module_record, 0);
+	CruxValue struct_val = PEEK(current_module_record, 1);
 
 	ObjectStruct *struct_obj = AS_CRUX_STRUCT(struct_val);
 	table_set(vm, &struct_obj->methods, method_name, method_closure);
+
+	pop(current_module_record); // closure
+	DISPATCH();
+}
+
+OP_STATIC_METHOD: {
+	ObjectString *method_name = READ_STRING();
+	CruxValue method_closure = PEEK(current_module_record, 0);
+	CruxValue struct_val = PEEK(current_module_record, 1);
+
+	ObjectStruct *struct_obj = AS_CRUX_STRUCT(struct_val);
+	table_set(vm, &struct_obj->static_methods, method_name, method_closure);
 
 	pop(current_module_record); // closure
 	DISPATCH();
@@ -1373,8 +1417,8 @@ OP_SET_PROPERTY_SLASH:
 OP_SET_PROPERTY_INT_DIVIDE:
 OP_SET_PROPERTY_MODULUS: {
 	ObjectString *name = READ_STRING();
-	Value operand = pop(current_module_record);
-	Value instance_val = PEEK(current_module_record, 0);
+	CruxValue operand = pop(current_module_record);
+	CruxValue instance_val = PEEK(current_module_record, 0);
 
 	if (!IS_CRUX_STRUCT_INSTANCE(instance_val)) {
 		runtime_panic(current_module_record, TYPE, "Only instances have properties.");
@@ -1382,10 +1426,10 @@ OP_SET_PROPERTY_MODULUS: {
 	}
 	ObjectStructInstance *instance = AS_CRUX_STRUCT_INSTANCE(instance_val);
 
-	Value indexValue;
+	CruxValue indexValue;
 	if (table_get(&instance->struct_type->fields, name, &indexValue)) {
 		uint16_t index = (uint16_t)AS_INT(indexValue);
-		Value current_val = instance->fields[index];
+		CruxValue current_val = instance->fields[index];
 
 		OpCode math_op;
 		if (instruction == OP_SET_PROPERTY_PLUS)
@@ -1417,7 +1461,7 @@ OP_SET_PROPERTY_MODULUS: {
 }
 
 OP_GET_PROPERTY_INDEX: {
-	Value receiver = pop(current_module_record);
+	CruxValue receiver = pop(current_module_record);
 	uint16_t index = READ_SHORT();
 	ObjectStructInstance *instance = AS_CRUX_STRUCT_INSTANCE(receiver);
 	push(current_module_record, instance->fields[index]);
@@ -1425,8 +1469,8 @@ OP_GET_PROPERTY_INDEX: {
 }
 
 OP_SET_PROPERTY_INDEX: {
-	Value valueToSet = pop(current_module_record);
-	Value receiver = pop(current_module_record);
+	CruxValue valueToSet = pop(current_module_record);
+	CruxValue receiver = pop(current_module_record);
 	uint16_t index = READ_SHORT();
 	ObjectStructInstance *instance = AS_CRUX_STRUCT_INSTANCE(receiver);
 	instance->fields[index] = valueToSet;
@@ -1441,11 +1485,11 @@ OP_SET_PROPERTY_SLASH_INDEX:
 OP_SET_PROPERTY_INT_DIVIDE_INDEX:
 OP_SET_PROPERTY_MODULUS_INDEX: {
 	uint16_t index = READ_SHORT();
-	Value operand = pop(current_module_record);
-	Value instance_val = PEEK(current_module_record, 0);
+	CruxValue operand = pop(current_module_record);
+	CruxValue instance_val = PEEK(current_module_record, 0);
 
 	ObjectStructInstance *instance = AS_CRUX_STRUCT_INSTANCE(instance_val);
-	Value current_val = instance->fields[index];
+	CruxValue current_val = instance->fields[index];
 
 	OpCode math_op;
 	if (instruction == OP_SET_PROPERTY_PLUS_INDEX)
@@ -1473,7 +1517,7 @@ OP_SET_PROPERTY_MODULUS_INDEX: {
 }
 
 OP_BITWISE_NOT: {
-	Value value = pop(current_module_record);
+	CruxValue value = pop(current_module_record);
 	if (!IS_INT(value)) {
 		runtime_panic(current_module_record, TYPE, "Bitwise NOT operation requires type 'Int'.");
 		return INTERPRET_RUNTIME_ERROR;
@@ -1484,9 +1528,9 @@ OP_BITWISE_NOT: {
 }
 
 OP_TYPE_COERCE: {
-	Value value = READ_CONSTANT();
+	CruxValue value = READ_CONSTANT();
 	ObjectTypeRecord *type_record = AS_CRUX_TYPE_RECORD(value);
-	Value query = PEEK(current_module_record, 0);
+	CruxValue query = PEEK(current_module_record, 0);
 	if (!runtime_types_compatible(type_record->base_type, query)) {
 		char type_name[128];
 		type_record_name(type_record, type_name, 128);
@@ -1498,7 +1542,7 @@ OP_TYPE_COERCE: {
 }
 
 OP_GET_SLICE: {
-	Value range_value = pop(current_module_record);
+	CruxValue range_value = pop(current_module_record);
 	ObjectRange *range = AS_CRUX_RANGE(range_value);
 	if (!IS_CRUX_OBJECT(PEEK(current_module_record, 0))) {
 		runtime_panic(current_module_record, TYPE, "Cannot get from a non-collection type.");
@@ -1517,7 +1561,7 @@ OP_GET_SLICE: {
 		ObjectArray *slice = new_array(vm, len);
 		for (uint32_t i = 0; i < len; i++) {
 			// okay to not check return, we allocated enough capacity
-			Value to_add = array->values[range->start + i * range->step];
+			CruxValue to_add = array->values[range->start + i * range->step];
 			array_add_back(vm, slice, to_add);
 		}
 		pop_push(current_module_record, OBJECT_VAL(slice));
@@ -1614,8 +1658,8 @@ OP_GET_SLICE: {
 
 // value in collection
 OP_IN: {
-	Value right = pop(current_module_record);
-	Value left = pop(current_module_record);
+	CruxValue right = pop(current_module_record);
+	CruxValue left = pop(current_module_record);
 
 	ObjectType right_type = object_get_type(AS_CRUX_OBJECT(right));
 
@@ -1679,15 +1723,7 @@ OP_IN: {
 			push(current_module_record, found ? TRUE_VAL : FALSE_VAL);
 			break;
 		}
-		case OBJECT_SET: {
-			ObjectSet *set = AS_CRUX_SET(right);
-			if (object_table_contains_key(set->entries, left)) {
-				push(current_module_record, TRUE_VAL);
-			} else {
-				push(current_module_record, FALSE_VAL);
-			}
-			break;
-		}
+
 		case OBJECT_RANGE: {
 			ObjectRange *range = AS_CRUX_RANGE(right);
 			if (!IS_INT(left)) {
@@ -1747,7 +1783,7 @@ OP_IN: {
 }
 
 OP_OK: {
-	Value value = PEEK(current_module_record, 0);
+	CruxValue value = PEEK(current_module_record, 0);
 	ObjectResult *result = new_ok_result(vm, value);
 	pop(current_module_record);
 	push(current_module_record, OBJECT_VAL(result));
@@ -1755,7 +1791,7 @@ OP_OK: {
 }
 
 OP_ERR: {
-	Value err = PEEK(current_module_record, 0);
+	CruxValue err = PEEK(current_module_record, 0);
 	ObjectError *error = new_error(vm, to_string(vm, err), RUNTIME, false);
 	push(current_module_record, OBJECT_VAL(error));
 	ObjectResult *result = new_error_result(vm, error);
@@ -1766,7 +1802,7 @@ OP_ERR: {
 }
 
 OP_SOME: {
-	Value value = PEEK(current_module_record, 0);
+	CruxValue value = PEEK(current_module_record, 0);
 	ObjectOption *some = new_option(vm, value, true);
 	pop(current_module_record);
 	push(current_module_record, OBJECT_VAL(some));
@@ -2058,7 +2094,7 @@ OP_DIVIDE_VECTOR_SCALAR: {
 OP_ADD_COMPLEX_COMPLEX: {
 	ObjectComplex *right = AS_CRUX_COMPLEX(current_module_record->stack_top[-1]);
 	ObjectComplex *left = AS_CRUX_COMPLEX(current_module_record->stack_top[-2]);
-	Value result = complex_add_value(vm, left, right);
+	CruxValue result = complex_add_value(vm, left, right);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2067,7 +2103,7 @@ OP_ADD_COMPLEX_COMPLEX: {
 OP_SUBTRACT_COMPLEX_COMPLEX: {
 	ObjectComplex *right = AS_CRUX_COMPLEX(current_module_record->stack_top[-1]);
 	ObjectComplex *left = AS_CRUX_COMPLEX(current_module_record->stack_top[-2]);
-	Value result = complex_subtract_value(vm, left, right);
+	CruxValue result = complex_subtract_value(vm, left, right);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2076,7 +2112,7 @@ OP_SUBTRACT_COMPLEX_COMPLEX: {
 OP_MULTIPLY_COMPLEX_COMPLEX: {
 	ObjectComplex *right = AS_CRUX_COMPLEX(current_module_record->stack_top[-1]);
 	ObjectComplex *left = AS_CRUX_COMPLEX(current_module_record->stack_top[-2]);
-	Value result = complex_multiply_value(vm, left, right);
+	CruxValue result = complex_multiply_value(vm, left, right);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2085,7 +2121,7 @@ OP_MULTIPLY_COMPLEX_COMPLEX: {
 OP_DIVIDE_COMPLEX_COMPLEX: {
 	ObjectComplex *right = AS_CRUX_COMPLEX(current_module_record->stack_top[-1]);
 	ObjectComplex *left = AS_CRUX_COMPLEX(current_module_record->stack_top[-2]);
-	Value result = complex_divide_value(vm, left, right);
+	CruxValue result = complex_divide_value(vm, left, right);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2094,7 +2130,7 @@ OP_DIVIDE_COMPLEX_COMPLEX: {
 OP_MULTIPLY_COMPLEX_SCALAR: {
 	double scalar = TO_DOUBLE(current_module_record->stack_top[-1]);
 	ObjectComplex *left = AS_CRUX_COMPLEX(current_module_record->stack_top[-2]);
-	Value result = complex_scalar_multiply_value(vm, left, scalar);
+	CruxValue result = complex_scalar_multiply_value(vm, left, scalar);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2103,7 +2139,7 @@ OP_MULTIPLY_COMPLEX_SCALAR: {
 OP_MULTIPLY_SCALAR_COMPLEX: {
 	ObjectComplex *right = AS_CRUX_COMPLEX(current_module_record->stack_top[-1]);
 	double scalar = TO_DOUBLE(current_module_record->stack_top[-2]);
-	Value result = complex_scalar_multiply_value(vm, right, scalar);
+	CruxValue result = complex_scalar_multiply_value(vm, right, scalar);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2151,7 +2187,7 @@ OP_SUBTRACT_MATRIX_MATRIX: {
 OP_ADD_MATRIX_SCALAR: {
 	double scalar = TO_DOUBLE(current_module_record->stack_top[-1]);
 	ObjectMatrix *left = AS_CRUX_MATRIX(current_module_record->stack_top[-2]);
-	Value result = matrix_scalar_add_value(vm, left, scalar);
+	CruxValue result = matrix_scalar_add_value(vm, left, scalar);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2160,7 +2196,7 @@ OP_ADD_MATRIX_SCALAR: {
 OP_ADD_SCALAR_MATRIX: {
 	ObjectMatrix *right = AS_CRUX_MATRIX(current_module_record->stack_top[-1]);
 	double scalar = TO_DOUBLE(current_module_record->stack_top[-2]);
-	Value result = matrix_scalar_add_value(vm, right, scalar);
+	CruxValue result = matrix_scalar_add_value(vm, right, scalar);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2169,7 +2205,7 @@ OP_ADD_SCALAR_MATRIX: {
 OP_SUBTRACT_MATRIX_SCALAR: {
 	double scalar = TO_DOUBLE(current_module_record->stack_top[-1]);
 	ObjectMatrix *left = AS_CRUX_MATRIX(current_module_record->stack_top[-2]);
-	Value result = matrix_scalar_subtract_value(vm, left, scalar);
+	CruxValue result = matrix_scalar_subtract_value(vm, left, scalar);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2178,7 +2214,7 @@ OP_SUBTRACT_MATRIX_SCALAR: {
 OP_SUBTRACT_SCALAR_MATRIX: {
 	ObjectMatrix *right = AS_CRUX_MATRIX(current_module_record->stack_top[-1]);
 	double scalar = TO_DOUBLE(current_module_record->stack_top[-2]);
-	Value result = scalar_matrix_subtract_value(vm, scalar, right);
+	CruxValue result = scalar_matrix_subtract_value(vm, scalar, right);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2200,7 +2236,7 @@ OP_MULTIPLY_MATRIX_MATRIX: {
 OP_MULTIPLY_MATRIX_SCALAR: {
 	double scalar = TO_DOUBLE(current_module_record->stack_top[-1]);
 	ObjectMatrix *left = AS_CRUX_MATRIX(current_module_record->stack_top[-2]);
-	Value result = matrix_scale_value(vm, left, scalar);
+	CruxValue result = matrix_scale_value(vm, left, scalar);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2209,7 +2245,7 @@ OP_MULTIPLY_MATRIX_SCALAR: {
 OP_MULTIPLY_SCALAR_MATRIX: {
 	ObjectMatrix *right = AS_CRUX_MATRIX(current_module_record->stack_top[-1]);
 	double scalar = TO_DOUBLE(current_module_record->stack_top[-2]);
-	Value result = matrix_scale_value(vm, right, scalar);
+	CruxValue result = matrix_scale_value(vm, right, scalar);
 	current_module_record->stack_top--;
 	current_module_record->stack_top[-1] = result;
 	DISPATCH();
@@ -2229,13 +2265,13 @@ OP_DIVIDE_MATRIX_SCALAR: {
 }
 
 OP_INVOKE_STDLIB: {
-	Value callable = READ_CONSTANT();
+	CruxValue callable = READ_CONSTANT();
 	int arg_count = READ_SHORT();
 
-	ObjectModuleRecord *current_module_record = vm->current_module_record;
-	const Value receiver = PEEK(current_module_record, arg_count);
-	const Value original = PEEK(current_module_record,
-								arg_count + 1); // Store the original caller
+	current_module_record = vm->current_module_record;
+	const CruxValue receiver = PEEK(current_module_record, arg_count);
+	const CruxValue original = PEEK(current_module_record,
+									arg_count + 1); // Store the original caller
 
 	if (!IS_CRUX_OBJECT(receiver)) {
 		runtime_panic(current_module_record, TYPE, "Only instances have methods");
@@ -2255,7 +2291,7 @@ OP_INVOKE_STDLIB: {
 	}
 
 	// restore the caller and put the result in the right place
-	const Value result = pop(current_module_record);
+	const CruxValue result = pop(current_module_record);
 	push(current_module_record, original);
 	push(current_module_record, result);
 
@@ -2265,13 +2301,13 @@ OP_INVOKE_STDLIB: {
 }
 
 OP_INVOKE_STDLIB_UNWRAP: {
-	Value callable = READ_CONSTANT();
+	CruxValue callable = READ_CONSTANT();
 	int arg_count = READ_SHORT();
 
-	ObjectModuleRecord *current_module_record = vm->current_module_record;
-	const Value receiver = PEEK(current_module_record, arg_count);
-	const Value original = PEEK(current_module_record,
-								arg_count + 1); // Store the original caller
+	current_module_record = vm->current_module_record;
+	const CruxValue receiver = PEEK(current_module_record, arg_count);
+	const CruxValue original = PEEK(current_module_record,
+									arg_count + 1); // Store the original caller
 
 	if (!IS_CRUX_OBJECT(receiver)) {
 		runtime_panic(current_module_record, TYPE, "Only instances have methods");
@@ -2291,7 +2327,7 @@ OP_INVOKE_STDLIB_UNWRAP: {
 	}
 
 	// restore the caller and put the result in the right place
-	const Value result = pop(current_module_record);
+	const CruxValue result = pop(current_module_record);
 	push(current_module_record, original);
 
 	if (!IS_CRUX_RESULT(result)) {
@@ -2360,15 +2396,16 @@ OP_2_FLOAT: {
 }
 
 end: {
-	printf("        ");
-	for (Value *slot = current_module_record->stack; slot < current_module_record->stack_top; slot++) {
-		printf("[");
-		print_value(*slot, false);
-		printf("]");
+	vm_print(vm, "        ");
+	for (CruxValue *slot = current_module_record->stack; slot < current_module_record->stack_top; slot++) {
+		vm_print(vm, "[");
+		print_value(vm, *slot, false);
+		vm_print(vm, "]");
 	}
-	printf("\n");
+	vm_print(vm, "\n");
 
-	disassemble_instruction(&frame->closure->function->chunk, (int)(frame->ip - frame->closure->function->chunk.code));
+	disassemble_instruction(vm, &frame->closure->function->chunk,
+							(int)(frame->ip - frame->closure->function->chunk.code));
 
 	instruction = READ_SHORT();
 	goto *dispatchTable[instruction];

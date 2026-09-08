@@ -1,0 +1,738 @@
+#include <string.h>
+
+#include "garbage_collector.h"
+#include "native/array.h"
+#include "native/buffer.h"
+#include "native/complex.h"
+#include "native/core.h"
+#include "native/error.h"
+#include "native/fs.h"
+#include "native/gc.h"
+#include "native/io.h"
+#include "native/math.h"
+#include "native/matrix.h"
+#include "native/native_registration.h"
+#include "native/option.h"
+#include "native/random.h"
+#include "native/range.h"
+#include "native/result.h"
+#include "native/string.h"
+#include "native/sys.h"
+#include "native/tables.h"
+#include "native/time.h"
+#include "native/tuple.h"
+#include "native/vectors.h"
+#include "object/object.h"
+#include "panic.h"
+#include "type_system.h"
+#include "value.h"
+
+#define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+#define SA vm
+
+static ObjectTypeRecord **make_args(CruxVM *vm, ObjectTypeRecord **src, int count)
+{
+	if (count == 0)
+		return NULL;
+	ObjectTypeRecord **dst = ALLOCATE(vm, ObjectTypeRecord *, count);
+	if (!dst)
+		return NULL;
+	memcpy(dst, src, sizeof(ObjectTypeRecord *) * count);
+	return dst;
+}
+
+static ObjectString **make_names(CruxVM *vm, ObjectString **src, int count)
+{
+	if (count == 0)
+		return NULL;
+	ObjectString **dst = ALLOCATE(vm, ObjectString *, count);
+	memcpy(dst, src, sizeof(ObjectString *) * count);
+	return dst;
+}
+
+#define NAMES(...)                                                                                                     \
+	make_names(vm, (ObjectString *[]){__VA_ARGS__},                                                                    \
+			   (int)(sizeof((ObjectString *[]){__VA_ARGS__}) / sizeof(ObjectString *)))
+
+#define ARGS(...)                                                                                                      \
+	make_args(vm, (ObjectTypeRecord *[]){__VA_ARGS__},                                                                 \
+			  (int)(sizeof((ObjectTypeRecord *[]){__VA_ARGS__}) / sizeof(ObjectTypeRecord *)))
+
+#define ARGS0 NULL
+
+#define name_any copy_string(SA, "Any", sizeof("Any"))
+#define name_int copy_string(SA, "Int", sizeof("Int"))
+#define name_float copy_string(SA, "Float", sizeof("Float"))
+#define name_string copy_string(SA, "String", sizeof("String"))
+#define name_nil copy_string(SA, "Nil", sizeof("Nil"))
+#define name_bool copy_string(SA, "Bool", sizeof("Bool"))
+#define name_vec copy_string(SA, "Vector[]", sizeof("Vector[]"))
+#define name_mat copy_string(SA, "Matrix[,]", sizeof("Matrix[,]"))
+#define name_tbl copy_string(SA, "Table[,]", sizeof("Table[,]"))
+#define name_rang copy_string(SA, "Range", sizeof("Range"))
+#define name_buf copy_string(SA, "Buffer", sizeof("Buffer"))
+#define name_iter copy_string(SA, "Iterator[]", sizeof("Iterator[]"))
+#define name_tup copy_string(SA, "Tuple[]", sizeof("Tuple[]"))
+#define name_arr copy_string(SA, "Array[Any]", sizeof("Array[Any]"))
+#define name_iterable                                                                                                  \
+	copy_string(SA, "Iterator[] | Array[Any] | Vector[] | Matrix[,] | Table[,] | Tuple[] | Range | Buffer | String",   \
+				sizeof(                                                                                                \
+					"Iterator[] | Array[Any] | Vector[] | Matrix[,] | Table[,] | Tuple[] | Range | Buffer | String"))
+
+#define REC(t) new_type_rec(SA, (t))
+#define ARR(elem) new_array_type_rec(SA, (elem))
+#define ITER(elem) new_iterator_type_rec(SA, (elem))
+#define TUP_ANY new_tuple_type_rec(SA, NULL, -1)
+#define TBL(k, v) new_table_type_rec(SA, (k), (v))
+#define RES(ok) new_result_type_rec(SA, (ok))
+#define TABLE_OF(key, value) new_table_type_rec(SA, (key), (value))
+#define OPT(elem) new_option_type_rec(SA, (elem))
+
+#define VEC(dim) new_vector_type_rec(SA, (dim))
+#define MAT(row, col) new_matrix_type_rec(SA, (row), (col))
+#define UNI(args, names, count) new_union_type_rec(SA, (args), (names), (count))
+#define FUNC(args, count, return_type) new_function_type_rec(SA, (args), (count), (return_type), false)
+
+#define t_nil REC(NIL_TYPE)
+#define t_bool REC(BOOL_TYPE)
+#define t_int REC(INT_TYPE)
+#define t_flt REC(FLOAT_TYPE)
+#define t_str REC(STRING_TYPE)
+#define t_any REC(ANY_TYPE)
+#define t_err REC(ERROR_TYPE)
+#define t_rnd REC(RANDOM_TYPE)
+#define t_file REC(FILE_TYPE)
+#define t_cmpl REC(COMPLEX_TYPE)
+#define t_rang REC(RANGE_TYPE)
+#define t_buf REC(BUFFER_TYPE)
+#define t_tbl REC(TABLE_TYPE)
+#define t_never REC(NEVER_TYPE)
+
+#define arr_str ARR(t_str)
+#define arr_any ARR(t_any)
+#define arr_int ARR(t_int)
+#define arr_flt ARR(t_flt)
+#define vec_any VEC(-1)
+#define mat_any MAT(-1, -1)
+#define tbl_any TABLE_OF(t_any, t_any)
+#define iter_any ITER(t_any)
+#define opt_any OPT(t_any)
+#define opt_int OPT(t_int)
+
+#define hashable                                                                                                       \
+	UNI(ARGS(t_nil, t_int, t_flt, t_bool, t_str), NAMES(name_nil, name_int, name_float, name_bool, name_string), 5)
+#define numeric UNI(ARGS(t_int, t_flt), NAMES(name_int, name_float), 2)
+#define iterable                                                                                                       \
+	UNI(ARGS(iter_any, arr_any, mat_any, TUP_ANY, t_str, vec_any, t_rang, t_buf),                                      \
+		NAMES(name_iter, name_arr, name_mat, name_tup, name_string, name_vec, name_rang, name_buf), 8)
+
+// Compound types
+#define res_nil RES(t_nil)
+#define res_any RES(t_any)
+#define res_int RES(t_int)
+#define res_str RES(t_str)
+#define res_flt RES(t_flt)
+#define res_bool RES(t_bool)
+
+#define arr_num ARR(numeric)
+
+bool register_native_method(CruxVM *vm, Table *method_table, const char *method_name,
+							const CruxCallable method_function, const int arity, ObjectTypeRecord **arg_types,
+							ObjectTypeRecord *return_type)
+{
+	ObjectString *name = copy_string(vm, method_name, (int)strlen(method_name));
+	if (!name) {
+		if (arg_types && arity > 0)
+			FREE_ARRAY(vm, ObjectTypeRecord *, arg_types, arity);
+		return false;
+	}
+	object_set_immortal(&name->object, true); // method names are immortal
+	ObjectNativeCallable *callable = new_native_callable(vm, method_function, arity, name, arg_types, return_type);
+	if (!callable) {
+		if (arg_types && arity > 0)
+			FREE_ARRAY(vm, ObjectTypeRecord *, arg_types, arity);
+		return false;
+	}
+	object_set_immortal(&callable->object, true); // method callables are immortal
+
+	for (int i = 0; i < arity; i++) {
+		ObjectTypeRecord *arg_type = arg_types[i];
+		object_set_immortal(&arg_type->object, true); // argument types are immortal
+	}
+	object_set_immortal(&return_type->object, true); // return type is immortal
+
+	table_set(vm, method_table, name, OBJECT_VAL(callable));
+	return true;
+}
+
+static bool register_native_function(CruxVM *vm, Table *function_table, const char *function_name,
+									 const CruxCallable function, const int arity, ObjectTypeRecord **arg_types,
+									 ObjectTypeRecord *return_type)
+{
+	ObjectModuleRecord *module_record = vm->current_module_record;
+	ObjectString *name = copy_string(vm, function_name, (int)strlen(function_name));
+	if (!name) {
+		if (arg_types && arity > 0)
+			FREE_ARRAY(vm, ObjectTypeRecord *, arg_types, arity);
+		return false;
+	}
+	object_set_immortal(&name->object, true); // function names are immortal
+	push(module_record, OBJECT_VAL(name));
+	ObjectNativeCallable *callable = new_native_callable(vm, function, arity, name, arg_types, return_type);
+	if (!callable) {
+		if (arg_types && arity > 0)
+			FREE_ARRAY(vm, ObjectTypeRecord *, arg_types, arity);
+		return false;
+	}
+	object_set_immortal(&callable->object, true); // function callables are immortal
+
+	for (int i = 0; i < arity; i++) {
+		ObjectTypeRecord *arg_type = arg_types[i];
+		object_set_immortal(&arg_type->object, true); // argument types are immortal
+	}
+	object_set_immortal(&return_type->object, true); // return type is immortal
+
+	const CruxValue func = OBJECT_VAL(callable);
+	push(module_record, func);
+	const bool ok = table_set(vm, function_table, name, func);
+	pop(module_record);
+	pop(module_record);
+	return ok;
+}
+
+static bool register_native_methods(CruxVM *vm, Table *method_table, const Callable *methods, int count)
+{
+	for (int i = 0; i < count; i++) {
+		if (!register_native_method(vm, method_table, methods[i].name, methods[i].function, methods[i].arity,
+									methods[i].arg_types, methods[i].return_type))
+			return false;
+	}
+	return true;
+}
+
+static bool register_native_functions(CruxVM *vm, Table *function_table, const Callable *functions, int count)
+{
+	for (int i = 0; i < count; i++) {
+		if (!register_native_function(vm, function_table, functions[i].name, functions[i].function, functions[i].arity,
+									  functions[i].arg_types, functions[i].return_type))
+			return false;
+	}
+	return true;
+}
+
+static bool init_module(CruxVM *vm, const char *module_name, const Callable *functions, int count)
+{
+	Table *module_table = ALLOCATE(vm, Table, 1);
+	if (!module_table)
+		return false;
+	init_table(module_table);
+
+	if (functions && !register_native_functions(vm, module_table, functions, count))
+		return false;
+
+	if (vm->native_modules.count + 1 > vm->native_modules.capacity) {
+		const int new_cap = vm->native_modules.capacity == 0 ? 8 : vm->native_modules.capacity * 2;
+		vm->native_modules.modules = GROW_ARRAY(vm, NativeModule, vm->native_modules.modules,
+												vm->native_modules.capacity, new_cap);
+		vm->native_modules.capacity = new_cap;
+	}
+
+	ObjectString *name_copy = copy_string(vm, module_name, (int)strlen(module_name));
+	object_set_immortal(&name_copy->object, true); // module names are immortal
+	vm->native_modules.modules[vm->native_modules.count++] = (NativeModule){.name = name_copy, .names = module_table};
+	return true;
+}
+
+static bool init_type_method_table(CruxVM *vm, Table *method_table, const Callable *methods, int count)
+{
+	return methods ? register_native_methods(vm, method_table, methods, count) : true;
+}
+
+bool initialize_std_lib(CruxVM *vm)
+{
+	GC_STATUS prev_status = vm->gc_status;
+	vm->gc_status = PAUSED;
+
+	// core functions
+	{
+		const Callable fns[] = {{"len", length_function, 1, ARGS(t_any), t_int},
+								{"error", error_function, 1, ARGS(t_any), t_err},
+								{"assert", assert_function, 2, ARGS(t_bool, t_str), t_nil},
+								{"int", int_function, 1, ARGS(t_any), RES(t_int)},
+								{"float", float_function, 1, ARGS(t_any), RES(t_flt)},
+								{"string", string_function, 1, ARGS(t_any), t_str},
+								{"table", table_function, 1, ARGS(t_any), RES(tbl_any)},
+								{"array", array_function, 1, ARGS(t_any), RES(arr_any)},
+								{"format", format_function, 2, ARGS(t_str, TBL(t_str, t_any)), res_nil},
+								{"println", io_println_function, 1, ARGS(t_any), t_nil},
+								{"iter", iter_function, 1, ARGS(t_any), res_any},
+								{"next", next_function, 1, ARGS(t_any), opt_any}};
+
+		if (!register_native_functions(vm, &vm->core_fns, fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// string methods
+	{
+		Callable methods[] = {
+			{"byte_length", string_byte_length_method, 1, ARGS(t_str), t_int},
+			{"first", string_first_method, 1, ARGS(t_str), t_str},
+			{"last", string_last_method, 1, ARGS(t_str), t_str},
+			{"get", string_get_method, 2, ARGS(t_str, t_int), res_str},
+			{"to_upper", string_to_upper_method, 1, ARGS(t_str), t_str},
+			{"to_lower", string_to_lower_method, 1, ARGS(t_str), t_str},
+			{"is_upper", string_is_upper_method, 1, ARGS(t_str), t_bool},
+			{"is_lower", string_is_lower_method, 1, ARGS(t_str), t_bool},
+			{"strip", string_strip_method, 1, ARGS(t_str), res_str},
+			{"substring", string_substring_method, 3, ARGS(t_str, t_int, t_int), RES(t_str)},
+			{"split", string_split_method, 2, ARGS(t_str, t_str), RES(arr_str)},
+			{"contains", string_contains_method, 2, ARGS(t_str, t_str), t_bool},
+			{"starts_with", string_starts_with_method, 2, ARGS(t_str, t_str), res_bool},
+			{"ends_with", string_ends_with_method, 2, ARGS(t_str, t_str), res_bool},
+			{"is_alpha", string_is_alpha_method, 1, ARGS(t_str), t_bool},
+			{"is_digit", string_is_digit_method, 1, ARGS(t_str), t_bool},
+			{"concat", string_concat_method, 2, ARGS(t_str, t_str), res_str},
+			{"reverse", string_reverse_method, 1, ARGS(t_str), RES(t_str)},
+			{"find", string_find_method, 2, ARGS(t_str, t_str), t_int},
+			{"repeat", string_repeat_method, 2, ARGS(t_str, t_int), RES(t_str)},
+			{"join", string_join_method, 2, ARGS(t_str, arr_any), t_str},
+			{"pad_left", string_pad_left_method, 3, ARGS(t_str, t_int, t_str), t_str},
+			{"pad_right", string_pad_right_method, 3, ARGS(t_str, t_int, t_str), t_str},
+			{"count", string_count_method, 2, ARGS(t_str, t_str), t_int},
+			{"is_empty", string_is_empty_method, 1, ARGS(t_str), t_bool},
+			{"is_space", string_is_space_method, 1, ARGS(t_str), t_bool},
+			{"is_alphanum", string_is_al_num_method, 1, ARGS(t_str), t_bool},
+			{"replace", string_replace_method, 3, ARGS(t_str, t_str, t_str), res_str},
+		};
+		init_type_method_table(vm, &vm->string_type, methods, ARRAY_COUNT(methods));
+	}
+
+	// array methods
+	{
+		const Callable methods[] = {
+			{"push", array_push_method, 2, ARGS(arr_any, t_any), res_nil},
+			{"pop", array_pop_method, 1, ARGS(arr_any), opt_any},
+			{"insert", array_insert_method, 3, ARGS(arr_any, t_int, t_any), res_nil},
+			{"remove", array_remove_at_method, 2, ARGS(arr_any, t_int), res_any},
+			{"concat", array_concat_method, 2, ARGS(arr_any, arr_any), RES(arr_any)},
+			{"slice", array_slice_method, 3, ARGS(arr_any, t_int, t_int), RES(arr_any)},
+			{"reverse", array_reverse_method, 1, ARGS(arr_any), res_nil},
+			{"index", array_index_of_method, 2, ARGS(arr_any, t_any), opt_int},
+			{"map", array_map_method, 2, ARGS(arr_any, FUNC(ARGS(t_any), 1, t_any)), RES(arr_any)},
+			{"filter", array_filter_method, 2, ARGS(arr_any, FUNC(ARGS(t_any), 1, t_any)), RES(arr_any)},
+			{"reduce", array_reduce_method, 3, ARGS(arr_any, FUNC(ARGS(t_any, t_any), 2, t_any), t_any), res_any},
+			{"sort", array_sort_method, 1, ARGS(arr_any), RES(arr_any)},
+			{"join", array_join_method, 2, ARGS(arr_any, t_str), res_str},
+			{"contains", array_contains_method, 2, ARGS(arr_any, t_any), t_bool},
+			{"clear", array_clear_method, 1, ARGS(arr_any), t_nil},
+			{"equals", arrayEqualsMethod, 2, ARGS(arr_any, arr_any), t_bool},
+		};
+		init_type_method_table(vm, &vm->array_type, methods, ARRAY_COUNT(methods));
+	}
+
+	// Table methods
+	{
+		const Callable methods[] = {
+			{"values", table_values_method, 1, ARGS(tbl_any), RES(arr_any)},
+			{"keys", table_keys_method, 1, ARGS(tbl_any), RES(arr_any)},
+			{"pairs", table_pairs_method, 1, ARGS(tbl_any), RES(arr_any)},
+			{"remove", table_remove_method, 2, ARGS(tbl_any, hashable), res_any},
+			{"get", table_get_method, 2, ARGS(tbl_any, hashable), res_any},
+			{"has_key", table_has_key_method, 2, ARGS(tbl_any, hashable), t_bool},
+			{"get_or_else", table_get_or_else_method, 3, ARGS(tbl_any, hashable, t_any), t_any},
+		};
+		init_type_method_table(vm, &vm->table_type, methods, ARRAY_COUNT(methods));
+	}
+
+	// Error methods
+	{
+		const Callable methods[] = {
+			{"type", error_type_method, 1, ARGS(t_err), t_str},
+			{"message", error_message_method, 1, ARGS(t_err), t_str},
+		};
+		init_type_method_table(vm, &vm->error_type, methods, ARRAY_COUNT(methods));
+	}
+
+	// Result methods
+	{
+		const Callable methods[] = {
+			{"unwrap", result_unwrap_method, 1, ARGS(res_any), t_any},
+			{"unwrap_or", result_unwrap_or_method, 2, ARGS(res_any, t_any), t_any},
+			{"is_ok", result_is_ok_method, 1, ARGS(res_any), t_bool},
+			{"is_err", result_is_err_method, 1, ARGS(res_any), t_bool},
+		};
+		init_type_method_table(vm, &vm->result_type, methods, ARRAY_COUNT(methods));
+	}
+
+	// Option methods
+	{
+		const Callable methods[] = {
+			{"unwrap", option_unwrap_method, 1, ARGS(new_option_type_rec(SA, t_any)), t_any},
+			{"unwrap_or", option_unwrap_or_method, 2, ARGS(new_option_type_rec(SA, t_any), t_any), t_any},
+			{"is_some", option_is_some_method, 1, ARGS(new_option_type_rec(SA, t_any)), t_bool},
+			{"is_none", option_is_none_method, 1, ARGS(new_option_type_rec(SA, t_any)), t_bool},
+		};
+		init_type_method_table(vm, &vm->option_type, methods, ARRAY_COUNT(methods));
+	}
+
+	// File methods
+	{
+		const Callable methods[] = {
+			{"close", fs_close_method, 1, ARGS(t_file), res_nil},
+			{"flush", fs_flush_method, 1, ARGS(t_file), res_nil},
+			{"read", fs_read_method, 2, ARGS(t_file, t_int), res_str},
+			{"readln", fs_readln_method, 1, ARGS(t_file), res_str},
+			{"read_all", fs_read_all_method, 1, ARGS(t_file), res_str},
+			{"read_lines", fs_read_lines_method, 1, ARGS(t_file), RES(arr_str)},
+			{"write", fs_write_method, 2, ARGS(t_file, t_str), res_nil},
+			{"writeln", fs_writeln_method, 2, ARGS(t_file, t_str), res_nil},
+			{"seek", fs_seek_method, 3, ARGS(t_file, t_int, t_str), res_nil},
+			{"tell", fs_tell_method, 1, ARGS(t_file), res_int},
+			{"is_open", fs_is_open_method, 1, ARGS(t_file), t_bool},
+		};
+		init_type_method_table(vm, &vm->file_type, methods, ARRAY_COUNT(methods));
+	}
+
+	// Random methods  +  module constructor
+	{
+		const Callable methods[] = {
+			{"seed", random_seed_method, 2, ARGS(t_rnd, t_int), t_nil},
+			{"int", random_int_method, 3, ARGS(t_rnd, t_int, t_int), RES(t_int)},
+			{"float", random_float_method, 3, ARGS(t_rnd, numeric, numeric), RES(t_flt)},
+			{"bool", random_bool_method, 2, ARGS(t_rnd, numeric), RES(t_bool)},
+			{"choice", random_choice_method, 2, ARGS(t_rnd, arr_any), RES(res_any)},
+			{"next", random_next_method, 1, ARGS(t_rnd), t_flt},
+		};
+		init_type_method_table(vm, &vm->random_type, methods, ARRAY_COUNT(methods));
+
+		const Callable fns[] = {
+			{"Random", random_init_function, 0, ARGS0, t_rnd},
+		};
+		if (!init_module(vm, "random", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// GC module
+	{
+		const Callable fns[] = {
+			{"off", gc_off_function, 0, ARGS0, t_nil},
+			{"on", gc_on_function, 0, ARGS0, t_nil},
+			{"set_heap_growth", gc_set_heap_growth_function, 1, ARGS(numeric), res_nil},
+			{"set_min_heap", gc_set_min_heap_function, 1, ARGS(numeric), res_nil},
+			{"set_min_growth", gc_set_min_growth_function, 1, ARGS(numeric), res_nil},
+			{"collect", gc_collect_function, 0, ARGS0, t_nil},
+			{"heap_used", gc_heap_used_function, 0, ARGS0, t_flt},
+			{"heap_capacity", gc_heap_capacity_function, 0, ARGS0, t_flt},
+			{"is_on", gc_is_on_function, 0, ARGS0, t_bool},
+			{"stats", gc_stats_function, 0, ARGS0, t_tbl},
+		};
+		if (!init_module(vm, "gc", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// Vector methods  +  module constructor
+	{
+		const Callable methods[] = {
+			{"dot", vector_dot_method, 2, ARGS(vec_any, vec_any), RES(t_flt)},
+			{"add", vector_add_method, 2, ARGS(vec_any, vec_any), RES(vec_any)},
+			{"subtract", vector_subtract_method, 2, ARGS(vec_any, vec_any), RES(vec_any)},
+			{"multiply", vector_multiply_method, 2, ARGS(vec_any, numeric), RES(vec_any)},
+			{"divide", vector_divide_method, 2, ARGS(vec_any, numeric), RES(vec_any)},
+			{"magnitude", vector_magnitude_method, 1, ARGS(vec_any), t_flt},
+			{"normalize", vector_normalize_method, 1, ARGS(vec_any), RES(vec_any)},
+			{"distance", vector_distance_method, 2, ARGS(vec_any, vec_any), RES(t_flt)},
+			{"angle_between", vector_angle_between_method, 2, ARGS(vec_any, vec_any), RES(t_flt)},
+			{"cross", vector_cross_method, 2, ARGS(vec_any, vec_any), RES(vec_any)},
+			{"lerp", vector_lerp_method, 3, ARGS(vec_any, vec_any, numeric), RES(vec_any)},
+			{"reflect", vector_reflect_method, 2, ARGS(vec_any, vec_any), RES(vec_any)},
+			{"equals", vector_equals_method, 2, ARGS(vec_any, vec_any), t_bool},
+			{"x", vector_x_method, 1, ARGS(vec_any), t_flt},
+			{"y", vector_y_method, 1, ARGS(vec_any), t_flt},
+			{"z", vector_z_method, 1, ARGS(vec_any), t_flt},
+			{"w", vector_w_method, 1, ARGS(vec_any), t_flt},
+			{"dimension", vector_dimension_method, 1, ARGS(vec_any), t_int},
+		};
+		init_type_method_table(vm, &vm->vector_type, methods, ARRAY_COUNT(methods));
+
+		const Callable fns[] = {
+			{"Vector", new_vector_function, 2, ARGS(t_int, arr_num), vec_any},
+		};
+		if (!init_module(vm, "vector", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// Complex methods  +  module constructor
+	{
+		const Callable methods[] = {
+			{"add", add_complex_number_method, 2, ARGS(t_cmpl, t_cmpl), t_cmpl},
+			{"sub", sub_complex_number_method, 2, ARGS(t_cmpl, t_cmpl), t_cmpl},
+			{"mul", mul_complex_number_method, 2, ARGS(t_cmpl, t_cmpl), t_cmpl},
+			{"div", div_complex_number_method, 2, ARGS(t_cmpl, t_cmpl), t_cmpl},
+			{"scale", scale_complex_number_method, 2, ARGS(t_cmpl, numeric), t_cmpl},
+			{"real", complex_real_method, 1, ARGS(t_cmpl), t_flt},
+			{"imag", complex_imag_method, 1, ARGS(t_cmpl), t_flt},
+			{"conjugate", conjugate_complex_number_method, 1, ARGS(t_cmpl), t_cmpl},
+			{"mag", magnitude_complex_number_method, 1, ARGS(t_cmpl), t_flt},
+			{"square_mag", square_magnitude_complex_number_method, 1, ARGS(t_cmpl), t_flt},
+		};
+		init_type_method_table(vm, &vm->complex_type, methods, ARRAY_COUNT(methods));
+
+		const Callable fns[] = {
+			{"Complex", new_complex_function, 2, ARGS(numeric, numeric), t_cmpl},
+		};
+		if (!init_module(vm, "complex", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// Matrix methods  +  module constructors
+	{
+		const Callable methods[] = {
+			{"get", matrix_get_method, 3, ARGS(mat_any, t_int, t_int), RES(t_flt)},
+			{"set", matrix_set_method, 4, ARGS(mat_any, t_int, t_int, numeric), RES(t_nil)},
+			{"add", matrix_add_method, 2, ARGS(mat_any, mat_any), RES(mat_any)},
+			{"sub", matrix_subtract_method, 2, ARGS(mat_any, mat_any), RES(mat_any)},
+			{"mul", matrix_multiply_method, 2, ARGS(mat_any, mat_any), RES(mat_any)},
+			{"scale", matrix_scale_method, 2, ARGS(mat_any, numeric), mat_any},
+			{"transpose", matrix_transpose_method, 1, ARGS(mat_any), mat_any},
+			{"determinant", matrix_determinant_method, 1, ARGS(mat_any), RES(t_flt)},
+			{"inverse", matrix_inverse_method, 1, ARGS(mat_any), RES(mat_any)},
+			{"trace", matrix_trace_method, 1, ARGS(mat_any), RES(t_flt)},
+			{"rank", matrix_rank_method, 1, ARGS(mat_any), RES(t_int)},
+			{"row", matrix_row_method, 2, ARGS(mat_any, t_int), RES(vec_any)},
+			{"col", matrix_col_method, 2, ARGS(mat_any, t_int), RES(vec_any)},
+			{"equals", matrix_equals_method, 2, ARGS(mat_any, mat_any), res_bool},
+			{"copy", matrix_copy_method, 1, ARGS(mat_any), RES(mat_any)},
+			{"to_array", matrix_to_array_method, 1, ARGS(mat_any), RES(arr_any)},
+			{"mul_vec", matrix_multiply_vector_method, 2, ARGS(mat_any, vec_any), RES(vec_any)},
+			{"rows", matrix_rows_method, 1, ARGS(mat_any), t_int},
+			{"cols", matrix_cols_method, 1, ARGS(mat_any), t_int},
+		};
+		init_type_method_table(vm, &vm->matrix_type, methods, ARRAY_COUNT(methods));
+
+		const Callable fns[] = {
+			{"Matrix", new_matrix_function, 2, ARGS(t_int, t_int), RES(mat_any)},
+			{"IMatrix", new_matrix_identity_function, 1, ARGS(t_int), RES(mat_any)},
+			{"AMatrix", new_matrix_from_array_function, 3, ARGS(t_int, t_int, arr_num), RES(mat_any)},
+		};
+		if (!init_module(vm, "matrix", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// Range methods  +  module constructor
+	{
+		const Callable methods[] = {
+			{"contains", contains_range_method, 2, ARGS(t_rang, t_int), t_bool},
+			{"to_array", to_array_range_method, 1, ARGS(t_rang), RES(arr_any)},
+			{"start", start_range_method, 1, ARGS(t_rang), t_int},
+			{"end", end_range_method, 1, ARGS(t_rang), t_int},
+			{"step", step_range_method, 1, ARGS(t_rang), t_int},
+			{"is_empty", is_empty_range_method, 1, ARGS(t_rang), t_bool},
+			{"reversed", reversed_range_method, 1, ARGS(t_rang), t_rang},
+		};
+		init_type_method_table(vm, &vm->range_type, methods, ARRAY_COUNT(methods));
+
+		const Callable fns[] = {
+			{"Range", new_range_function, 3, ARGS(t_int, t_int, t_int), RES(t_rang)},
+		};
+		if (!init_module(vm, "range", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// Tuple methods  +  module constructor
+	{
+		const Callable methods[] = {
+			{"get", get_tuple_method, 2, ARGS(TUP_ANY, t_int), res_any},
+			{"slice", slice_tuple_method, 3, ARGS(TUP_ANY, t_int, t_int), RES(arr_any)},
+			{"index", index_tuple_method, 2, ARGS(TUP_ANY, t_any), opt_int},
+			{"is_empty", is_empty_tuple_method, 1, ARGS(TUP_ANY), t_bool},
+			{"to_array", to_array_tuple_method, 1, ARGS(TUP_ANY), arr_any},
+			{"first", first_tuple_method, 1, ARGS(TUP_ANY), opt_any},
+			{"last", last_tuple_method, 1, ARGS(TUP_ANY), opt_any},
+			{"contains", contains_tuple_method, 2, ARGS(TUP_ANY, t_any), t_bool},
+			{"equals", equals_tuple_method, 2, ARGS(TUP_ANY, TUP_ANY), t_bool},
+		};
+		init_type_method_table(vm, &vm->tuple_type, methods, ARRAY_COUNT(methods));
+
+		const Callable fns[] = {
+			{"Tuple", new_tuple_function, 1, ARGS(arr_any), TUP_ANY},
+		};
+		if (!init_module(vm, "tuple", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// Buffer methods  +  module constructor
+	{
+		const Callable methods[] = {
+			{"write_byte", write_byte_buffer_method, 2, ARGS(t_buf, t_int), res_nil},
+			{"write_int16_le", write_int16_le_buffer_method, 2, ARGS(t_buf, t_int), res_nil},
+			{"write_int32_le", write_int32_le_buffer_method, 2, ARGS(t_buf, t_int), res_nil},
+			{"write_float32_le", write_float32_le_buffer_method, 2, ARGS(t_buf, t_flt), res_nil},
+			{"write_float64_le", write_float64_le_buffer_method, 2, ARGS(t_buf, t_flt), res_nil},
+			{"write_int16_be", write_int16_be_buffer_method, 2, ARGS(t_buf, t_int), res_nil},
+			{"write_int32_be", write_int32_be_buffer_method, 2, ARGS(t_buf, t_int), res_nil},
+			{"write_float32_be", write_float32_be_buffer_method, 2, ARGS(t_buf, t_flt), res_nil},
+			{"write_float64_be", write_float64_be_buffer_method, 2, ARGS(t_buf, t_flt), res_nil},
+			{"write_string", write_string_buffer_method, 2, ARGS(t_buf, t_str), res_nil},
+			{"write_buffer", write_buffer_buffer_method, 2, ARGS(t_buf, t_buf), res_nil},
+			{"read_byte", read_byte_buffer_method, 1, ARGS(t_buf), res_int},
+			{"read_string", read_string_buffer_method, 2, ARGS(t_buf, t_int), res_str},
+			{"read_line", read_line_buffer_method, 1, ARGS(t_buf), res_str},
+			{"read_all", read_all_buffer_method, 1, ARGS(t_buf), res_str},
+			{"read_int16_le", read_int16_le_buffer_method, 1, ARGS(t_buf), res_int},
+			{"read_int32_le", read_int32_le_buffer_method, 1, ARGS(t_buf), res_int},
+			{"read_float32_le", read_float32_le_buffer_method, 1, ARGS(t_buf), res_flt},
+			{"read_float64_le", read_float64_le_buffer_method, 1, ARGS(t_buf), res_flt},
+			{"read_int16_be", read_int16_be_buffer_method, 1, ARGS(t_buf), res_int},
+			{"read_int32_be", read_int32_be_buffer_method, 1, ARGS(t_buf), res_int},
+			{"read_float32_be", read_float32_be_buffer_method, 1, ARGS(t_buf), res_flt},
+			{"read_float64_be", read_float64_be_buffer_method, 1, ARGS(t_buf), res_flt},
+			{"capacity", capacity_buffer_method, 1, ARGS(t_buf), t_flt},
+			{"is_empty", is_empty_buffer_method, 1, ARGS(t_buf), t_bool},
+			{"clear", clear_buffer_method, 1, ARGS(t_buf), t_nil},
+			{"peek_byte", peek_byte_buffer_method, 1, ARGS(t_buf), t_int},
+			{"skip_bytes", skip_bytes_buffer_method, 2, ARGS(t_buf, t_int), res_nil},
+			{"clone", clone_buffer_method, 1, ARGS(t_buf), t_buf},
+			{"compact", compact_buffer_method, 1, ARGS(t_buf), t_nil},
+		};
+		init_type_method_table(vm, &vm->buffer_type, methods, ARRAY_COUNT(methods));
+
+		const Callable fns[] = {
+			{"Buffer", new_buffer_function, 0, ARGS0, t_buf},
+		};
+		if (!init_module(vm, "buffer", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// Math module
+	{
+		const Callable fns[] = {
+			{"pow", pow_function, 2, ARGS(numeric, numeric), t_flt},
+			{"sqrt", sqrt_function, 1, ARGS(numeric), RES(t_flt)},
+			{"ceil", ceil_function, 1, ARGS(numeric), t_int},
+			{"floor", floor_function, 1, ARGS(numeric), t_int},
+			{"abs", abs_function, 1, ARGS(numeric), numeric},
+			{"sin", sin_function, 1, ARGS(numeric), t_flt},
+			{"cos", cos_function, 1, ARGS(numeric), t_flt},
+			{"tan", tan_function, 1, ARGS(numeric), t_flt},
+			{"atan", atan_function, 1, ARGS(numeric), t_flt},
+			{"acos", acos_function, 1, ARGS(numeric), res_flt},
+			{"asin", asin_function, 1, ARGS(numeric), res_flt},
+			{"exp", exp_function, 1, ARGS(numeric), t_flt},
+			{"ln", ln_function, 1, ARGS(numeric), res_flt},
+			{"log", log10_function, 1, ARGS(numeric), res_flt},
+			{"round", round_function, 1, ARGS(numeric), t_int},
+			{"min", min_function, 2, ARGS(numeric, numeric), numeric},
+			{"max", max_function, 2, ARGS(numeric, numeric), numeric},
+			{"e", e_function, 0, ARGS0, t_flt},
+			{"pi", pi_function, 0, ARGS0, t_flt},
+			{"nan", nan_function, 0, ARGS0, t_flt},
+			{"inf", inf_function, 0, ARGS0, t_flt},
+		};
+		if (!init_module(vm, "math", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// IO module
+	{
+		const Callable fns[] = {
+			{"print", io_print_function, 1, ARGS(t_any), t_nil},
+			{"print_to", io_print_to_function, 2, ARGS(t_str, t_any), res_nil},
+			{"println_to", io_println_to_function, 2, ARGS(t_str, t_any), res_nil},
+			{"scan", io_scan_function, 0, ARGS0, res_str},
+			{"scanln", io_scanln_function, 0, ARGS0, res_str},
+			{"nscan", io_nscan_function, 1, ARGS(t_int), res_str},
+			{"scan_from", io_scan_from_function, 1, ARGS(t_str), res_str},
+			{"scanln_from", io_scanln_from_function, 1, ARGS(t_str), res_str},
+			{"nscan_from", io_nscan_from_function, 2, ARGS(t_str, t_int), res_str},
+		};
+		if (!init_module(vm, "io", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// Time module
+	{
+		const Callable fns[] = {
+			{"sleep_s", sleep_seconds_function, 1, ARGS(numeric), t_nil},
+			{"sleep_ms", sleep_milliseconds_function, 1, ARGS(numeric), t_nil},
+			{"time_s", time_seconds_function_, 0, ARGS0, t_flt},
+			{"time_ms", time_milliseconds_function_, 0, ARGS0, t_flt},
+			{"year", year_function_, 0, ARGS0, t_int},
+			{"month", month_function_, 0, ARGS0, t_int},
+			{"day", day_function_, 0, ARGS0, t_int},
+			{"hour", hour_function_, 0, ARGS0, t_int},
+			{"minute", minute_function_, 0, ARGS0, t_int},
+			{"second", second_function_, 0, ARGS0, t_int},
+			{"weekday", weekday_function_, 0, ARGS0, t_int},
+			{"day_of_year", day_of_year_function_, 0, ARGS0, t_int},
+		};
+		if (!init_module(vm, "time", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// System module
+	{
+		const Callable fns[] = {
+			{"args", args_function, 0, ARGS0, RES(arr_str)},  {"get_env", get_env_function, 1, ARGS(t_str), res_str},
+			{"platform", platform_function, 0, ARGS0, t_str}, {"arch", arch_function, 0, ARGS0, t_str},
+			{"pid", pid_function, 0, ARGS0, t_int},			  {"exit", exit_function, 1, ARGS(t_int), t_never},
+		};
+		if (!init_module(vm, "sys", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	// Filesystem module
+	{
+		ObjectTypeRecord *res_file = RES(t_file);
+
+		const Callable fns[] = {
+			{"open", fs_open_function, 2, ARGS(t_str, t_str), res_file},
+			{"remove", fs_remove_function, 1, ARGS(t_str), res_nil},
+			{"remove_dir", fs_remove_dir_function, 1, ARGS(t_str), res_nil},
+			{"size", fs_file_size_function, 1, ARGS(t_str), res_int},
+			{"copy_file", fs_copy_file_function, 2, ARGS(t_str, t_str), res_nil},
+			{"mkdir", fs_mkdir_function, 1, ARGS(t_str), res_nil},
+			{"read_file", fs_read_file_function, 1, ARGS(t_str), res_str},
+			{"write_file", fs_write_file_function, 2, ARGS(t_str, t_str), res_nil},
+			{"append_file", fs_append_file_function, 2, ARGS(t_str, t_str), res_nil},
+			{"exists", fs_exists_function, 1, ARGS(t_str), t_bool},
+			{"is_file", fs_is_file_function, 1, ARGS(t_str), t_bool},
+			{"is_dir", fs_is_dir_function, 1, ARGS(t_str), t_bool},
+		};
+		if (!init_module(vm, "fs", fns, ARRAY_COUNT(fns))) {
+			vm->gc_status = prev_status;
+			return false;
+		}
+	}
+
+	{
+		vm->gc_status = prev_status;
+		return true;
+	}
+}

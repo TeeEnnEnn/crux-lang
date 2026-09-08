@@ -1,0 +1,153 @@
+pub struct Set {
+    data: Table[Any, Bool]
+}
+
+impl Set {
+    fn add(value: Any) -> Bool {
+        if self.contains(value) {
+            return false;
+        }
+        self.data[value] = true;
+        return true;
+    }
+
+    fn remove(value: Any) -> Bool {
+        if not self.contains(value) {
+            return false;
+        }
+        self.data.remove(value);
+        return true;
+    }
+
+    fn contains(value: Any) -> Bool {
+        return self.data.has_key(value);
+    }
+
+    fn size() -> Int {
+        var keys = match self.data.keys() {
+            Ok(v) => {
+                give v;
+            }
+            Err(e) => {
+                give [];
+            }
+        };
+        return len(keys);
+    }
+
+    fn is_empty() -> Bool {
+        return self.size() == 0;
+    }
+
+    fn clear() -> Nil {
+        self.data = {};
+    }
+
+    fn union(other: Set) -> Set {
+        var result = new Set {data = {}};
+        var self_keys = match self.data.keys() {
+            Ok(v) => {
+                give v;
+            }
+            Err(e) => {
+                give [];
+            }
+        };
+        for var key in self_keys {
+            result.add(key);
+        }
+        var other_keys = match other.data.keys() {
+            Ok(v) => {
+                give v;
+            }
+            Err(e) => {
+                give [];
+            }
+        };
+        for var key in other_keys {
+            result.add(key);
+        }
+        return result;
+    }
+
+    fn intersect(other: Set) -> Set {
+        var result = new Set {data = {}};
+        var self_keys = match self.data.keys() {
+            Ok(v) => {
+                give v;
+            }
+            Err(e) => {
+                give [];
+            }
+        };
+        for var key in self_keys {
+            if other.contains(key) {
+                result.add(key);
+            }
+        }
+        return result;
+    }
+
+    fn difference(other: Set) -> Set {
+        var result = new Set {data = {}};
+        var self_keys = match self.data.keys() {
+            Ok(v) => {
+                give v;
+            }
+            Err(e) => {
+                give [];
+            }
+        };
+        for var key in self_keys {
+            if not other.contains(key) {
+                result.add(key);
+            }
+        }
+        return result;
+    }
+
+    fn is_subset(other: Set) -> Bool {
+        var self_keys = match self.data.keys() {
+            Ok(v) => {
+                give v;
+            }
+            Err(e) => {
+                give [];
+            }
+        };
+        for var key in self_keys {
+            if not other.contains(key) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    fn is_disjoint(other: Set) -> Bool {
+        var self_keys = match self.data.keys() {
+            Ok(v) => {
+                give v;
+            }
+            Err(e) => {
+                give [];
+            }
+        };
+        for var key in self_keys {
+            if other.contains(key) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    fn to_array() -> Array[Any] {
+        return match self.data.keys() {
+            Ok(v) => {
+                give v;
+            }
+            Err(e) => {
+                give [];
+            }
+        };
+    }
+}

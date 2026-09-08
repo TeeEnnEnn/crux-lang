@@ -25,3 +25,4 @@ crux_test_file.txt
 /.idea
 /.vscode
 /.vs
+__pycache__

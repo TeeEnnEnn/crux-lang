@@ -1,0 +1,22 @@
+var number: Int | String = 42;
+if typeof(number) == "Int" {
+    assert(number + 1 == 43, "typeof narrowing failed");
+}
+
+fn make_counter() -> () -> Int {
+    var value = 0;
+    return fn () -> Int {
+        value += 1;
+        return value;
+    };
+}
+
+var counter = make_counter();
+assert(counter() == 1, "closure capture failed");
+assert(counter() == 2, "closure state failed");
+
+var description = match Some(42) {
+    Some(value) => give string(value);
+    None => give "none";
+};
+assert(description == "42", "option matching failed");

@@ -4,17 +4,17 @@ use Random from "crux:random";
 println("=== STRING PROCESSING BENCHMARK ===");
 println("");
 
-let g_rng = Random();
+var g_rng = Random();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared utilities
 // ─────────────────────────────────────────────────────────────────────────────
 
-let ALPHA     = "abcdefghijklmnopqrstuvwxyz";
-let ALPHA_LEN = 26;
+var ALPHA     = "abcdefghijklmnopqrstuvwxyz";
+var ALPHA_LEN = 26;
 
 fn rand_char() {
-    let i = int(g_rng.float(0.0, ALPHA_LEN)?)?;
+    var i = int(g_rng.float(0.0, ALPHA_LEN)?)?;
     return ALPHA[i];
 }
 
@@ -22,8 +22,8 @@ fn rand_char() {
 // Deliberately uses naive concatenation — this IS the thing being measured
 // in Part 1.  Parts 2–5 call this once for setup, outside timed sections.
 fn rand_string(n) {
-    let s = "";
-    for let i = 0; i < n; i += 1 { s = s + rand_char(); }
+    var s = "";
+    for var i = 0; i < n; i += 1 { s = s + rand_char(); }
     return s;
 }
 
@@ -51,14 +51,14 @@ fn char_to_digit(c) {
 fn run_concat_benchmark() {
     println("── Part 1: Concatenation Growth ──────────────────────────────");
 
-    let sizes = [100, 250, 500, 1000, 2000, 4000, 8000];
+    var sizes = [100, 250, 500, 1000, 2000, 4000, 8000];
 
-    for let si = 0; si < len(sizes); si += 1 {
-        let n  = sizes[si];
-        let t0 = time_ms();
-        let s  = "";
-        for let i = 0; i < n; i += 1 { s = s + rand_char(); }
-        let elapsed = time_ms() - t0;
+    for var si = 0; si < len(sizes); si += 1 {
+        var n  = sizes[si];
+        var t0 = time_ms();
+        var s  = "";
+        for var i = 0; i < n; i += 1 { s = s + rand_char(); }
+        var elapsed = time_ms() - t0;
         // Checksum: use final length so the string can't be DCE'd
         println("  n=" + string(n) + "  len=" + string(len(s)) + "  time=" + string(elapsed) + " ms");
     }
@@ -77,13 +77,13 @@ fn run_concat_benchmark() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 fn naive_search_all(haystack, needle) {
-    let hn    = len(haystack);
-    let nn    = len(needle);
-    let count = 0;
-    let i     = 0;
+    var hn    = len(haystack);
+    var nn    = len(needle);
+    var count = 0;
+    var i     = 0;
     while i <= hn - nn {
-        let ok = true;
-        let j  = 0;
+        var ok = true;
+        var j  = 0;
         while j < nn and ok {
             if haystack[i + j] != needle[j] { ok = false; }
             j += 1;
@@ -95,11 +95,11 @@ fn naive_search_all(haystack, needle) {
 }
 
 fn kmp_build_table(pattern) {
-    let m    = len(pattern);
-    let fail = [];
+    var m    = len(pattern);
+    var fail = [];
     fail.push(0);
-    let k = 0;
-    for let i = 1; i < m; i += 1 {
+    var k = 0;
+    for var i = 1; i < m; i += 1 {
         while k > 0 and pattern[k] != pattern[i] { k = fail[k - 1]; }
         if pattern[k] == pattern[i] { k += 1; }
         fail.push(k);
@@ -108,11 +108,11 @@ fn kmp_build_table(pattern) {
 }
 
 fn kmp_search_all(haystack, needle, fail) {
-    let n     = len(haystack);
-    let m     = len(needle);
-    let count = 0;
-    let q     = 0;
-    for let i = 0; i < n; i += 1 {
+    var n     = len(haystack);
+    var m     = len(needle);
+    var count = 0;
+    var q     = 0;
+    for var i = 0; i < n; i += 1 {
         while q > 0 and needle[q] != haystack[i] { q = fail[q - 1]; }
         if needle[q] == haystack[i] { q += 1; }
         if q == m {
@@ -126,35 +126,35 @@ fn kmp_search_all(haystack, needle, fail) {
 fn run_search_benchmark() {
     println("── Part 2: Substring Search — Naive vs KMP ───────────────────");
 
-    let HAYSTACK_LEN = 8000;
-    let NEEDLE_LEN   = 5;
-    let RUNS         = 40;
+    var HAYSTACK_LEN = 8000;
+    var NEEDLE_LEN   = 5;
+    var RUNS         = 40;
 
     println("  Building " + string(HAYSTACK_LEN) + "-char haystack...");
-    let haystack = rand_string(HAYSTACK_LEN);
+    var haystack = rand_string(HAYSTACK_LEN);
 
     // Pull a real substring out of the haystack so we know it appears at least once
-    let ns  = int(g_rng.float(0.0, HAYSTACK_LEN - NEEDLE_LEN)?)?;
-    let needle = "";
-    for let i = 0; i < NEEDLE_LEN; i += 1 { needle = needle + haystack[ns + i]; }
+    var ns  = int(g_rng.float(0.0, HAYSTACK_LEN - NEEDLE_LEN)?)?;
+    var needle = "";
+    for var i = 0; i < NEEDLE_LEN; i += 1 { needle = needle + haystack[ns + i]; }
     println("  Needle : \"" + needle + "\"");
 
-    let fail = kmp_build_table(needle);
+    var fail = kmp_build_table(needle);
 
     // Correctness check
-    let naive_count = naive_search_all(haystack, needle);
-    let kmp_count   = kmp_search_all(haystack, needle, fail);
+    var naive_count = naive_search_all(haystack, needle);
+    var kmp_count   = kmp_search_all(haystack, needle, fail);
     println("  Matches (naive) : " + string(naive_count));
     println("  Matches (KMP)   : " + string(kmp_count));
     println("  Agreement       : " + string(naive_count == kmp_count));
 
-    let t0 = time_ms();
-    for let r = 0; r < RUNS; r += 1 { naive_search_all(haystack, needle); }
-    let naive_ms = time_ms() - t0;
+    var t0 = time_ms();
+    for var r = 0; r < RUNS; r += 1 { naive_search_all(haystack, needle); }
+    var naive_ms = time_ms() - t0;
 
-    let t1 = time_ms();
-    for let r = 0; r < RUNS; r += 1 { kmp_search_all(haystack, needle, fail); }
-    let kmp_ms = time_ms() - t1;
+    var t1 = time_ms();
+    for var r = 0; r < RUNS; r += 1 { kmp_search_all(haystack, needle, fail); }
+    var kmp_ms = time_ms() - t1;
 
     println("  Naive ×" + string(RUNS) + " : " + string(naive_ms) + " ms");
     println("  KMP   ×" + string(RUNS) + " : " + string(kmp_ms) + " ms");
@@ -177,11 +177,11 @@ fn run_search_benchmark() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 fn generate_csv(rows, cols) {
-    let s = "";
-    for let r = 0; r < rows; r += 1 {
-        for let c = 0; c < cols; c += 1 {
-            let field_len = 3 + int(g_rng.float(0.0, 6.0)?)?;
-            for let k = 0; k < field_len; k += 1 { s = s + rand_char(); }
+    var s = "";
+    for var r = 0; r < rows; r += 1 {
+        for var c = 0; c < cols; c += 1 {
+            var field_len = 3 + int(g_rng.float(0.0, 6.0)?)?;
+            for var k = 0; k < field_len; k += 1 { s = s + rand_char(); }
             if c < cols - 1 { s = s + ","; }
         }
         s = s + "\n";
@@ -190,14 +190,14 @@ fn generate_csv(rows, cols) {
 }
 
 fn parse_csv(src) {
-    let field_count = 0;
-    let total_chars = 0;
-    let n           = len(src);
-    let i           = 0;
+    var field_count = 0;
+    var total_chars = 0;
+    var n           = len(src);
+    var i           = 0;
 
     while i < n {
         // Accumulate one field
-        let field = "";
+        var field = "";
         while i < n and src[i] != "," and src[i] != "\n" {
             field = field + src[i];
             i += 1;
@@ -213,20 +213,20 @@ fn parse_csv(src) {
 fn run_csv_benchmark() {
     println("── Part 3: CSV Generation + Parsing ──────────────────────────");
 
-    let ROWS       = 200;
-    let COLS       = 6;
-    let PARSE_RUNS = 10;
+    var ROWS       = 200;
+    var COLS       = 6;
+    var PARSE_RUNS = 10;
 
     println("  Generating " + string(ROWS) + " rows × " + string(COLS) + " cols...");
-    let tg  = time_ms();
-    let csv = generate_csv(ROWS, COLS);
-    let gen_ms = time_ms() - tg;
+    var tg  = time_ms();
+    var csv = generate_csv(ROWS, COLS);
+    var gen_ms = time_ms() - tg;
     println("  CSV length     : " + string(len(csv)) + " chars  (generated in " + string(gen_ms) + " ms)");
 
-    let tp     = time_ms();
-    let result = { "fields": 0, "chars": 0 };
-    for let r = 0; r < PARSE_RUNS; r += 1 { result = parse_csv(csv); }
-    let parse_ms = time_ms() - tp;
+    var tp     = time_ms();
+    var result = { "fields": 0, "chars": 0 };
+    for var r = 0; r < PARSE_RUNS; r += 1 { result = parse_csv(csv); }
+    var parse_ms = time_ms() - tp;
 
     println("  Fields parsed  : " + string(result["fields"]));
     println("  Content chars  : " + string(result["chars"]));
@@ -250,9 +250,9 @@ fn run_csv_benchmark() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 fn rand_run_string(n) {
-    let s   = "";
-    let cur = rand_char();
-    for let i = 0; i < n; i += 1 {
+    var s   = "";
+    var cur = rand_char();
+    for var i = 0; i < n; i += 1 {
         if g_rng.float(0.0, 1.0)? < 0.3 { cur = rand_char(); }
         s = s + cur;
     }
@@ -260,12 +260,12 @@ fn rand_run_string(n) {
 }
 
 fn rle_encode(s) {
-    let n = len(s);
+    var n = len(s);
     if n == 0 { return ""; }
-    let out   = "";
-    let cur   = s[0];
-    let count = 1;
-    for let i = 1; i < n; i += 1 {
+    var out   = "";
+    var cur   = s[0];
+    var count = 1;
+    for var i = 1; i < n; i += 1 {
         if s[i] == cur {
             count += 1;
         } else {
@@ -278,21 +278,21 @@ fn rle_encode(s) {
 }
 
 fn rle_decode(s) {
-    let n   = len(s);
-    let out = "";
-    let i   = 0;
+    var n   = len(s);
+    var out = "";
+    var i   = 0;
     while i < n {
-        let num       = 0;
-        let has_digit = false;
+        var num       = 0;
+        var has_digit = false;
         while i < n and is_digit_char(s[i]) {
             num       = num * 10 + char_to_digit(s[i]);
             has_digit = true;
             i += 1;
         }
         if has_digit and i < n {
-            let ch = s[i];
+            var ch = s[i];
             i += 1;
-            for let j = 0; j < num; j += 1 { out = out + ch; }
+            for var j = 0; j < num; j += 1 { out = out + ch; }
         } else {
             i += 1;
         }
@@ -303,26 +303,26 @@ fn rle_decode(s) {
 fn run_rle_benchmark() {
     println("── Part 4: Run-Length Encoding + Decoding ─────────────────────");
 
-    let SRC_LEN = 3000;
-    let RUNS    = 25;
+    var SRC_LEN = 3000;
+    var RUNS    = 25;
 
     println("  Generating " + string(SRC_LEN) + "-char run-heavy string...");
-    let src     = rand_run_string(SRC_LEN);
-    let encoded = rle_encode(src);
-    let decoded = rle_decode(encoded);
+    var src     = rand_run_string(SRC_LEN);
+    var encoded = rle_encode(src);
+    var decoded = rle_decode(encoded);
 
     println("  Original length  : " + string(len(src)));
     println("  Encoded length   : " + string(len(encoded)));
     println("  Compression      : " + string(len(encoded) * 100 / len(src)) + "%");
     println("  Roundtrip OK     : " + string(len(decoded) == len(src)));
 
-    let te = time_ms();
-    for let r = 0; r < RUNS; r += 1 { rle_encode(src); }
-    let enc_ms = time_ms() - te;
+    var te = time_ms();
+    for var r = 0; r < RUNS; r += 1 { rle_encode(src); }
+    var enc_ms = time_ms() - te;
 
-    let td = time_ms();
-    for let r = 0; r < RUNS; r += 1 { rle_decode(encoded); }
-    let dec_ms = time_ms() - td;
+    var td = time_ms();
+    for var r = 0; r < RUNS; r += 1 { rle_decode(encoded); }
+    var dec_ms = time_ms() - td;
 
     println("  Encode ×" + string(RUNS) + "      : " + string(enc_ms) + " ms");
     println("  Decode ×" + string(RUNS) + "      : " + string(dec_ms) + " ms");
@@ -333,12 +333,12 @@ fn run_rle_benchmark() {
 }
 
 fn split_words(s) {
-    let words = [];
-    let n     = len(s);
-    let i     = 0;
+    var words = [];
+    var n     = len(s);
+    var i     = 0;
     while i < n {
         while i < n and s[i] == " " { i += 1; }
-        let w = "";
+        var w = "";
         while i < n and s[i] != " " { w = w + s[i]; i += 1; }
         if len(w) > 0 { words.push(w); }
     }
@@ -346,14 +346,14 @@ fn split_words(s) {
 }
 
 fn main() {
-    let t_start = time_ms();
+    var t_start = time_ms();
 
     run_concat_benchmark();
     run_search_benchmark();
     run_csv_benchmark();
     run_rle_benchmark();
 
-    let total = time_ms() - t_start;
+    var total = time_ms() - t_start;
     println("════════════════════════════════════════════════════");
     println("Total wall time: " + string(total) + " ms");
 }

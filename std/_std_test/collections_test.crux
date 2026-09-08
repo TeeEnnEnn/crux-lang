@@ -1,0 +1,127 @@
+use Stack, Set from "std:collections";
+
+// ---- Stack tests ----
+var stack = new Stack {data = []};
+assert(stack.is_empty() == true, "new stack should be empty");
+assert(stack.len() == 0, "new stack len 0");
+var empty_peek = stack.peek();
+assert(empty_peek.is_none(), "peek on empty should be None");
+
+stack.push(1);
+assert(stack.is_empty() == false, "stack not empty after push");
+assert(stack.len() == 1, "len 1 after push");
+var peek1 = (stack.peek() as Option[Any]).unwrap();
+assert(peek1 == 1, "peek should return 1 got: " + string(peek1));
+
+stack.push(2);
+stack.push(3);
+assert(stack.len() == 3, "len 3 after 3 pushes");
+var peek3 = (stack.peek() as Option[Any]).unwrap();
+assert(peek3 == 3, "peek should return 3 got: " + string(peek3));
+
+var poppeda = (stack.pop() as Option[Any]).unwrap();
+assert(poppeda == 3, "pop should return 3 got: " + string(poppeda));
+var peek_after_pop = (stack.peek() as Option[Any]).unwrap();
+assert(peek_after_pop == 2, "peek after pop should be 2 got: " + string(peek_after_pop));
+
+var poppedb = (stack.pop() as Option[Any]).unwrap();
+assert(poppedb == 2, "pop should return 2 got: " + string(poppedb));
+var poppedc = (stack.pop() as Option[Any]).unwrap();
+assert(poppedc == 1, "pop should return 1 got: " + string(poppedc));
+assert(stack.is_empty() == true, "stack empty after pops");
+
+var none_pop = stack.pop();
+assert(none_pop.is_none(), "pop on empty should be None");
+assert(stack.peek().is_none(), "peek on empty after pops should be None");
+
+stack.push(10);
+stack.push(20);
+stack.clear();
+assert(stack.is_empty() == true, "clear should empty stack");
+assert(stack.len() == 0, "len 0 after clear");
+assert(stack.peek().is_none(), "peek after clear should be None");
+
+// ---- Set tests ----
+var s = new Set {data = {}};
+assert(s.is_empty() == true, "new set should be empty");
+assert(s.size() == 0, "new set size 0");
+assert(s.contains(1) == false, "empty set should not contain");
+
+assert(s.add(1) == true, "add 1 should return true");
+assert(s.add(1) == false, "add duplicate should return false");
+assert(s.add(2) == true, "add 2");
+assert(s.contains(1) == true, "contains 1");
+assert(s.contains(2) == true, "contains 2");
+assert(s.contains(3) == false, "contains 3 false");
+assert(s.size() == 2, "size 2 got " + string(s.size()));
+assert(s.is_empty() == false, "not empty");
+
+assert(s.remove(1) == true, "remove 1");
+assert(s.contains(1) == false, "not contains 1 after remove");
+assert(s.remove(1) == false, "remove again false");
+assert(s.size() == 1, "size 1 after remove");
+
+// union
+var s2 = new Set {data = {}};
+s2.add(2);
+s2.add(3);
+var u = s.union(s2);
+assert(u.size() == 2, "union size 2 got " + string(u.size()));
+assert(u.contains(2) == true, "union contains 2");
+assert(u.contains(3) == true, "union contains 3");
+assert(s.size() == 1, "original s unchanged after union");
+assert(s2.size() == 2, "original s2 unchanged after union");
+
+var inter = s.intersect(s2);
+assert(inter.size() == 1, "intersect size 1");
+assert(inter.contains(2) == true, "intersect contains 2");
+assert(inter.contains(3) == false, "intersect not contains 3");
+
+var diff = s2.difference(s);
+assert(diff.size() == 1, "diff size 1");
+assert(diff.contains(3) == true, "diff contains 3");
+assert(diff.contains(2) == false, "diff not contains 2");
+
+var diff2 = s.difference(s2);
+assert(diff2.size() == 0, "s diff s2 empty");
+
+assert(s.is_subset(u) == true, "s subset u");
+assert(s2.is_subset(s) == false, "s2 not subset s");
+assert(u.is_subset(s) == false, "u not subset s");
+
+var empty_set = new Set {data = {}};
+assert(empty_set.is_subset(s) == true, "empty subset of any");
+assert(s.is_subset(empty_set) == false, "non-empty not subset of empty");
+
+assert(s.is_disjoint(s2) == false, "s not disjoint s2 (common 2)");
+var s3 = new Set {data = {}};
+s3.add(99);
+assert(s.is_disjoint(s3) == true, "s disjoint s3");
+assert(s3.is_disjoint(s) == true, "disjoint symmetric");
+assert(empty_set.is_disjoint(s) == true, "empty disjoint any");
+assert(s.is_disjoint(empty_set) == true, "any disjoint empty");
+
+var arr = u.to_array();
+assert(len(arr) == 2, "to_array len 2");
+assert(arr.contains(2) == true, "to_array contains 2");
+assert(arr.contains(3) == true, "to_array contains 3");
+
+// different types
+var mixed = new Set {data = {}};
+mixed.add(1);
+mixed.add("hello");
+mixed.add(true);
+mixed.add(nil);
+assert(mixed.size() == 4, "mixed size 4");
+assert(mixed.contains("hello") == true, "mixed contains hello");
+assert(mixed.contains(nil) == true, "mixed contains nil");
+
+mixed.clear();
+assert(mixed.is_empty() == true, "mixed clear");
+assert(mixed.size() == 0, "mixed size 0 after clear");
+
+// to_array order not guaranteed but size correct
+var to_arr2 = s2.to_array();
+assert(len(to_arr2) == 2, "to_array len 2 again");
+
+println("All collection tests passed");

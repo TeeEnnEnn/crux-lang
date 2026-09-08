@@ -6,50 +6,48 @@ use Matrix from "crux:matrix";
 use Complex from "crux:complex";
 use Range from "crux:range";
 use Tuple from "crux:tuple";
-use Set from "crux:set";
 
 println("--- 1. PRIMITIVES & LITERALS ---");
-let a: String = "test";
-let b: Int = 123;
-let c: Float = 3.14;
-let d: Bool = true;
-let e: Nil = nil;
-let f: Any = 42;
+var a: String = "test";
+var b: Int = 123;
+var c: Float = 3.14;
+var d: Bool = true;
+var e: Nil = nil;
+var f: Any = 42;
 f = "now I am a string"; // Any allows reassignment to different types
 
 println("--- 2. COMPOUND TYPES & GENERICS ---");
-let arr_int: Array[Int] = [1, 2, 3];
-let arr_str: Array[String] = ["one", "two", "three"];
-let empty_arr: Array[Any] = []; // Empty array inference fallback to Any
+var arr_int: Array[Int] = [1, 2, 3];
+var arr_str: Array[String] = ["one", "two", "three"];
+var empty_arr: Array[Any] = []; // Empty array inference fallback to Any
 
-let tbl: Table[String, Int] = {"one": 1, "two": 2};
-let empty_tbl: Table[Any, Any] = {};
+var tbl: Table[String, Int] = {"one": 1, "two": 2};
+var empty_tbl: Table[Any, Any] = {};
 
-let set_val: Set[Int] = Set([1, 2, 3])?;
-let tup_val: Tuple[Int] = Tuple([10, 20, 30]);
-let another_tuple: Tuple[String, Float, Int] = Tuple(["one", 2.21, 4]);
-let rng_val: Range = Range(0, 10, 1)?;
+var tup_val: Tuple[Int] = Tuple([10, 20, 30]);
+var another_tuple: Tuple[String, Float, Int] = Tuple(["one", 2.21, 4]);
+var rng_val: Range = Range(0, 10, 1)?;
 
 println("--- 3. MATH & BINARY OPERATOR PROMOTION ---");
-let math_int: Int = 10 + 5 * 2;
-let math_flt: Float = 10.0 / 3.0;
-let math_mixed: Float = math_int + math_flt; // Int + Float -> Float promotion!
-let bitwise: Int = (10 << 1) | 1; // Bitwise requires Ints
+var math_int: Int = 10 + 5 * 2;
+var math_flt: Float = 10.0 / 3.0;
+var math_mixed: Float = math_int + math_flt; // Int + Float -> Float promotion!
+var bitwise: Int = (10 << 1) | 1; // Bitwise requires Ints
 
-let cmp_bool: Bool = (math_int > 5) and (math_flt <= 20.0) or not false;
-let str_concat: String = "Hello " + "World";
+var cmp_bool: Bool = (math_int > 5) and (math_flt <= 20.0) or not false;
+var str_concat: String = "Hello " + "World";
 
 println("--- 4. COMPOUND ASSIGNMENTS ---");
-let counter: Int = 0;
+var counter: Int = 0;
 counter += 10;
 counter *= 2;
 counter \= 3; // Int divide
-let f_counter: Float = 1.0;
+var f_counter: Float = 1.0;
 f_counter += 2.5;
 f_counter += counter; // Float += Int is allowed
 
 println("--- 5. UNIONS ---");
-let my_union: Int | String = 100;
+var my_union: Int | String = 100;
 my_union = "string now";
 // my_union = 3.14; // Compile Error: Float not compatible with Int | String
 
@@ -66,20 +64,20 @@ struct Player {
     is_active: Bool
 }
 
-let p1: Player = new Player {
+var p1: Player = new Player {
     name = "Hero",
     score = 1500, // Matches Int | Float
     is_active = true
 };
 p1.score = 2000.5; // Struct property assignment
-let p1_score: Int | Float = p1.score; // Struct property get
+var p1_score: Int | Float = p1.score; // Struct property get
 
 println("--- 7. FUNCTIONS, CLOSURES & HIGHER ORDER ---");
 fn add(x: Int, y: Int) -> Int {
     return x + y;
 }
 
-let closure_fn: (Int) -> Int = fn (num: Int) -> Int {
+var closure_fn: (Int) -> Int = fn (num: Int) -> Int {
     return num * counter; // Captures local 'counter'
 };
 
@@ -89,18 +87,18 @@ fn apply_twice(func: (Int) -> Int, val: Int) -> Int {
 assert(apply_twice(closure_fn, 2) == 72, "HOF failed");
 
 println("--- 8. STDLIB NATIVE OBJECTS & METHODS ---");
-let buf: Buffer = Buffer();
+var buf: Buffer = Buffer();
 buf.write_string("data");
 
-let rand: Random = Random();
-let r_val: Int = rand.int(0, 10)?;
+var rand: Random = Random();
+var r_val: Int = rand.int(0, 10)?;
 
-let comp: Complex = Complex(1.0, 2.0);
+var comp: Complex = Complex(1.0, 2.0);
 
 println("--- 9. WILDCARD MATRICES & VECTORS ---");
-let v_exact: Vector[3] = Vector(3, [1.0, 2.0, 3.0])?;
-let v_wild: Vector[] = Vector(5, [1.0, 2.0, 3.0, 4.0, 5.0])?; // Vector[] accepts any dimension
-let m_wild: Matrix[,] = Matrix(4, 4)?;
+var v_exact: Vector[3] = Vector(3, [1.0, 2.0, 3.0]);
+var v_wild: Vector[] = Vector(5, [1.0, 2.0, 3.0, 4.0, 5.0]); // Vector[] accepts any dimension
+var m_wild: Matrix[,] = Matrix(4, 4)?;
 
 // v_exact = Vector(4, [1.0, 2.0, 3.0, 4.0])?; // Compile Error: Vector[4] != Vector[3]
 v_wild = v_exact; // Vector[3] is compatible with Vector[]!
@@ -113,13 +111,13 @@ fn might_fail(fail: Bool) -> Result[Int] {
     return Ok(42);
 }
 
-let res: Result[Int] = might_fail(false);
+var res: Result[Int] = might_fail(false);
 
 // Unwrapping with operator
-let unwrapped: Int = res?;
+var unwrapped: Int = res?;
 
 // Exhaustive match testing
-let match_val: String = match might_fail(true) {
+var match_val: String = match might_fail(true) {
     Ok(val) => {
         give "Success: " + string(val);
     }
@@ -136,11 +134,11 @@ fn add_no_types(a, b) {
     return a + b;
 }
 
-let anon_with_types = fn(a: Int, b: Int) -> Int {
+var anon_with_types = fn(a: Int, b: Int) -> Int {
     return a + b;
 };
 
-let anon_no_types = fn(a, b) {
+var anon_no_types = fn(a, b) {
     return a + b;
 };
 
@@ -158,19 +156,19 @@ fn get_next(n: Node) -> Node | Nil {
     return n.next;
 }
 
-let n2 = new Node {
+var n2 = new Node {
     next = nil,
     value = 2
 };
 
-let n1 = new Node {
+var n1 = new Node {
     next = n2,
     value = 1
 };
 
-let next_node = get_next(n1);
+var next_node = get_next(n1);
 
-let result = match next_node {
+var result = match next_node {
     nil => give "nil";
     default => give "not nil";
 };

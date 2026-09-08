@@ -1,5 +1,4 @@
-#include "file_handler.h"
-
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +6,7 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#include <windows.h>
 #define mkdir(path, mode) _mkdir(path)
 #else
 #include <sys/stat.h>
@@ -14,6 +14,7 @@
 #include <unistd.h>
 #endif
 
+#include "file_handler.h"
 /**
  * @brief Extracts the directory name from a file path,
  *
@@ -161,11 +162,181 @@ char *combine_paths(const char *base, const char *relative)
 	return result;
 }
 
+static bool is_valid_package_name(const char *name)
+{
+	if (name == NULL || *name == '\0')
+		return false;
+	for (const char *p = name; *p; p++) {
+		if (!isalnum((unsigned char)*p) && *p != '_' && *p != '-')
+			return false;
+	}
+	return true;
+}
+
+static bool file_exists(const char *path)
+{
+#ifdef _WIN32
+	DWORD dwAttrib = GetFileAttributesA(path);
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+#else
+	struct stat buffer;
+	return (stat(path, &buffer) == 0);
+#endif
+}
+
 char *resolve_path(const char *base_path, const char *import_path)
 {
 	if (import_path == NULL)
 		return NULL;
 
+	// 1. Handle "std:X" (Package or File)
+	if (strncmp(import_path, "std:", 4) == 0) {
+		const char *module_name = import_path + 4;
+		char *stdlib_path = getenv("CRUX_STDLIB");
+		bool free_stdlib = false;
+
+		if (stdlib_path == NULL) {
+			stdlib_path = get_crux_dir();
+			if (stdlib_path) {
+				char *temp = combine_paths(stdlib_path, "stdlib");
+				free(stdlib_path);
+				stdlib_path = temp;
+				free_stdlib = true;
+			}
+		}
+
+		if (stdlib_path == NULL)
+			return NULL;
+
+		// Try directory package first: std/X/pkg.crux
+		char dir_pkg_rel[256];
+#ifdef _WIN32
+		snprintf(dir_pkg_rel, sizeof(dir_pkg_rel), "%s\\pkg.crux", module_name);
+#else
+		snprintf(dir_pkg_rel, sizeof(dir_pkg_rel), "%s/pkg.crux", module_name);
+#endif
+		char *dir_resolved_temp = combine_paths(stdlib_path, dir_pkg_rel);
+
+#ifdef _WIN32
+		char *dir_resolved = malloc(MAX_PATH_LENGTH);
+		if (_fullpath(dir_resolved, dir_resolved_temp, MAX_PATH_LENGTH)) {
+			if (file_exists(dir_resolved)) {
+				free(dir_resolved_temp);
+				if (free_stdlib)
+					free(stdlib_path);
+				return dir_resolved;
+			}
+		}
+		free(dir_resolved);
+#else
+		char dir_resolved[MAX_PATH_LENGTH];
+		if (realpath(dir_resolved_temp, dir_resolved)) {
+			if (file_exists(dir_resolved)) {
+				free(dir_resolved_temp);
+				if (free_stdlib)
+					free(stdlib_path);
+				return strdup(dir_resolved);
+			}
+		}
+#endif
+		free(dir_resolved_temp);
+
+		// Fallback to single file: std/X.crux
+		char filename[256];
+		snprintf(filename, sizeof(filename), "%s.crux", module_name);
+		char *resolved_temp = combine_paths(stdlib_path, filename);
+
+#ifdef _WIN32
+		char *resolved = malloc(MAX_PATH_LENGTH);
+		if (_fullpath(resolved, resolved_temp, MAX_PATH_LENGTH)) {
+			free(resolved_temp);
+			if (free_stdlib)
+				free(stdlib_path);
+			return resolved;
+		}
+		free(resolved);
+#else
+		char resolved[MAX_PATH_LENGTH];
+		if (realpath(resolved_temp, resolved)) {
+			free(resolved_temp);
+			if (free_stdlib)
+				free(stdlib_path);
+			return strdup(resolved);
+		}
+#endif
+		free(resolved_temp);
+
+		if (free_stdlib)
+			free(stdlib_path);
+		return NULL;
+	}
+
+	// 2. Handle "pkg:X" (Upward Traversal with Manifest Boundary)
+	if (strncmp(import_path, "pkg:", 4) == 0) {
+		const char *package_name = import_path + 4;
+
+		if (!is_valid_package_name(package_name)) {
+			return NULL;
+		}
+
+		char *current_search_dir = base_path ? get_directory_from_path(base_path) : strdup(".");
+
+		while (current_search_dir != NULL) {
+			char rel_pkg_path[512];
+#ifdef _WIN32
+			snprintf(rel_pkg_path, sizeof(rel_pkg_path), "crux_modules\\%s\\pkg.crux", package_name);
+#else
+			snprintf(rel_pkg_path, sizeof(rel_pkg_path), "crux_modules/%s/pkg.crux", package_name);
+#endif
+			char *full_pkg_path = combine_paths(current_search_dir, rel_pkg_path);
+
+			if (file_exists(full_pkg_path)) {
+				// Found it!
+#ifdef _WIN32
+				char *final_path = malloc(MAX_PATH_LENGTH);
+				if (_fullpath(final_path, full_pkg_path, MAX_PATH_LENGTH)) {
+					free(full_pkg_path);
+					free(current_search_dir);
+					return final_path;
+				}
+#else
+				char final_path[MAX_PATH_LENGTH];
+				if (realpath(full_pkg_path, final_path)) {
+					free(full_pkg_path);
+					free(current_search_dir);
+					return strdup(final_path);
+				}
+#endif
+			}
+			free(full_pkg_path);
+
+			// SECURITY: Check if this directory contains a manifest.
+			// If it does, we have reached the project root and must stop searching upward.
+			char *manifest_path = combine_paths(current_search_dir, "crux.json");
+			bool is_root = file_exists(manifest_path);
+			free(manifest_path);
+
+			if (is_root) {
+				break;
+			}
+
+			// Move up one directory
+			char *parent = dirName(current_search_dir);
+			if (parent == NULL || strcmp(parent, current_search_dir) == 0) {
+				if (parent)
+					free(parent);
+				break;
+			}
+			free(current_search_dir);
+			current_search_dir = parent;
+		}
+
+		if (current_search_dir)
+			free(current_search_dir);
+		return NULL; // Not found within project boundary
+	}
+
+	// 3. Handle normal relative/absolute paths
 	if (base_path == NULL || import_path[0] == '/'
 #ifdef _WIN32
 		|| (strlen(import_path) > 2 && import_path[1] == ':')

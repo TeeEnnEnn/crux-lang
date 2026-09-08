@@ -14,6 +14,8 @@ on:
     paths:
       - "**.c"
       - "**.h"
+      - "**.crux"
+      - "std/**"
 
 permissions:
   contents: read
@@ -120,3 +122,27 @@ jobs:
         run: |
           cd tests
           python test_runner.py
+
+      - name: Run stdlib tests
+        run: |
+          cd std/_std_test
+          python test_runner.py
+        env:
+          CRUX_STDLIB: ${{ github.workspace }}/std
+          CRUX_EXE: ${{ github.workspace }}/build/${{ matrix.binary_name }}
+        shell: bash
+
+      - name: Validate documentation
+        run: python scripts/check_docs.py --require-runtime
+        env:
+          CRUX_STDLIB: ${{ github.workspace }}/std
+          CRUX_EXE: ${{ github.workspace }}/build/${{ matrix.binary_name }}
+
+      - name: Run Embedding Example
+        run: |
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            ./build/crux_embedding_example.exe
+          else
+            ./build/crux_embedding_example
+          fi
+        shell: bash

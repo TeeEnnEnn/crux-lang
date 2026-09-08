@@ -1,0 +1,33 @@
+#ifndef COMMON_H
+#define COMMON_H
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <setjmp.h>
+
+#define RESET "\033[0m"
+#define GREEN "\033[32m"
+#define CYAN "\033[36m"
+#define RED "\x1b[31m"
+#define MAGENTA "\x1b[35m"
+
+#define UINT8_COUNT (UINT8_MAX + 1)
+#define FRAMES_MAX (128)
+#define STACK_MAX (FRAMES_MAX * UINT8_COUNT * 8) // Approx 2MB stack size
+#define STRUCT_INSTANCE_DEPTH (16)
+#define NATIVE_MODULES_CAPACITY (16)
+#define INITIAL_BUFFER_CAPACITY (64)
+#define MATCH_NEST_DEPTH (16)
+#define TYPE_NAME_BUF_SIZE (256)
+
+#define INIT_GC_HEAP_GROW_FACTOR (2)
+#define MIN_GC_HEAP_SIZE (1024 * 1024)
+#define MIN_GC_GROWTH_DELTA (256 * 1024)
+#define SLAB_CAPACITY (4096)
+#define INITIAL_TYPE_TABLE_SIZE (16)
+#define TABLE_MAX_LOAD (0.65)
+
+#define CRUX_VM_PRINT_BUFFER_SIZE (1024)
+
+#endif

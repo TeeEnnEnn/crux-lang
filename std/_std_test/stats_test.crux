@@ -1,0 +1,11 @@
+use mean, median from "std:statistics";
+
+fn main() {
+    var data = [345, 242, 981.53, 431.3, 456];
+    var avg = mean(data);
+    var med = median(data);
+    println("Average: " + string(avg));
+    println("Median: " + string(med));
+}
+
+main();

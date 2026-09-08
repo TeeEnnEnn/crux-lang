@@ -1,6 +1,8 @@
 # crux-lang
 
-A gradually typed, memory-managed, interpreted programming language.
+A simple gradually typed, memory-managed, interpreted programming language that let's you get to the **crux** of your code.
+
+**Docs:** All documentation lives in [`docs/`](docs/README.md) — see [Getting Started](docs/getting-started/installation.md) + [Language Overview](docs/language/overview.md) + [Stdlib](docs/stdlib/README.md) + [Embedding](docs/embedding/lifecycle.md). Contributor entry is [`src/README.md`](src/README.md).
 
 ## Getting Started
 

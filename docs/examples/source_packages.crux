@@ -1,0 +1,13 @@
+use Stack, Set from "std:collections";
+use mean from "std:statistics";
+
+var stack = new Stack {data = []};
+stack.push(1);
+stack.push(2);
+assert(stack.pop().unwrap() == 2, "stack order failed");
+
+var set = new Set {data = {}};
+assert(set.add("value"), "set insertion failed");
+assert(set.contains("value"), "set membership failed");
+
+assert(mean([1, 2, 3]) == 2.0, "statistics mean failed");

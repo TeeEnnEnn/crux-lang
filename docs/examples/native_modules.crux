@@ -1,0 +1,14 @@
+use sqrt from "crux:math";
+use Random from "crux:random";
+use Buffer from "crux:buffer";
+
+assert(sqrt(9)? == 3.0, "math module failed");
+
+var random = Random();
+random.seed(42);
+var value = random.int(1, 3)?;
+assert(value >= 1 and value <= 3, "random bounds failed");
+
+var buffer = Buffer();
+buffer.write_string("Crux")?;
+assert(buffer.read_all()? == "Crux", "buffer round trip failed");

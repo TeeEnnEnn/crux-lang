@@ -1,0 +1,138 @@
+#ifndef SCANNER_H
+#define SCANNER_H
+
+typedef struct {
+	const char *start;
+	const char *current;
+	int line;
+} Scanner;
+
+typedef enum {
+	// Single-character tokens.
+	CRUX_TOKEN_LEFT_PAREN, // (
+	CRUX_TOKEN_RIGHT_PAREN, // )
+	CRUX_TOKEN_LEFT_BRACE, // {
+	CRUX_TOKEN_RIGHT_BRACE, // }
+	CRUX_TOKEN_LEFT_SQUARE, // [
+	CRUX_TOKEN_RIGHT_SQUARE, // ]
+	CRUX_TOKEN_DOLLAR_LEFT_SQUARE, // $[
+	CRUX_TOKEN_COMMA, // ,
+	CRUX_TOKEN_DOT, // .
+	CRUX_TOKEN_DOT_DOT, // ..
+	CRUX_TOKEN_MINUS, // -
+	CRUX_TOKEN_PLUS, // +
+	CRUX_TOKEN_SEMICOLON, // ;
+	CRUX_TOKEN_SLASH, // /
+	CRUX_TOKEN_BACKSLASH, // "\"
+	CRUX_TOKEN_STAR, // *
+	CRUX_TOKEN_STAR_STAR, // **
+	CRUX_TOKEN_PERCENT, // %
+	CRUX_TOKEN_COLON, // :
+	CRUX_TOKEN_SINGLE_QUOTE, // '
+	CRUX_TOKEN_DOUBLE_QUOTE, // "
+	// One or two character tokens. //
+	CRUX_TOKEN_ARROW, // ->
+	CRUX_TOKEN_BANG_EQUAL, // !=
+	CRUX_TOKEN_EQUAL, // =
+	CRUX_TOKEN_EQUAL_EQUAL, // ==
+	CRUX_TOKEN_GREATER, // >
+	CRUX_TOKEN_GREATER_EQUAL, // >=
+	CRUX_TOKEN_LESS, // <
+	CRUX_TOKEN_LESS_EQUAL, // <=
+	CRUX_TOKEN_LEFT_SHIFT, // <<
+	CRUX_TOKEN_RIGHT_SHIFT, // >>
+	CRUX_TOKEN_AMPERSAND, // &
+	CRUX_TOKEN_CARET, // ^
+	CRUX_TOKEN_PIPE, // |
+	CRUX_TOKEN_TILDE, // ~
+	CRUX_TOKEN_PLUS_EQUAL, // +=
+	CRUX_TOKEN_MINUS_EQUAL, // -=
+	CRUX_TOKEN_STAR_EQUAL, // *=
+	CRUX_TOKEN_SLASH_EQUAL, // /=
+	CRUX_TOKEN_BACK_SLASH_EQUAL, // \=
+	CRUX_TOKEN_PERCENT_EQUAL, // %=
+	CRUX_TOKEN_QUESTION_MARK, // ?
+	CRUX_TOKEN_COLON_COLON, // ::
+	// Literals. //
+	CRUX_TOKEN_IDENTIFIER, //
+	CRUX_TOKEN_STRING, //
+	CRUX_TOKEN_INT, //
+	CRUX_TOKEN_FLOAT, //
+	CRUX_TOKEN_BINARY_INT, // 0b
+	CRUX_TOKEN_HEX_INT, // 0x
+	// Keywords.
+	CRUX_TOKEN_AND, // and
+	CRUX_TOKEN_NOT, // not
+	CRUX_TOKEN_ELSE, // else
+	CRUX_TOKEN_FALSE, // false
+	CRUX_TOKEN_FOR, // for
+	CRUX_TOKEN_FN, // fn
+	CRUX_TOKEN_IF, // if
+	CRUX_TOKEN_NIL, // nil
+	CRUX_TOKEN_OR, // or
+	CRUX_TOKEN_RETURN, // return
+	CRUX_TOKEN_TRUE, // true
+	CRUX_TOKEN_VAR, // var
+	CRUX_TOKEN_WHILE, // while
+	CRUX_TOKEN_ERROR, //
+	CRUX_TOKEN_BREAK, // break
+	CRUX_TOKEN_CONTINUE, // continue
+	CRUX_TOKEN_USE, // use
+	CRUX_TOKEN_FROM, // from
+	CRUX_TOKEN_PUB, // pub
+	CRUX_TOKEN_AS, // as
+	CRUX_TOKEN_EOF, //
+	CRUX_TOKEN_MATCH, // match
+	CRUX_TOKEN_EQUAL_ARROW, // =>
+	CRUX_TOKEN_OK, // Ok
+	CRUX_TOKEN_ERR, // Err
+	CRUX_TOKEN_NONE, // None
+	CRUX_TOKEN_SOME, // Some
+	CRUX_TOKEN_DEFAULT, // default
+	CRUX_TOKEN_GIVE, // give
+	CRUX_TOKEN_TYPEOF, // typeof
+	CRUX_TOKEN_NEW, // new
+	CRUX_TOKEN_PANIC, // panic
+	CRUX_TOKEN_STRUCT, // struct
+	CRUX_TOKEN_SHAPE, // shape
+	CRUX_TOKEN_IMPL, // impl
+	CRUX_TOKEN_TYPE, // type
+	CRUX_TOKEN_IN, // in
+	CRUX_TOKEN_NATIVE, // native
+	CRUX_TOKEN_STATIC, // static
+
+	CRUX_TOKEN_NIL_TYPE, // Nil
+	CRUX_TOKEN_BOOL_TYPE, // Bool
+	CRUX_TOKEN_INT_TYPE, // Int
+	CRUX_TOKEN_FLOAT_TYPE, // Float
+	CRUX_TOKEN_STRING_TYPE, // String
+	CRUX_TOKEN_ARRAY_TYPE, // Array
+	CRUX_TOKEN_TABLE_TYPE, // Table
+	CRUX_TOKEN_ERROR_TYPE, // Error
+	CRUX_TOKEN_RESULT_TYPE, // Result
+	CRUX_TOKEN_RANDOM_TYPE, // Random
+	CRUX_TOKEN_FILE_TYPE, // File
+	CRUX_TOKEN_STRUCT_TYPE, // Struct
+	CRUX_TOKEN_VECTOR_TYPE, // Vector
+	CRUX_TOKEN_COMPLEX_TYPE, // Complex
+	CRUX_TOKEN_MATRIX_TYPE, // Matrix
+	CRUX_TOKEN_TUPLE_TYPE, // Tuple
+	CRUX_TOKEN_BUFFER_TYPE, // Buffer
+	CRUX_TOKEN_RANGE_TYPE, // Range
+	CRUX_TOKEN_ANY_TYPE, // Any
+	CRUX_TOKEN_NEVER_TYPE, // Never
+	CRUX_TOKEN_ITERATOR_TYPE, // Iterator
+	CRUX_TOKEN_OPTION_TYPE, // Option
+} CruxTokenType;
+
+typedef struct {
+	CruxTokenType type;
+	int length;
+	const char *start;
+	int line;
+} Token;
+
+void init_scanner(Scanner* scanner, const char *source);
+Token scan_token(Scanner* scanner);
+
+#endif // SCANNER_H
