@@ -59,6 +59,17 @@ jobs:
           sudo apt-get install -y gcc g++
           echo "CC=gcc" >> $GITHUB_ENV
 
+      - name: Install MinGW (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: mingw64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            make
+
       - name: Setup GCC environment (Windows)
         if: matrix.os == 'windows-latest'
         run: |
@@ -107,7 +118,7 @@ jobs:
           fi
           tar -czf crux-stdlib.tar.gz -C dist stdlib
           cd dist && zip -r ../crux-stdlib.zip stdlib
-          
+
       - name: Upload Stdlib Archives
         if: matrix.os == 'ubuntu-latest' && matrix.arch == 'amd64'
         uses: actions/upload-artifact@v4
@@ -209,7 +220,7 @@ jobs:
 
           # Save to file and output
           echo -e "$CHANGELOG" > release_notes.md
-          
+
           # Set output for GitHub Actions (escape newlines)
           {
             echo 'RELEASE_NOTES<<EOF'

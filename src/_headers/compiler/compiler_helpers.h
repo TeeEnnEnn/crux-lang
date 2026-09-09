@@ -2,8 +2,8 @@
 #define COMPILER_HELPERS_H
 
 #include "object/object.h"
-#include "vm.h"
 #include "scanner.h"
+#include "vm.h"
 
 /**
  * lookup a callable in a vm stdlib table
@@ -23,19 +23,19 @@ void advance(const Compiler *compiler);
 void consume(const Compiler *compiler, CruxTokenType type, const char *message);
 Chunk *current_chunk(const Compiler *compiler);
 
-int merge_vector_dimensions(Compiler *compiler, const ObjectTypeRecord *left_type,
-								   const ObjectTypeRecord *right_type, const char *operation);
+int merge_vector_dimensions(Compiler *compiler, const ObjectTypeRecord *left_type, const ObjectTypeRecord *right_type,
+							const char *operation);
 
 bool is_primitive_numeric_type(const ObjectTypeRecord *type);
 
 ObjectTypeRecord *merge_matrix_shape(Compiler *compiler, const ObjectTypeRecord *left_type,
-											const ObjectTypeRecord *right_type, const char *operation);
+									 const ObjectTypeRecord *right_type, const char *operation);
 
 ObjectTypeRecord *matrix_multiply_result_type(Compiler *compiler, const ObjectTypeRecord *left_type,
-													 const ObjectTypeRecord *right_type);
+											  const ObjectTypeRecord *right_type);
 
 bool resolve_assignment_target(Compiler *compiler, const Token name, uint16_t *set_op, int *arg,
-									  ObjectTypeRecord **target_type);
+							   ObjectTypeRecord **target_type);
 
 Token peek_next_token(const Compiler *compiler);
 

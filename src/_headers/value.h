@@ -3,8 +3,8 @@
 
 #include "crux.h"
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct ObjectString ObjectString;
 typedef struct CruxObject CruxObject;

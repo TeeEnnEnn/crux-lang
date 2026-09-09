@@ -2,12 +2,11 @@
 #define COMPILER_H
 
 #include <stdint.h>
+#include "common.h"
 #include "garbage_collector.h"
 #include "object/object.h"
 #include "scanner.h"
 #include "type_system.h"
-#include "common.h"
-
 
 /**
  * @brief Parser state used during compilation.
@@ -100,46 +99,46 @@ typedef struct {
 } NarrowingInfo;
 
 typedef enum {
-    MATCH_PATTERN_DEFAULT,
-    MATCH_PATTERN_OK,
-    MATCH_PATTERN_ERR,
-    MATCH_PATTERN_SOME,
-    MATCH_PATTERN_NONE,
-    MATCH_PATTERN_EXPRESSION,
-    MATCH_PATTERN_TYPE
+	MATCH_PATTERN_DEFAULT,
+	MATCH_PATTERN_OK,
+	MATCH_PATTERN_ERR,
+	MATCH_PATTERN_SOME,
+	MATCH_PATTERN_NONE,
+	MATCH_PATTERN_EXPRESSION,
+	MATCH_PATTERN_TYPE
 } MatchPatternType;
 
 typedef struct {
-    MatchPatternType type;
-    int jump_if_not_match;
-    uint16_t binding_slot;
-    ObjectTypeRecord* type_produced;
-    bool is_binding;
+	MatchPatternType type;
+	int jump_if_not_match;
+	uint16_t binding_slot;
+	ObjectTypeRecord *type_produced;
+	bool is_binding;
 } MatchPattern;
 
 typedef struct {
-    ObjectTypeRecord* target_type;
-    ObjectTypeRecord* resultant_type;
-    bool has_ok;
-    bool has_err;
-    bool has_some;
-    bool has_none;
-    bool has_literal;
-    bool has_type;
-    bool has_default;
-    ObjectTypeRecord** matched_types;
-    int matched_types_count;
-    int matched_types_capacity;
-}MatchExhaustiveness;
+	ObjectTypeRecord *target_type;
+	ObjectTypeRecord *resultant_type;
+	bool has_ok;
+	bool has_err;
+	bool has_some;
+	bool has_none;
+	bool has_literal;
+	bool has_type;
+	bool has_default;
+	ObjectTypeRecord **matched_types;
+	int matched_types_count;
+	int matched_types_capacity;
+} MatchExhaustiveness;
 
 typedef struct {
-    MatchPattern *patterns;
-    int pattern_count;
-    int pattern_capacity;
-    MatchExhaustiveness exhaustiveness;
-    int* end_jumps;
-    int jump_count;
-    int jump_capacity;
+	MatchPattern *patterns;
+	int pattern_count;
+	int pattern_capacity;
+	MatchExhaustiveness exhaustiveness;
+	int *end_jumps;
+	int jump_count;
+	int jump_capacity;
 } MatchCompiler;
 
 struct Compiler {
@@ -154,7 +153,7 @@ struct Compiler {
 	ObjectTypeRecord *type_stack[UINT8_COUNT];
 	LoopContext loop_stack[UINT8_COUNT];
 	Local locals[UINT8_COUNT];
-    MatchCompiler match_compiler[MATCH_NEST_DEPTH];
+	MatchCompiler match_compiler[MATCH_NEST_DEPTH];
 	Upvalue upvalues[UINT8_COUNT];
 	NarrowingInfo current_narrowing;
 	Table globals;
@@ -164,7 +163,7 @@ struct Compiler {
 	int local_count;
 	FunctionType type;
 	int type_stack_count;
-    int match_depth;
+	int match_depth;
 	bool has_return;
 };
 typedef void (*ParseFn)(Compiler *compiler, const bool can_assign);
@@ -195,7 +194,6 @@ ObjectTypeRecord *peek_type_record(const Compiler *compiler);
 bool is_valid_table_key_type(ObjectTypeRecord *type);
 void emit_words(const Compiler *compiler, uint16_t word1, uint16_t word2);
 void emit_word(const Compiler *compiler, uint16_t word);
-
 
 /**
  * emits an OP_LOOP instruction
@@ -277,7 +275,7 @@ bool identifiers_equal(const Token *a, const Token *b);
  */
 void end_scope(Compiler *compiler);
 
-OpCode get_compound_opcode(const Compiler *compiler,  OpCode setOp, int op);
+OpCode get_compound_opcode(const Compiler *compiler, OpCode setOp, int op);
 
 /**
  * Defines a variable, emitting the bytecode to store its value.

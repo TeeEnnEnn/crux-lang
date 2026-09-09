@@ -1,8 +1,8 @@
 #include <string.h>
 
-#include "native/gc.h"
 #include "common.h"
 #include "garbage_collector.h"
+#include "native/gc.h"
 #include "panic.h"
 #include "value.h"
 

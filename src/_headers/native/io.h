@@ -58,8 +58,7 @@ CruxValue io_scan_from_function(CruxVM *vm, const CruxValue *args);
 
 /* scanln_from(channel: string)  -> Result<string>
  * Reads from the named channel up to (and discarding) the next '\n'. */
-CruxValue io_scanln_from_function(CruxVM *vm,
-                                      const CruxValue *args);
+CruxValue io_scanln_from_function(CruxVM *vm, const CruxValue *args);
 
 /* nscan_from(channel: string, n: int)  -> Result<string>
  * Reads up to <n> characters from the named channel,

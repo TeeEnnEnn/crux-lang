@@ -16,7 +16,7 @@ int crux_cmd_run(CruxVM *vm, const char *path);
 /**
  * @brief Initializes a new Crux project.
  */
-int crux_cmd_init(const char* name);
+int crux_cmd_init(const char *name);
 
 /**
  * @brief Installs project dependencies from crux.json.

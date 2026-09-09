@@ -87,8 +87,7 @@ void collect_garbage(CruxVM *vm);
  */
 void free_objects(CruxVM *vm, bool free_all);
 
-void mark_object_internal(CruxVM* vm, CruxObject* object);
-
+void mark_object_internal(CruxVM *vm, CruxObject *object);
 
 /**
  * @brief Marks an object as reachable during garbage collection.
@@ -108,7 +107,5 @@ static inline void mark_object(CruxVM *vm, CruxObject *object)
 
 	mark_object_internal(vm, object);
 }
-
-
 
 #endif // MEMORY_H

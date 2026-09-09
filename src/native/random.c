@@ -34,8 +34,7 @@ double get_next(ObjectRandom *random)
 	const int bits26 = next(&random->seed, 26);
 	const int bits27 = next(&random->seed, 27);
 
-	const double result = (((uint64_t)bits26 << 27) + bits27) /
-			      (double)(1ULL << 53);
+	const double result = (((uint64_t)bits26 << 27) + bits27) / (double)(1ULL << 53);
 	return result;
 }
 
@@ -78,9 +77,7 @@ CruxValue random_int_method(CruxVM *vm, const CruxValue *args)
 	const int32_t maxInt = AS_INT(max);
 
 	if (minInt > maxInt) {
-		return MAKE_GC_SAFE_ERROR(
-			vm, "<min> must be less than or equal to <max>",
-			RUNTIME);
+		return MAKE_GC_SAFE_ERROR(vm, "<min> must be less than or equal to <max>", RUNTIME);
 	}
 
 	ObjectRandom *random = AS_CRUX_RANDOM(args[0]);
@@ -103,16 +100,14 @@ CruxValue random_float_method(CruxVM *vm, const CruxValue *args)
 	const CruxValue min = args[1];
 	const CruxValue max = args[2];
 
-	const double minDouble = IS_FLOAT(min) ? AS_FLOAT(min)
-					       : (double)AS_INT(min);
-	const double maxDouble = IS_FLOAT(max) ? AS_FLOAT(max)
-					       : (double)AS_INT(max);
+	const double minDouble = IS_FLOAT(min) ? AS_FLOAT(min) : (double)AS_INT(min);
+	const double maxDouble = IS_FLOAT(max) ? AS_FLOAT(max) : (double)AS_INT(max);
 
 	if (minDouble > maxDouble) {
 		return MAKE_GC_SAFE_ERROR(vm,
-					  "Parameter <min> must be less than "
-					  "or equal to parameter <max>.",
-					  RUNTIME);
+								  "Parameter <min> must be less than "
+								  "or equal to parameter <max>.",
+								  RUNTIME);
 	}
 
 	ObjectRandom *random = AS_CRUX_RANDOM(args[0]);
@@ -134,9 +129,7 @@ CruxValue random_bool_method(CruxVM *vm, const CruxValue *args)
 	const double prob = TO_DOUBLE(args[1]);
 
 	if (prob < 0 || prob > 1) {
-		return MAKE_GC_SAFE_ERROR(vm,
-					  "Probability must be between 0 and 1",
-					  RUNTIME);
+		return MAKE_GC_SAFE_ERROR(vm, "Probability must be between 0 and 1", RUNTIME);
 	}
 
 	ObjectRandom *random = AS_CRUX_RANDOM(args[0]);

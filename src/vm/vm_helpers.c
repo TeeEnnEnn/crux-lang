@@ -661,7 +661,7 @@ bool invoke(CruxVM *vm, const ObjectString *name, int arg_count)
 	return invoke_dispatch_table[OBJECT_TYPE(receiver)](vm, name, arg_count, original, receiver);
 }
 
-bool static_method_invoke(CruxVM* vm, const ObjectString *name, int arg_count)
+bool static_method_invoke(CruxVM *vm, const ObjectString *name, int arg_count)
 {
 	ObjectModuleRecord *current_module_record = vm->current_module_record;
 	const CruxValue receiver = PEEK(current_module_record, arg_count);
@@ -669,7 +669,7 @@ bool static_method_invoke(CruxVM* vm, const ObjectString *name, int arg_count)
 		runtime_panic(current_module_record, TYPE, "Only structs have static methods");
 		return false;
 	}
-	const ObjectStruct* struct_ = AS_CRUX_STRUCT(receiver);
+	const ObjectStruct *struct_ = AS_CRUX_STRUCT(receiver);
 	CruxValue method_val;
 	if (table_get(&struct_->static_methods, name, &method_val)) {
 		return call_value(vm, method_val, arg_count);

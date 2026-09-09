@@ -17,10 +17,8 @@ void write_chunk(CruxVM *vm, Chunk *chunk, const uint16_t byte, const int line)
 	if (chunk->capacity < chunk->count + 1) {
 		const int oldCapacity = chunk->capacity;
 		chunk->capacity = GROW_CAPACITY(oldCapacity);
-		chunk->code = GROW_ARRAY(vm, uint16_t, chunk->code, oldCapacity,
-					 chunk->capacity);
-		chunk->lines = GROW_ARRAY(vm, int, chunk->lines, oldCapacity,
-					  chunk->capacity);
+		chunk->code = GROW_ARRAY(vm, uint16_t, chunk->code, oldCapacity, chunk->capacity);
+		chunk->lines = GROW_ARRAY(vm, int, chunk->lines, oldCapacity, chunk->capacity);
 	}
 
 	chunk->code[chunk->count] = byte;

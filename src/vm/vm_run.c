@@ -554,7 +554,7 @@ OP_INVOKE: {
 }
 
 OP_STATIC_INVOKE: {
-	ObjectString* method_name = READ_STRING();
+	ObjectString *method_name = READ_STRING();
 	int arg_count = READ_SHORT();
 	if (!static_method_invoke(vm, method_name, arg_count)) {
 		return INTERPRET_RUNTIME_ERROR;
@@ -562,7 +562,6 @@ OP_STATIC_INVOKE: {
 	frame = &current_module_record->frames[current_module_record->frame_count - 1];
 	DISPATCH();
 }
-
 
 OP_ARRAY: {
 	uint16_t elementCount = READ_SHORT();

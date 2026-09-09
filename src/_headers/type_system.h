@@ -22,7 +22,8 @@ ObjectTypeRecord *new_iterator_type_rec(CruxVM *vm, ObjectTypeRecord *element_ty
 ObjectTypeRecord *new_table_type_rec(CruxVM *vm, ObjectTypeRecord *key_type, ObjectTypeRecord *value_type);
 ObjectTypeRecord *new_option_type_rec(CruxVM *vm, ObjectTypeRecord *element_type);
 ObjectTypeRecord *new_result_type_rec(CruxVM *vm, ObjectTypeRecord *ok_type);
-ObjectTypeRecord *new_struct_type_rec(CruxVM *vm, ObjectStruct *definition, ObjectTypeTable *field_types, int field_count);
+ObjectTypeRecord *new_struct_type_rec(CruxVM *vm, ObjectStruct *definition, ObjectTypeTable *field_types,
+									  int field_count);
 ObjectTypeRecord *new_vector_type_rec(CruxVM *vm, int dimensions);
 ObjectTypeRecord *new_tuple_type_rec(CruxVM *vm, ObjectTypeRecord **element_types, int element_count);
 ObjectTypeRecord *new_matrix_type_rec(CruxVM *vm, int rows, int cols);
@@ -41,6 +42,6 @@ bool is_numeric_type(const ObjectTypeRecord *type);
 bool is_collection_type(const ObjectTypeRecord *type);
 bool is_iterable_type(const ObjectTypeRecord *type);
 ObjectTypeRecord *get_iterable_element_type(const Compiler *compiler, const ObjectTypeRecord *iterable_type);
-bool mask_in_type(ObjectTypeRecord* type, TypeMask mask);
+bool mask_in_type(ObjectTypeRecord *type, TypeMask mask);
 
 #endif // CRUX_LANG_TYPE_SYSTEM_H
