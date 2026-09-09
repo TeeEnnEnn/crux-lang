@@ -1,19 +1,19 @@
 #ifndef CRUX_LANG_SLAB_ALLOCATOR_H
 #define CRUX_LANG_SLAB_ALLOCATOR_H
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct SlabNode SlabNode;
 struct SlabNode {
-    SlabNode *next;
-    // Memory slots follow immediately in memory
+	SlabNode *next;
+	// Memory slots follow immediately in memory
 };
 
 typedef struct SlabAllocator {
-    uint16_t slot_size;
-    uint16_t capacity;
-    void *free_list;      // Head of global free list
-    SlabNode *slab_head;  // Track slabs for destruction
+	uint16_t slot_size;
+	uint16_t capacity;
+	void *free_list; // Head of global free list
+	SlabNode *slab_head; // Track slabs for destruction
 } SlabAllocator;
 
 SlabAllocator *init_slab_allocator(uint16_t slot_size, uint16_t capacity);

@@ -13,12 +13,12 @@
  * @brief Default write callback for the CruxVM.
  * Outputs text to stdout.
  */
-void cli_write_fn(CruxVM* vm, const char* text);
+void cli_write_fn(CruxVM *vm, const char *text);
 
 /**
  * @brief Default error callback for the CruxVM.
  * Outputs formatted error messages to stderr.
  */
-void cli_error_fn(CruxVM* vm, CruxErrorType type, const char* module_name, int line_number, const char* text);
+void cli_error_fn(CruxVM *vm, CruxErrorType type, const char *module_name, int line_number, const char *text);
 
 #endif // CRUX_CLI_UTILS_H

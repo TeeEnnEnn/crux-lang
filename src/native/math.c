@@ -5,9 +5,8 @@
 #include <math.h>
 #endif
 
-
-#include "panic.h"
 #include "native/math.h"
+#include "panic.h"
 #include "value.h"
 
 /**
@@ -33,10 +32,7 @@ CruxValue sqrt_function(CruxVM *vm, const CruxValue *args)
 {
 	const double number = TO_DOUBLE(args[0]);
 	if (number < 0) {
-		return MAKE_GC_SAFE_ERROR(
-			vm,
-			"Cannot calculate square root of a negative number.",
-			VALUE);
+		return MAKE_GC_SAFE_ERROR(vm, "Cannot calculate square root of a negative number.", VALUE);
 	}
 
 	return OBJECT_VAL(new_ok_result(vm, FLOAT_VAL(sqrt(number))));
@@ -66,8 +62,7 @@ static double absolute_float(const double x)
 CruxValue abs_function(CruxVM *vm, const CruxValue *args)
 {
 	(void)vm;
-	return IS_INT(args[0]) ? INT_VAL(absolute_int(AS_INT(args[0])))
-			       : FLOAT_VAL(absolute_float(AS_FLOAT(args[0])));
+	return IS_INT(args[0]) ? INT_VAL(absolute_int(AS_INT(args[0]))) : FLOAT_VAL(absolute_float(AS_FLOAT(args[0])));
 }
 
 /**
@@ -111,9 +106,7 @@ CruxValue asin_function(CruxVM *vm, const CruxValue *args)
 {
 	const double num = TO_DOUBLE(args[0]);
 	if (num < -1 || num > 1) {
-		return MAKE_GC_SAFE_ERROR(vm,
-					  "Argument must be between -1 and 1.",
-					  VALUE);
+		return MAKE_GC_SAFE_ERROR(vm, "Argument must be between -1 and 1.", VALUE);
 	}
 
 	return OBJECT_VAL(new_ok_result(vm, FLOAT_VAL(asin(num))));
@@ -127,9 +120,7 @@ CruxValue acos_function(CruxVM *vm, const CruxValue *args)
 {
 	const double num = TO_DOUBLE(args[0]);
 	if (num < -1 || num > 1) {
-		return MAKE_GC_SAFE_ERROR(vm,
-					  "Argument must be between -1 and 1.",
-					  VALUE);
+		return MAKE_GC_SAFE_ERROR(vm, "Argument must be between -1 and 1.", VALUE);
 	}
 	return OBJECT_VAL(new_ok_result(vm, FLOAT_VAL(acos(num))));
 }
@@ -165,9 +156,9 @@ CruxValue ln_function(CruxVM *vm, const CruxValue *args)
 	const double number = TO_DOUBLE(args[0]);
 	if (number < 0) {
 		return MAKE_GC_SAFE_ERROR(vm,
-					  "Cannot calculate natural logarithm "
-					  "of non positive number.",
-					  VALUE);
+								  "Cannot calculate natural logarithm "
+								  "of non positive number.",
+								  VALUE);
 	}
 	return OBJECT_VAL(new_ok_result(vm, FLOAT_VAL(log(number))));
 }
@@ -182,9 +173,9 @@ CruxValue log10_function(CruxVM *vm, const CruxValue *args)
 	const double number = TO_DOUBLE(args[0]);
 	if (number < 0) {
 		return MAKE_GC_SAFE_ERROR(vm,
-					  "Cannot calculate base 10 logarithm "
-					  "of non positive number.",
-					  VALUE);
+								  "Cannot calculate base 10 logarithm "
+								  "of non positive number.",
+								  VALUE);
 	}
 
 	return OBJECT_VAL(new_ok_result(vm, FLOAT_VAL(log10(number))));

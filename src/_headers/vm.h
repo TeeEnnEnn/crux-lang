@@ -19,7 +19,12 @@ typedef struct ObjectRange ObjectRange;
 typedef struct SlabAllocator SlabAllocator;
 typedef struct Compiler Compiler;
 
-typedef enum { INTERPRET_OK = 0, INTERPRET_COMPILE_ERROR = 1, INTERPRET_RUNTIME_ERROR = 2, INTERPRET_EXIT = 3 } InterpretResult;
+typedef enum {
+	INTERPRET_OK = 0,
+	INTERPRET_COMPILE_ERROR = 1,
+	INTERPRET_RUNTIME_ERROR = 2,
+	INTERPRET_EXIT = 3
+} InterpretResult;
 
 /**
  * An ongoing function call
@@ -79,9 +84,9 @@ typedef enum {
 typedef struct CruxHandle CruxHandle;
 
 struct CruxHandle {
-    CruxValue value;
-    struct CruxHandle* prev;
-    struct CruxHandle* next;
+	CruxValue value;
+	struct CruxHandle *prev;
+	struct CruxHandle *next;
 };
 
 struct CruxVM {
@@ -167,7 +172,7 @@ struct CruxVM {
 	int api_stack_capacity;
 	int api_stack_count;
 
-    struct CruxHandle *handles; // Head of the persistent handles list
+	struct CruxHandle *handles; // Head of the persistent handles list
 
 	int exit_code;
 	jmp_buf jump_buffer;
@@ -298,13 +303,15 @@ ObjectStructInstance *pop_struct_stack(CruxVM *vm);
 bool pushStructStack(CruxVM *vm, ObjectStructInstance *struct_instance);
 ObjectStructInstance *peek_struct_stack(const CruxVM *vm);
 
-bool handle_compound_assignment(ObjectModuleRecord *currentModuleRecord, CruxValue *target, CruxValue operand, OpCode op);
+bool handle_compound_assignment(ObjectModuleRecord *currentModuleRecord, CruxValue *target, CruxValue operand,
+								OpCode op);
 bool range_indices_in_bounds(const ObjectRange *range, const uint32_t collection_size);
 bool collect_string_codepoint_starts(CruxVM *vm, const ObjectString *string, const utf8_int8_t ***starts_out);
 
 bool bind_core_globals(CruxVM *vm, ObjectModuleRecord *module_record);
 
-void vm_print(CruxVM* vm, const char* format, ...) 	__attribute__((format(printf, 2, 3)));
-void vm_error(CruxVM *vm, CruxErrorType error_type, int line_number, const char *format, ...) __attribute__((format(printf, 4, 5)));
+void vm_print(CruxVM *vm, const char *format, ...) __attribute__((format(printf, 2, 3)));
+void vm_error(CruxVM *vm, CruxErrorType error_type, int line_number, const char *format, ...)
+	__attribute__((format(printf, 4, 5)));
 
 #endif // VM_H

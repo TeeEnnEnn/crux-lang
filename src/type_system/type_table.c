@@ -1,5 +1,5 @@
-#include "type_system.h"
 #include "common.h"
+#include "type_system.h"
 
 #define TYPE_GROW_CAPACITY(capacity) ((capacity) < 8 ? 8 : (capacity) * 2)
 
@@ -42,8 +42,6 @@ static void type_table_adjust_capacity(ObjectTypeTable *table, const int capacit
 	table->entries = entries;
 	table->capacity = capacity;
 }
-
-
 
 bool type_table_get(const ObjectTypeTable *table, const ObjectString *key, ObjectTypeRecord **value)
 {

@@ -66,7 +66,6 @@
 #define IS_CRUX_OPTION(value) is_object_type(value, OBJECT_OPTION)
 #define IS_CRUX_COROUTINE(value) is_object_type(value, OBJECT_COROUTINE)
 
-
 #define AS_CRUX_STRING(value) ((ObjectString *)AS_CRUX_OBJECT(value))
 #define AS_C_STRING(value) (((ObjectString *)AS_CRUX_OBJECT(value))->chars)
 #define AS_CRUX_FUNCTION(value) ((ObjectFunction *)AS_CRUX_OBJECT(value))
@@ -95,8 +94,6 @@
 #define AS_CRUX_OPTION(value) ((ObjectOption *)AS_CRUX_OBJECT(value))
 #define AS_CRUX_ENUM(value) ((ObjectEnum *)AS_CRUX_OBJECT(value))
 #define AS_CRUX_COROUTINE(value) ((ObjectCoroutine *)AS_CRUX_OBJECT(value))
-
-
 
 #define IS_CRUX_HASHABLE(value)                                                                                        \
 	(IS_INT(value) || IS_FLOAT(value) || IS_CRUX_STRING(value) || IS_NIL(value) || IS_BOOL(value))
@@ -142,7 +139,7 @@ static_assert(SENTINEL_OBJECT_COUNT <= 32, "Object type count exceeds 32 bits");
 #endif
 
 struct CruxObject {
-    uintptr_t tagged_next;
+	uintptr_t tagged_next;
 };
 
 #define CRUX_TAGGED_POINTER_MASK 0x0000FFFFFFFFFFFFULL
@@ -156,7 +153,7 @@ struct CruxObject {
 
 #else
 struct CruxObject {
-    CruxObject* next;
+	CruxObject *next;
 	ObjectType type;
 	bool is_marked;
 	bool is_immortal;
@@ -165,85 +162,94 @@ struct CruxObject {
 
 // Object getters
 
-static inline CruxObject* object_get_next(CruxObject* object) {
-    #ifdef CRUX_TAGGED_OBJECT
-    return (CruxObject*)(object->tagged_next & CRUX_TAGGED_POINTER_MASK);
-    #else
-    return object->next;
-    #endif
+static inline CruxObject *object_get_next(CruxObject *object)
+{
+#ifdef CRUX_TAGGED_OBJECT
+	return (CruxObject *)(object->tagged_next & CRUX_TAGGED_POINTER_MASK);
+#else
+	return object->next;
+#endif
 }
 
-static inline ObjectType object_get_type(CruxObject* object) {
-    #ifdef CRUX_TAGGED_OBJECT
-    return (ObjectType)((object->tagged_next >> CRUX_TAGGED_TYPE_SHIFT) & CRUX_TAGGED_TYPE_MASK);
-    #else
-    return object->type;
-    #endif
+static inline ObjectType object_get_type(CruxObject *object)
+{
+#ifdef CRUX_TAGGED_OBJECT
+	return (ObjectType)((object->tagged_next >> CRUX_TAGGED_TYPE_SHIFT) & CRUX_TAGGED_TYPE_MASK);
+#else
+	return object->type;
+#endif
 }
 
-static inline bool object_is_marked(CruxObject* object) {
-    #ifdef CRUX_TAGGED_OBJECT
-    return (object->tagged_next >> CRUX_TAGGED_MARKED_SHIFT) & 1;
-    #else
-    return object->is_marked;
-    #endif
+static inline bool object_is_marked(CruxObject *object)
+{
+#ifdef CRUX_TAGGED_OBJECT
+	return (object->tagged_next >> CRUX_TAGGED_MARKED_SHIFT) & 1;
+#else
+	return object->is_marked;
+#endif
 }
 
-static inline bool object_is_immortal(CruxObject* object) {
-    #ifdef CRUX_TAGGED_OBJECT
-    return (object->tagged_next >> CRUX_TAGGED_IMMORTAL_SHIFT) & 1;
-    #else
-    return object->is_immortal;
-    #endif
+static inline bool object_is_immortal(CruxObject *object)
+{
+#ifdef CRUX_TAGGED_OBJECT
+	return (object->tagged_next >> CRUX_TAGGED_IMMORTAL_SHIFT) & 1;
+#else
+	return object->is_immortal;
+#endif
 }
 
-
-static inline void object_set_next(CruxObject* object, CruxObject* next) {
-    #ifdef CRUX_TAGGED_OBJECT
-    object->tagged_next = (object->tagged_next & ~CRUX_TAGGED_POINTER_MASK) | ((uintptr_t)next & CRUX_TAGGED_POINTER_MASK);
-    #else
-    object->next = next;
-    #endif
+static inline void object_set_next(CruxObject *object, CruxObject *next)
+{
+#ifdef CRUX_TAGGED_OBJECT
+	object->tagged_next = (object->tagged_next & ~CRUX_TAGGED_POINTER_MASK) |
+						  ((uintptr_t)next & CRUX_TAGGED_POINTER_MASK);
+#else
+	object->next = next;
+#endif
 }
 
-static inline void object_set_marked(CruxObject* object, bool marked) {
-    #ifdef CRUX_TAGGED_OBJECT
-    object->tagged_next = (object->tagged_next & ~(1ULL << CRUX_TAGGED_MARKED_SHIFT)) | ((uintptr_t)marked << CRUX_TAGGED_MARKED_SHIFT);
-    #else
-    object->is_marked = marked;
-    #endif
+static inline void object_set_marked(CruxObject *object, bool marked)
+{
+#ifdef CRUX_TAGGED_OBJECT
+	object->tagged_next = (object->tagged_next & ~(1ULL << CRUX_TAGGED_MARKED_SHIFT)) |
+						  ((uintptr_t)marked << CRUX_TAGGED_MARKED_SHIFT);
+#else
+	object->is_marked = marked;
+#endif
 }
 
-static inline void object_set_immortal(CruxObject* object, bool immortal) {
-    #ifdef CRUX_TAGGED_OBJECT
-    object->tagged_next = (object->tagged_next & ~(1ULL << CRUX_TAGGED_IMMORTAL_SHIFT)) | ((uintptr_t)immortal << CRUX_TAGGED_IMMORTAL_SHIFT);
-    #else
-    object->is_immortal = immortal;
-    #endif
+static inline void object_set_immortal(CruxObject *object, bool immortal)
+{
+#ifdef CRUX_TAGGED_OBJECT
+	object->tagged_next = (object->tagged_next & ~(1ULL << CRUX_TAGGED_IMMORTAL_SHIFT)) |
+						  ((uintptr_t)immortal << CRUX_TAGGED_IMMORTAL_SHIFT);
+#else
+	object->is_immortal = immortal;
+#endif
 }
 
-static inline void object_init(CruxObject* object, CruxObject* next,  ObjectType type, bool marked, bool immortal) {
-    #ifdef CRUX_TAGGED_OBJECT
-    uintptr_t tags = 0;
-    tags |= ((uintptr_t) type & CRUX_TAGGED_TYPE_MASK) << CRUX_TAGGED_TYPE_SHIFT;
-    tags |= ((uintptr_t) marked) << CRUX_TAGGED_MARKED_SHIFT;
-    tags |= ((uintptr_t) immortal) << CRUX_TAGGED_IMMORTAL_SHIFT;
+static inline void object_init(CruxObject *object, CruxObject *next, ObjectType type, bool marked, bool immortal)
+{
+#ifdef CRUX_TAGGED_OBJECT
+	uintptr_t tags = 0;
+	tags |= ((uintptr_t)type & CRUX_TAGGED_TYPE_MASK) << CRUX_TAGGED_TYPE_SHIFT;
+	tags |= ((uintptr_t)marked) << CRUX_TAGGED_MARKED_SHIFT;
+	tags |= ((uintptr_t)immortal) << CRUX_TAGGED_IMMORTAL_SHIFT;
 
-    object->tagged_next = ((uintptr_t) next & CRUX_TAGGED_POINTER_MASK) | tags;
-    #else
-    object->next = next;
-    object->type = type;
-    object->is_marked = marked;
-    object->is_immortal = immortal;
-    #endif
+	object->tagged_next = ((uintptr_t)next & CRUX_TAGGED_POINTER_MASK) | tags;
+#else
+	object->next = next;
+	object->type = type;
+	object->is_marked = marked;
+	object->is_immortal = immortal;
+#endif
 }
-
 
 #define TO_DOUBLE(value) (IS_INT((value)) ? (double)AS_INT((value)) : AS_FLOAT((value)))
 
 struct ObjectString {
 	CruxObject object;
-	utf8_int8_t* chars;
+	utf8_int8_t *chars;
 	uint32_t byte_length; // this is the length without the null terminator
 	uint32_t code_point_length;
 	uint32_t hash;
@@ -344,7 +350,6 @@ typedef struct {
 	Table static_methods;
 } ObjectStruct;
 
-
 typedef struct ObjectTypeTable ObjectTypeTable;
 
 typedef struct {
@@ -418,7 +423,7 @@ typedef CruxValue (*CruxCallable)(CruxVM *vm, const CruxValue *args);
 typedef struct {
 	CruxObject object;
 	CruxCallable function;
-    CruxForeignMethodFn foreign_fn;
+	CruxForeignMethodFn foreign_fn;
 	ObjectString *name;
 	int arity;
 	ObjectTypeRecord **arg_types;
@@ -496,7 +501,7 @@ struct ObjectIterator {
 
 struct ObjectModuleRecord {
 	CruxObject object;
-	CruxVM* owner;
+	CruxVM *owner;
 	ObjectString *path;
 	Table global_names;
 	Table publics;

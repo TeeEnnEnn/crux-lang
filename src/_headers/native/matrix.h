@@ -38,8 +38,8 @@ CruxValue matrix_scalar_divide_value(CruxVM *vm, const ObjectMatrix *mat, double
 
 CruxValue matrix_add_method(CruxVM *vm, const CruxValue *args);
 CruxValue matrix_subtract_method(CruxVM *vm, const CruxValue *args);
-CruxValue matrix_multiply_method(CruxVM *vm, const CruxValue *args);   /* mat×mat or mat×scalar */
-CruxValue matrix_scale_method(CruxVM *vm, const CruxValue *args);      /* mat × scalar */
+CruxValue matrix_multiply_method(CruxVM *vm, const CruxValue *args); /* mat×mat or mat×scalar */
+CruxValue matrix_scale_method(CruxVM *vm, const CruxValue *args); /* mat × scalar */
 
 /* ── Linear-algebra operations ─────────────────────────────────────────────── */
 
@@ -51,8 +51,8 @@ CruxValue matrix_rank_method(CruxVM *vm, const CruxValue *args);
 
 /* ── Row operations (return new matrix) ────────────────────────────────────── */
 
-CruxValue matrix_row_method(CruxVM *vm, const CruxValue *args);   /* row(i) -> Array */
-CruxValue matrix_col_method(CruxVM *vm, const CruxValue *args);   /* col(j) -> Array */
+CruxValue matrix_row_method(CruxVM *vm, const CruxValue *args); /* row(i) -> Array */
+CruxValue matrix_col_method(CruxVM *vm, const CruxValue *args); /* col(j) -> Array */
 
 /* ── Utilities ─────────────────────────────────────────────────────────────── */
 

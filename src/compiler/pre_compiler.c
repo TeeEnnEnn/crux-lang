@@ -272,7 +272,8 @@ static ObjectTypeRecord *pre_parse_function_signature(Compiler *compiler, bool i
 	}
 	push(compiler->owner->current_module_record, OBJECT_VAL(return_type));
 
-	ObjectTypeRecord *fn_type = new_function_type_rec(compiler->owner, param_types, param_count, return_type, is_static);
+	ObjectTypeRecord *fn_type = new_function_type_rec(compiler->owner, param_types, param_count, return_type,
+													  is_static);
 
 	pop(compiler->owner->current_module_record); // return_type
 	for (int i = 0; i < param_count; i++) {
@@ -351,8 +352,7 @@ static void pre_collect_impl(Compiler *compiler)
 		ObjectTypeRecord *method_type = pre_parse_function_signature(compiler, is_static);
 		if (method_type) {
 			push(compiler->owner->current_module_record, OBJECT_VAL(method_type));
-			ObjectString *method_name =
-				copy_string(compiler->owner, method_name_token.start, method_name_token.length);
+			ObjectString *method_name = copy_string(compiler->owner, method_name_token.start, method_name_token.length);
 			push(compiler->owner->current_module_record, OBJECT_VAL(method_name));
 			type_table_set(struct_type->as.struct_type.field_types, method_name, method_type);
 			pop(compiler->owner->current_module_record); // method_name

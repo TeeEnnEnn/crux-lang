@@ -10,8 +10,7 @@ CruxValue time_milliseconds_function_(CruxVM *vm, const CruxValue *args);
 
 // Sleep functions
 CruxValue sleep_seconds_function(CruxVM *vm, const CruxValue *args);
-CruxValue sleep_milliseconds_function(CruxVM *vm,
-					  const CruxValue *args);
+CruxValue sleep_milliseconds_function(CruxVM *vm, const CruxValue *args);
 
 // Date/Time functions
 CruxValue year_function_(CruxVM *vm, const CruxValue *args);

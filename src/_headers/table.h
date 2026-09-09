@@ -78,8 +78,7 @@ void table_add_all(CruxVM *vm, const Table *from, Table *to);
  * @param hash Hash value of the string.
  * @return Pointer to the found string object, or NULL if not found.
  */
-ObjectString *table_find_string(const Table *table, const char *chars,
-				uint64_t length, uint32_t hash);
+ObjectString *table_find_string(const Table *table, const char *chars, uint64_t length, uint32_t hash);
 
 /**
  * Removes all entries with unmarked keys during garbage collection.
