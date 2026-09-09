@@ -28,3 +28,9 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release ../
 make
 ```
+
+## Acknowledgements
+
+A huge thanks to [Crafting Interpreters](https://craftinginterpreters.com/) without it Crux would not exist.
+
+Crux is based on Lox.
